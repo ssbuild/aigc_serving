@@ -107,6 +107,8 @@ def runner():
 
 
         for model_name, config in model_config_map.items():
+            if not config["enable"]:
+                continue
             group_name = 'serving_group_{}_1'.format(model_name)
             # group_name
             # manager is an agent  and act as a load balancing
