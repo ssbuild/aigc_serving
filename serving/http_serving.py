@@ -50,27 +50,45 @@ class HTTP_Proxy(Process):
             return {"Hello": "World"}
 
 
-        @app.post("/predict")
-        async def predict(requst: typing.Dict):
+
+        @app.post("/generate")
+        async def generate(r: typing.Dict):
             try:
-                r = requst
-                print(r)
+                r["method"] = "generate"
                 model_name = r.get('model', None)
                 texts = r.get('texts', [])
                 if len(texts) == 0 or texts is None:
                     return {'code': -1, "msg": "invalid data"}
-
                 if model_name not in model_config_map:
                     msg = "mode not in " + ','.join( [k for k,v in model_config_map.items() if v["enable"]])
                     print(msg)
                     return {'code': -1, "msg": msg}
 
                 instance = self.queue_mapper[model_name]
-
                 request_id = instance.put(r)
-
                 result = instance.get(request_id)
+                if isinstance(result, np.ndarray):
+                    result = result.tolist()
+                return result
+            except Exception as e:
+                raise {'code': -1, "msg": str(e)}
 
+        @app.post("/chat")
+        async def chat(r: typing.Dict):
+            try:
+                r["method"] = "chat"
+                model_name = r.get('model', None)
+                texts = r.get('texts', [])
+                if len(texts) == 0 or texts is None:
+                    return {'code': -1, "msg": "invalid data"}
+                if model_name not in model_config_map:
+                    msg = "mode not in " + ','.join([k for k, v in model_config_map.items() if v["enable"]])
+                    print(msg)
+                    return {'code': -1, "msg": msg}
+
+                instance = self.queue_mapper[model_name]
+                request_id = instance.put(r)
+                result = instance.get(request_id)
                 if isinstance(result, np.ndarray):
                     result = result.tolist()
                 return result

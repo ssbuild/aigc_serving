@@ -79,11 +79,22 @@ class My_worker(ZMQ_process_worker):
             texts = r.get('texts', [])
             params = r.get('params', {})
 
-            if isinstance(params,dict):
-                for text in texts:
-                    result.append(self.api_client.infer(text,**params))
+            method = r.get('method', "generate")
+            if method == 'chat':
+                method_fn = getattr(self.api_client, 'chat')
+            else:
+                method_fn = getattr(self.api_client, 'generate')
+            if method_fn is not None:
+                if isinstance(params,dict):
+                    for text in texts:
+                        result.append(method_fn(text,**params))
+                else:
+                    code = -1
+                    msg = "params error"
             else:
                 code = -1
+                msg = "{} not exist method {}".format(self.model_name,method)
+
 
         except Exception as e:
             msg = str(e)

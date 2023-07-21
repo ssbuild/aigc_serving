@@ -51,7 +51,7 @@ class Engine_API(Engine_API_Base):
         response, history = self.model.chat(self.tokenizer, query=input,  **kwargs)
         return response, history
 
-    def infer(self,input,**kwargs):
+    def generate(self,input,**kwargs):
         default_kwargs = dict(
             history=[], 
             eos_token_id=self.model.config.eos_token_id,

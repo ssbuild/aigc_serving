@@ -8,7 +8,10 @@ class Engine_API_Base(ABC):
     def init(self, model_name):
         raise NotImplemented
 
-    def infer(self,input,**kwargs):
+    def chat(self,input,**kwargs):
+        raise NotImplemented
+
+    def generate(self,input,**kwargs):
         raise NotImplemented
 
     def with_deepspeed(self):

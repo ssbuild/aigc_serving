@@ -56,7 +56,7 @@ class Engine_API(Engine_API_Base):
         response = self.tokenizer.decode(outputs)
         return response
 
-    def infer(self,input,**kwargs):
+    def generate(self,input,**kwargs):
         default_kwargs = dict(
             eos_token_id = [2, 103028],
             do_sample=True, top_p=0.7, temperature=0.95,
