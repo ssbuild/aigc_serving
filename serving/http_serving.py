@@ -14,7 +14,7 @@ from starlette.middleware.cors import CORSMiddleware
 import os
 import multiprocessing
 from ipc_worker.ipc_zmq_loader import IPC_zmq, ZMQ_process_worker
-from serving.config.config import config as nn_config
+from serving.config.constant_map import models_info_args as model_config_map
 from serving.workers import llm_worker
 
 
@@ -55,6 +55,7 @@ class HTTP_Proxy(Process):
             try:
                 r = requst
                 print(r)
+                model_name = r.get('model', None)
                 texts = r.get('texts', [])
                 param = r.get('param', None)
                 if len(texts) == 0 or texts is None:
@@ -64,8 +65,8 @@ class HTTP_Proxy(Process):
                     print(msg)
                     return {'code': -1, "msg": msg}
                 mode = param["mode"]
-                if mode not in nn_config:
-                    msg = "mode not in " + ','.join(list(nn_config.keys()))
+                if model_name not in model_config_map:
+                    msg = "mode not in " + ','.join(list(model_config_map.keys()))
                     print(msg)
                     return {'code': -1, "msg": msg}
 
@@ -104,24 +105,23 @@ def runner():
         queue_mapper = {}
         process_list = []
 
-        # gpu 数量
-        device_num = 1
-        for mode, config in nn_config.items():
-            group_name = 'serving_group_{}_1'.format(mode)
+
+        for model_name, config in model_config_map.items():
+            group_name = 'serving_group_{}_1'.format(model_name)
             # group_name
             # manager is an agent  and act as a load balancing
             # worker is real doing your work
             instance = IPC_zmq(
                 CLS_worker=llm_worker.My_worker,
-                worker_args=(config, device_num),  # must be tuple
-                worker_num=1,  # number of worker Process
+                worker_args=(model_name, config,),  # must be tuple
+                worker_num=1,  # number of worker Process  大模型 建议使用1个 worker
                 group_name=group_name,  # share memory name
                 evt_quit=evt_quit,
                 queue_size=20,  # recv queue size
                 is_log_time=True,  # whether log compute time
             )
             process_list.append(instance)
-            queue_mapper[mode] = instance
+            queue_mapper[model_name] = instance
             instance.start()
 
         http_ = HTTP_Proxy(queue_mapper,

@@ -13,9 +13,9 @@ class NN_DataHelper(DataHelper):pass
 
 
 class Engine_API(Engine_API_Base):
-    def init(self,model_name):
+    def init(self,model_config_dict):
         parser = HfArgumentParser((ModelArguments,))
-        (model_args,) = parser.parse_dict(models_info_args[model_name], allow_extra_keys=True)
+        (model_args,) = parser.parse_dict(model_config_dict["model_config"], allow_extra_keys=True)
 
         dataHelper = NN_DataHelper(model_args)
         tokenizer, config, _, _ = dataHelper.load_tokenizer_and_config(config_class_name=BaichuanConfig,

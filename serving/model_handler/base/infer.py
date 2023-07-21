@@ -10,3 +10,6 @@ class Engine_API_Base(ABC):
 
     def infer(self,input,**kwargs):
         raise NotImplemented
+
+    def with_deepspeed(self):
+        raise NotImplemented

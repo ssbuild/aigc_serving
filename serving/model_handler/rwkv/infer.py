@@ -14,9 +14,9 @@ class NN_DataHelper(DataHelper):pass
 
 
 class Engine_API(Engine_API_Base):
-    def init(self,model_name):
+    def init(self,model_config_dict):
         parser = HfArgumentParser((ModelArguments,))
-        (model_args,) = parser.parse_dict(models_info_args[model_name], allow_extra_keys=True)
+        (model_args,) = parser.parse_dict(model_config_dict["model_config"], allow_extra_keys=True)
 
         # 可以自行修改 RWKV_T_MAX  推理最大长度
         set_model_profile(RWKV_T_MAX=2048, RWKV_FLOAT_MODE='16')
