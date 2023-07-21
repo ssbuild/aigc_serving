@@ -1,0 +1,5 @@
+ipc-worker>=0.0.9
+pyzmq
+fastapi
+uvicorn
+numpy
