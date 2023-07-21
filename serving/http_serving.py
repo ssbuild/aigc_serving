@@ -13,7 +13,7 @@ from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 import os
 import multiprocessing
-from ipc_worker.ipc_zmq_loader import IPC_zmq, ZMQ_process_worker
+from ipc_worker.ipc_zmq_loader import IPC_zmq, ZMQ_process_worker # noqa
 from serving.config.constant_map import models_info_args as model_config_map
 from serving.workers import llm_worker
 

@@ -6,17 +6,17 @@ from deep_training.data_helper import ModelArguments,DataHelper
 from transformers import HfArgumentParser
 from aigc_zoo.model_zoo.chatglm.llm_model import MyTransformer, ChatGLMTokenizer, LoraArguments, setup_model_profile, \
     ChatGLMConfig
-from serving.model_handler.base import Engine_API_Base
+from serving.model_handler.base import EngineAPI_Base
 from serving.config.constant_map import models_info_args
 class NN_DataHelper(DataHelper):pass
 
 
 
-class Engine_API(Engine_API_Base):
-    def init(self,model_config_dict):
+class EngineAPI(EngineAPI_Base):
+    def init_model(self):
         models_info_args['seed'] = None
         parser = HfArgumentParser((ModelArguments,))
-        (model_args,) = parser.parse_dict(model_config_dict["model_config"], allow_extra_keys=True)
+        (model_args,) = parser.parse_dict(self.model_config_dict["model_config"], allow_extra_keys=True)
 
         setup_model_profile()
 
@@ -42,8 +42,7 @@ class Engine_API(Engine_API_Base):
         self.tokenizer = tokenizer
 
     def chat(self,input,**kwargs):
-        default_kwargs = dict(
-            history=[], 
+        default_kwargs = dict(history=[], 
             eos_token_id=self.model.config.eos_token_id,
             do_sample=True, top_p=0.7, temperature=0.95,
         )
@@ -52,8 +51,7 @@ class Engine_API(Engine_API_Base):
         return response, history
 
     def generate(self,input,**kwargs):
-        default_kwargs = dict(
-            history=[], 
+        default_kwargs = dict(history=[], 
             eos_token_id=self.model.config.eos_token_id,
             do_sample=True, top_p=0.7, temperature=0.95,
         )
@@ -67,8 +65,8 @@ class Engine_API(Engine_API_Base):
         return response
 
 if __name__ == '__main__':
-    api_client = Engine_API()
-    api_client.init("chatglm-6b-int4")
+    api_client = EngineAPI(models_info_args['chatglm-6b-int4'])
+    api_client.init()
     text_list = [
         "写一个诗歌，关于冬天",
         "晚上睡不着应该怎么办",

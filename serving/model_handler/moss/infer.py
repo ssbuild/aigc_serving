@@ -7,16 +7,16 @@ from deep_training.data_helper import ModelArguments, DataArguments, DataHelper
 from transformers import HfArgumentParser
 from aigc_zoo.model_zoo.moss.llm_model import MyTransformer,MossConfig,MossTokenizer
 from aigc_zoo.utils.moss_generate import Generate
-from serving.model_handler.base import Engine_API_Base
+from serving.model_handler.base import EngineAPI_Base
 from serving.config.constant_map import models_info_args
 class NN_DataHelper(DataHelper):pass
 
 
-class Engine_API(Engine_API_Base):
-    def init(self,model_config_dict):
+class EngineAPI(EngineAPI_Base):
+    def init_model(self):
         models_info_args['seed'] = None
         parser = HfArgumentParser((ModelArguments,))
-        (model_args,) = parser.parse_dict(model_config_dict["model_config"], allow_extra_keys=True)
+        (model_args,) = parser.parse_dict(self.model_config_dict["model_config"], allow_extra_keys=True)
 
         dataHelper = NN_DataHelper(model_args)
         tokenizer: MossTokenizer
@@ -34,7 +34,6 @@ class Engine_API(Engine_API_Base):
 
     def infer(self,input,**kwargs):
         default_kwargs = dict(
-            
             eos_token_id=self.model.config.eos_token_id,
             pad_token_id=self.model.config.eos_token_id,
             do_sample=True, top_p=0.7, temperature=0.95,
@@ -45,7 +44,6 @@ class Engine_API(Engine_API_Base):
 
     def generate(self,input,**kwargs):
         default_kwargs = dict(
-            
             eos_token_id=self.model.config.eos_token_id,
             pad_token_id=self.model.config.eos_token_id,
             do_sample=True, top_p=0.7, temperature=0.95,
@@ -56,8 +54,8 @@ class Engine_API(Engine_API_Base):
 
 
 if __name__ == '__main__':
-    api_client = Engine_API()
-    api_client.init("moss-moon-003-sft-int4")
+    api_client = EngineAPI(models_info_args['moss-moon-003-sft-int4'])
+    api_client.init()
     text_list = ["写一个诗歌，关于冬天",
                  "<|Human|>: 如果一个女性想要发展信息技术行业，她应该做些什么？<eoh>\n<|MOSS|>:",
                  ]

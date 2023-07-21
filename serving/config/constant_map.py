@@ -7,7 +7,16 @@
 models_info_args = {
     "baichuan-7B":{
         "enable": False,
-        "device_id": None,
+        "device_id": None, # sample [0,1,...]
+        "deepspeed": {
+            "enable": False
+        },
+        "accelerate": {
+            "enable": False
+        },
+        "vllm":{
+            "enable": False
+        },
         "model_config" : {
             "model_type": "baichuan",
             "model_name_or_path": "/data/nlp/pre_models/torch/baichuan/baichuan-7B",
@@ -20,7 +29,16 @@ models_info_args = {
 
     "Baichuan-13B-Chat":{
         "enable": False,
-        "device_id": None,
+        "device_id": None, # sample [0,1,...]
+        "deepspeed": {
+            "enable": False
+        },
+        "accelerate": {
+            "enable": False
+        },
+        "vllm": {
+            "enable": False
+        },
         "model_config": {
             "model_type": "baichuan",
             "model_name_or_path": "/data/nlp/pre_models/torch/baichuan/Baichuan-13B-Chat",
@@ -34,7 +52,16 @@ models_info_args = {
 
     "chatglm-6b":{
         "enable": False,
-        "device_id": None,
+        "device_id": None,  # sample [0,1,...]
+        "deepspeed": {
+            "enable": False
+        },
+        "accelerate": {
+            "enable": False
+        },
+        "vllm": {
+            "enable": False
+        },
         "model_config": {
             "model_type": "chatglm",
             "model_name_or_path": "/data/nlp/pre_models/torch/chatglm/chatglm-6b",
@@ -46,7 +73,16 @@ models_info_args = {
     },
     "chatglm-6b-int4":{
         "enable": False,
-        "device_id": None,
+        "device_id": None, # sample [0,1,...]
+        "deepspeed": {
+            "enable": False
+        },
+        "accelerate": {
+            "enable": False
+        },
+        "vllm": {
+            "enable": False
+        },
         "model_config": {
             "model_type": "chatglm",
             "model_name_or_path": "/data/nlp/pre_models/torch/chatglm/chatglm-6b-int4",
@@ -59,7 +95,16 @@ models_info_args = {
     },
     "chatglm-6b-int8":{
         "enable": False,
-        "device_id": None,
+        "device_id": None, # sample [0,1,...]
+        "deepspeed": {
+            "enable": False
+        },
+        "accelerate": {
+            "enable": False
+        },
+        "vllm": {
+            "enable": False
+        },
         "model_config": {
             "model_type": "chatglm",
             "model_name_or_path": "/data/nlp/pre_models/torch/chatglm/chatglm-6b-int8",
@@ -72,7 +117,16 @@ models_info_args = {
     },
     "chatglm2-6b-int4" : {
         "enable": False,
-        "device_id": None,
+        "device_id": None, # sample [0,1,...]
+        "deepspeed": {
+            "enable": False
+        },
+        "accelerate": {
+            "enable": False
+        },
+        "vllm": {
+            "enable": False
+        },
         "model_config" : {
             "model_type": "chatglm2",
             "model_name_or_path": "/data/nlp/pre_models/torch/chatglm2/chatglm2-6b-int4",
@@ -84,7 +138,16 @@ models_info_args = {
     },
     "chatglm2-6b": {
         "enable": False,
-        "device_id": None,
+        "device_id": None, # sample [0,1,...]
+        "deepspeed": {
+            "enable": False
+        },
+        "accelerate": {
+            "enable": False
+        },
+        "vllm": {
+            "enable": False
+        },
         "model_config": {
             "model_type": "chatglm2",
             "model_name_or_path": "/data/nlp/pre_models/torch/chatglm2/chatglm2-6b",
@@ -97,7 +160,16 @@ models_info_args = {
     },
     "bloom-560m": {
         "enable": True,
-        "device_id": None,
+        "device_id": None, # sample [0,1,...]
+        "deepspeed": {
+            "enable": False
+        },
+        "accelerate": {
+            "enable": False
+        },
+        "vllm": {
+            "enable": False
+        },
         "model_config": {
             "model_type": "bloom",
             "model_name_or_path": "/data/nlp/pre_models/torch/bloom/bloom-560m",
@@ -110,7 +182,16 @@ models_info_args = {
     },
     "bloom-1b7": {
         "enable": False,
-        "device_id": None,
+        "device_id": None, # sample [0,1,...]
+        "deepspeed": {
+            "enable": False
+        },
+        "accelerate": {
+            "enable": False
+        },
+        "vllm": {
+            "enable": False
+        },
         "model_config": {
             "model_type": "bloom",
             "model_name_or_path": "/data/nlp/pre_models/torch/bloom/bloom-1b7",
@@ -123,7 +204,16 @@ models_info_args = {
     },
     "opt-350m": {
         "enable": False,
-        "device_id": None,
+        "device_id": None, # sample [0,1,...]
+        "deepspeed": {
+            "enable": False
+        },
+        "accelerate": {
+            "enable": False
+        },
+        "vllm": {
+            "enable": False
+        },
         "model_config": {
             "model_type": "opt",
             "model_name_or_path": "/data/nlp/pre_models/torch/opt/opt-350m",
@@ -137,7 +227,16 @@ models_info_args = {
 
     "llama-7b-hf": {
         "enable": False,
-        "device_id": None,
+        "device_id": None, # sample [0,1,...]
+        "deepspeed": {
+            "enable": False
+        },
+        "accelerate": {
+            "enable": False
+        },
+        "vllm": {
+            "enable": False
+        },
         "model_config": {
             "model_type": "llama",
             "model_name_or_path": "/data/nlp/pre_models/torch/llama/llama-7b-hf",
@@ -151,7 +250,16 @@ models_info_args = {
 
     "moss-moon-003-sft-int4":{
         "enable": False,
-        "device_id": None,
+        "device_id": None, # sample [0,1,...]
+        "deepspeed": {
+            "enable": False
+        },
+        "accelerate": {
+            "enable": False
+        },
+        "vllm": {
+            "enable": False
+        },
         "model_config": {
             "model_type": "moss",
             "model_name_or_path": "/data/nlp/pre_models/torch/moss/moss-moon-003-sft-int4",
@@ -166,7 +274,16 @@ models_info_args = {
     # 中英日语
     "rwkv-4-raven-3b-v12-Eng49%-Chn49%-Jpn1%-Other1%": {
         "enable": False,
-        "device_id": None,
+        "device_id": None, # sample [0,1,...]
+        "deepspeed": {
+            "enable": False
+        },
+        "accelerate": {
+            "enable": False
+        },
+        "vllm": {
+            "enable": False
+        },
         "model_config": {
             "model_type": "rwkv",
             "model_name_or_path": "/data/nlp/pre_models/torch/rwkv_gf/rwkv-4-raven-3b-v12",
@@ -180,7 +297,16 @@ models_info_args = {
 
     "internlm-chat-7b": {
         "enable": False,
-        "device_id": None,
+        "device_id": None, # sample [0,1,...]
+        "deepspeed": {
+            "enable": False
+        },
+        "accelerate": {
+            "enable": False
+        },
+        "vllm": {
+            "enable": False
+        },
         "model_config": {
             "model_type": "internlm",
             "model_name_or_path": "/data/nlp/pre_models/torch/internlm/internlm-chat-7b",
