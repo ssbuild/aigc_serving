@@ -2,6 +2,7 @@
 # @Time    : 2022/6/8 13:33
 # @Author  : tk
 import os
+import time
 import typing
 
 from ipc_worker.ipc_zmq_loader import IPC_zmq,ZMQ_process_worker
@@ -70,12 +71,28 @@ class My_worker(ZMQ_process_worker):
     #any data put will trigger this func
     def run_once(self,request_data):
         r = request_data
-        texts = r.get('texts', [])
-        params = r.get('texts', {})
         result = []
-        for text in texts:
-            result.append(self.api_client.infer(text,**params))
+        code = 0
+        start_time = time.time()
+        msg = "ok"
+        try:
+            texts = r.get('texts', [])
+            params = r.get('params', {})
+
+            if isinstance(params,dict):
+                for text in texts:
+                    result.append(self.api_client.infer(text,**params))
+            else:
+                code = -1
+
+        except Exception as e:
+            msg = str(e)
+            self._logger.info(e)
+            code = -1
+        end_time = time.time()
         return {
-            "code": 0,
-            "result": result
+            "code": code,
+            "runtime": (end_time - start_time) * 1000,
+            "result": result,
+            "msg": msg
         }
