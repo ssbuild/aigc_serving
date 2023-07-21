@@ -57,20 +57,15 @@ class HTTP_Proxy(Process):
                 print(r)
                 model_name = r.get('model', None)
                 texts = r.get('texts', [])
-                param = r.get('param', None)
                 if len(texts) == 0 or texts is None:
                     return {'code': -1, "msg": "invalid data"}
-                if param is None or param["mode"] is None:
-                    msg = "param is required"
-                    print(msg)
-                    return {'code': -1, "msg": msg}
-                mode = param["mode"]
+
                 if model_name not in model_config_map:
-                    msg = "mode not in " + ','.join(list(model_config_map.keys()))
+                    msg = "mode not in " + ','.join( [k for k,v in model_config_map.items() if v["enable"]])
                     print(msg)
                     return {'code': -1, "msg": msg}
 
-                instance = self.queue_mapper[mode]
+                instance = self.queue_mapper[model_name]
 
                 request_id = instance.put(r)
 

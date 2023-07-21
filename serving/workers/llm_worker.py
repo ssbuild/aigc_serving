@@ -2,6 +2,8 @@
 # @Time    : 2022/6/8 13:33
 # @Author  : tk
 import os
+import typing
+
 from ipc_worker.ipc_zmq_loader import IPC_zmq,ZMQ_process_worker
 import copy
 
@@ -67,5 +69,13 @@ class My_worker(ZMQ_process_worker):
 
     #any data put will trigger this func
     def run_once(self,request_data):
-        print('request data',request_data)
-        return request_data
+        r = request_data
+        texts = r.get('texts', [])
+        params = r.get('texts', {})
+        result = []
+        for text in texts:
+            result.append(self.api_client.infer(text,**params))
+        return {
+            "code": 0,
+            "result": result
+        }
