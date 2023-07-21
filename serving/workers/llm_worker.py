@@ -78,12 +78,8 @@ class My_worker(ZMQ_process_worker):
         try:
             texts = r.get('texts', [])
             params = r.get('params', {})
-
             method = r.get('method', "generate")
-            if method == 'chat':
-                method_fn = getattr(self.api_client, 'chat')
-            else:
-                method_fn = getattr(self.api_client, 'generate')
+            method_fn = getattr(self.api_client, method)
             if method_fn is not None:
                 if isinstance(params,dict):
                     for text in texts:

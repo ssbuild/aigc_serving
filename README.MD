@@ -1,22 +1,19 @@
-# 简介
+## 简介
 
    aigc_serving lightweight and efficient 大语言模型高性能纯python推理服务
    
 
-# 推荐环境
+## 推荐环境
    linux python >=3.8
    因对进程的管理和共享内存机制，暂时不支持windows
     
 
-# 安装模块
+## install
 pip install -r requirements.txt
 
 
 
-
 ## 启动
-
-
 ```commandline
 cd script
 bash start.sh
