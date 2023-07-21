@@ -1,19 +1,21 @@
 # -*- coding: utf-8 -*-
 # @Author  : ssbuild
 # @Time    : 2023/7/21 8:55
+import sys
+sys.path.append('..')
+
 import typing
 from multiprocessing import Process
 from typing import Union
 import numpy as np
 import uvicorn
-
-from config.config import config as nn_config
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 import os
 import multiprocessing
 from ipc_worker.ipc_zmq_loader import IPC_zmq, ZMQ_process_worker
-import llm_worker
+from serving.config.config import config as nn_config
+from serving.workers import llm_worker
 
 
 
@@ -31,9 +33,7 @@ class HTTP_Proxy(Process):
         self.http_ip = http_ip
         self.http_port = http_port
         self.queue_mapper = queue_mapper
-
         self.app = None
-        # self.app = self.create_app()
 
     def create_app(self):
         app = FastAPI()
@@ -133,7 +133,7 @@ def runner():
         try:
             for p in process_list:
                 p.join()
-        except Exception as e:
+        except Exception as e: # noqa
             evt_quit.set()
             for p in process_list:
                 p.terminate()
