@@ -9,7 +9,7 @@
     
 
 # 安装模块
-pip install -r nn-serving/requirements.txt
+pip install -r requirements.txt
 
 
 
@@ -25,7 +25,7 @@ bash start.sh
 ## 请求
 ```text
 http://127.0.0.1:8081/generate
-request
+请求
 {
     "texts": ["你会干什么？"],
     "model": "bloom-560m",
@@ -46,7 +46,7 @@ request
 
 ```text
 http://127.0.0.1:8081/chat
-request
+请求
 {
     "texts": ["你会干什么？"],
     "model": "bloom-560m",
