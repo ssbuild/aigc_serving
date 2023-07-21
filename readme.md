@@ -1,5 +1,6 @@
 # 简介
-   nn-serving 是一个神经网络推理服务，推理冻结的模型并提供restful接口.
+
+   aigc_serving Lightweight and efficient 大语言模型推理服务
    
 
 # 推荐环境
