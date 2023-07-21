@@ -55,7 +55,7 @@ class My_worker(ZMQ_process_worker):
         self.config = copy.deepcopy(config)
         self.model_name = model_name
         self.api_client = None
-        self.initail_error = None
+        self.initial_error = None
 
     #Process begin trigger this func
     def run_begin(self):
