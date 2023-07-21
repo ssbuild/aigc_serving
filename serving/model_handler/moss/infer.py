@@ -62,6 +62,6 @@ if __name__ == '__main__':
                  "<|Human|>: 如果一个女性想要发展信息技术行业，她应该做些什么？<eoh>\n<|MOSS|>:",
                  ]
     for input in text_list:
-        response = api_client.infer(input)
+        response = api_client.generate(input)
         print('input', input)
         print('output', response)

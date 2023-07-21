@@ -74,7 +74,7 @@ if __name__ == '__main__':
         "晚上睡不着应该怎么办",
     ]
     for input in text_list:
-        response = api_client.infer(input)
+        response = api_client.generate(input)
         print("input", input)
         print("response", response)
 

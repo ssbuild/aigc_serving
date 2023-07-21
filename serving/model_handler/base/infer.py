@@ -16,3 +16,14 @@ class Engine_API_Base(ABC):
 
     def with_deepspeed(self):
         raise NotImplemented
+
+
+    def wrapper_deepspeed(self):
+        import deepspeed
+
+        ds_engine = deepspeed.init_inference(
+            self.model,
+            config=ds_config,
+            base_dir=model_path,
+            checkpoint=checkpoint,
+        )

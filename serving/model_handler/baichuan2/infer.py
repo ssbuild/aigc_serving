@@ -79,6 +79,6 @@ if __name__ == '__main__':
                  "Hamlet->Shakespeare\nOne Hundred Years of Solitude->",
                  ]
     for input in text_list:
-        response = api_client.infer(input)
+        response = api_client.generate(input)
         print('input', input)
         print('output', response)

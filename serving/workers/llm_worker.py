@@ -4,7 +4,6 @@
 import os
 import time
 import typing
-
 from ipc_worker.ipc_zmq_loader import IPC_zmq,ZMQ_process_worker
 import copy
 
@@ -51,18 +50,25 @@ class My_worker(ZMQ_process_worker):
     def __init__(self,model_name,config,*args,**kwargs):
         super(My_worker,self).__init__(*args,**kwargs)
         self._logger.info('Process id {}, group name {} , identity {}'.format(self._idx,self._group_name,self._identity))
-        # config['model_config']['device_id'] = self._idx % device_num if device_num > 0 else 0
+        # config['device_id'] = self._idx % device_num if device_num > 0 else 0
         self._logger.info(config)
         self.config = copy.deepcopy(config)
         self.model_name = model_name
         self.api_client = None
+        self.initail_error = None
 
     #Process begin trigger this func
     def run_begin(self):
-        self._logger.info('{} worker pid {}...'.format(self.model_name , os.getpid()))
-        self.api_client = get_worker_instance(self.model_name,self.config)
-        assert self.api_client is not None
-        self.api_client.init(self.config)
+        try:
+            device_id = self.config.get("device_id", None)
+            if device_id is not None:
+                os.environ['CUDA_VISIBLE_DEVICES'] = device_id
+            self._logger.info('{} worker pid {}...'.format(self.model_name, os.getpid()))
+            self.api_client = get_worker_instance(self.model_name, self.config)
+            self.api_client.init(self.config)
+        except Exception as e:
+            self.api_client = None
+            self.initial_error = str(e)
 
     # Process end trigger this func
     def run_end(self):
@@ -76,22 +82,24 @@ class My_worker(ZMQ_process_worker):
         start_time = time.time()
         msg = "ok"
         try:
-            texts = r.get('texts', [])
-            params = r.get('params', {})
-            method = r.get('method', "generate")
-            method_fn = getattr(self.api_client, method)
-            if method_fn is not None:
-                if isinstance(params,dict):
-                    for text in texts:
-                        result.append(method_fn(text,**params))
+            if self.initial_error is None:
+                texts = r.get('texts', [])
+                params = r.get('params', {})
+                method = r.get('method', "generate")
+                method_fn = getattr(self.api_client, method)
+                if method_fn is not None:
+                    if isinstance(params,dict):
+                        for text in texts:
+                            result.append(method_fn(text,**params))
+                    else:
+                        code = -1
+                        msg = "params error"
                 else:
                     code = -1
-                    msg = "params error"
+                    msg = "{} not exist method {}".format(self.model_name,method)
             else:
                 code = -1
-                msg = "{} not exist method {}".format(self.model_name,method)
-
-
+                msg = self.initial_error
         except Exception as e:
             msg = str(e)
             self._logger.info(e)

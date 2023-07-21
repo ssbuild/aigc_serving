@@ -17,18 +17,14 @@ from ipc_worker.ipc_zmq_loader import IPC_zmq, ZMQ_process_worker
 from serving.config.constant_map import models_info_args as model_config_map
 from serving.workers import llm_worker
 
-
-
-class HTTP_Proxy(Process):
+class HTTP_Serving(Process):
     def __init__(self,
                  queue_mapper : dict,
                  http_ip='0.0.0.0',
                  http_port=8088,
-                 cors='*',
                  http_num_workers=1,
     ):
         super().__init__(daemon=True)
-        self.cors = cors
         self.http_num_workers = http_num_workers
         self.http_ip = http_ip
         self.http_port = http_port
@@ -48,8 +44,6 @@ class HTTP_Proxy(Process):
         @app.get("/")
         def read_root():
             return {"Hello": "World"}
-
-
 
         @app.post("/generate")
         async def generate(r: typing.Dict):
@@ -102,7 +96,7 @@ class HTTP_Proxy(Process):
             self.app.stop()
     def run(self):
         self.app = self.create_app()
-        uvicorn.run(self.app, host=self.http_ip, port=self.http_port, workers=1)
+        uvicorn.run(self.app, host=self.http_ip, port=self.http_port, workers=self.http_num_workers)
 
 
 
@@ -117,7 +111,6 @@ def runner():
         evt_quit = multiprocessing.Manager().Event()
         queue_mapper = {}
         process_list = []
-
 
         for model_name, config in model_config_map.items():
             if not config["enable"]:
@@ -139,12 +132,11 @@ def runner():
             queue_mapper[model_name] = instance
             instance.start()
 
-        http_ = HTTP_Proxy(queue_mapper,
-                           http_ip='0.0.0.0',
-                           http_port=8081, )
+        http_ = HTTP_Serving(queue_mapper,
+                             http_ip='0.0.0.0',
+                             http_port=8081, )
         http_.start()
         process_list.append(http_)
-
         try:
             for p in process_list:
                 p.join()
