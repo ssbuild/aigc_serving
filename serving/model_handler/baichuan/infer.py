@@ -7,13 +7,13 @@ from deep_training.data_helper import ModelArguments, DataArguments,DataHelper
 from transformers import HfArgumentParser, BitsAndBytesConfig
 from aigc_zoo.model_zoo.baichuan.llm_model import MyTransformer,BaiChuanConfig,BaiChuanTokenizer
 from aigc_zoo.utils.llm_generate import Generate
-from serving.config.constant_map import models_info_args
+from config.constant_map import models_info_args
 from serving.model_handler.base import EngineAPI_Base
 class NN_DataHelper(DataHelper):pass
 
 
 class EngineAPI(EngineAPI_Base):
-    def init_model(self):
+    def init_model(self,device_id=0):
         parser = HfArgumentParser((ModelArguments,))
         (model_args,) = parser.parse_dict(self.model_config_dict["model_config"], allow_extra_keys=True)
 
@@ -29,7 +29,7 @@ class EngineAPI(EngineAPI_Base):
         model = model.eval()
         model.requires_grad_(False)
 
-        model = model.half().cuda()
+        model = model.half().cuda(device_id)
 
         self.model = model
         self.tokenizer = tokenizer

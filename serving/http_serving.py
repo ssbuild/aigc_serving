@@ -3,18 +3,17 @@
 # @Time    : 2023/7/21 8:55
 import sys
 sys.path.append('..')
-
+import os
 import typing
+import multiprocessing
 from multiprocessing import Process
 from typing import Union
 import numpy as np
 import uvicorn
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
-import os
-import multiprocessing
 from ipc_worker.ipc_zmq_loader import IPC_zmq, ZMQ_process_worker # noqa
-from serving.config.constant_map import models_info_args as model_config_map
+from config.constant_map import models_info_args as model_config_map
 from serving.workers import llm_worker
 
 class HTTP_Serving(Process):
@@ -122,7 +121,7 @@ def runner():
             instance = IPC_zmq(
                 CLS_worker=llm_worker.My_worker,
                 worker_args=(model_name, config,),  # must be tuple
-                worker_num=1,  # number of worker Process  大模型 建议使用1个 worker
+                worker_num=len(config['workers']['worker']),  # number of worker Process  大模型 建议使用1个 worker
                 group_name=group_name,  # share memory name
                 evt_quit=evt_quit,
                 queue_size=20,  # recv queue size

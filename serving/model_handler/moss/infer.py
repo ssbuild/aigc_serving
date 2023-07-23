@@ -8,12 +8,12 @@ from transformers import HfArgumentParser
 from aigc_zoo.model_zoo.moss.llm_model import MyTransformer,MossConfig,MossTokenizer
 from aigc_zoo.utils.moss_generate import Generate
 from serving.model_handler.base import EngineAPI_Base
-from serving.config.constant_map import models_info_args
+from config.constant_map import models_info_args
 class NN_DataHelper(DataHelper):pass
 
 
 class EngineAPI(EngineAPI_Base):
-    def init_model(self):
+    def init_model(self,device_id=0):
         models_info_args['seed'] = None
         parser = HfArgumentParser((ModelArguments,))
         (model_args,) = parser.parse_dict(self.model_config_dict["model_config"], allow_extra_keys=True)
@@ -26,7 +26,7 @@ class EngineAPI(EngineAPI_Base):
 
         pl_model = MyTransformer(config=config, model_args=model_args, torch_dtype=torch.float16, )
         model = pl_model.get_llm_model()
-        model.eval().half().cuda()
+        model.eval().half().cuda(device_id)
 
         self.model = model
         self.tokenizer: MossTokenizer = tokenizer

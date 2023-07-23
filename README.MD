@@ -1,9 +1,14 @@
+
 ## 简介
 
    aigc_serving lightweight and efficient 大语言模型高性能纯python推理服务
-   
 
-## 推荐环境
+
+## update information
+```text
+   07-23 support deepspeed , accelerate
+```
+   注意:
    linux python >=3.8
    因对进程的管理和共享内存机制，暂时不支持windows
     
@@ -28,6 +33,11 @@ http://127.0.0.1:8081/generate
     "model": "bloom-560m",
     "params": {"max_new_tokens": 512,"do_sample": true,"temperature": 0.9,"top_p": 0.7}
 }
+
+例子 
+curl http://127.0.0.1:8081/generate -H "Content-Type: application/json" -X POST -d '{"texts":["你会干什么？"],"model":"bloom-560m","params":{"max_new_tokens":512,"do_sample":true,"temperature":0.9,"top_p":0.7}}'
+
+
 返回
 {
     "code": 0,
@@ -49,6 +59,8 @@ http://127.0.0.1:8081/chat
     "model": "bloom-560m",
     "params": {"max_new_tokens": 512,"do_sample": true,"temperature": 0.9,"top_p": 0.7}
 }
+
+
 返回
 {
     "code": 0,
@@ -59,6 +71,8 @@ http://127.0.0.1:8081/chat
     "msg": "ok"
 }
 ```
+
+
 
 ## 
     纯粹而干净的代码

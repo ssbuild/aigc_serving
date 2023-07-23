@@ -8,13 +8,13 @@ from transformers import HfArgumentParser
 from aigc_zoo.model_zoo.llm.llm_model import MyTransformer
 from aigc_zoo.utils.llm_generate import Generate
 from serving.model_handler.base import EngineAPI_Base
-from serving.config.constant_map import models_info_args
+from config.constant_map import models_info_args
 class NN_DataHelper(DataHelper):pass
 
 
 
 class EngineAPI(EngineAPI_Base):
-    def init_model(self):
+    def init_model(self,device_id=0):
         parser = HfArgumentParser((ModelArguments,))
         (model_args,) = parser.parse_dict(self.model_config_dict["model_config"], allow_extra_keys=True)
 
@@ -24,15 +24,16 @@ class EngineAPI(EngineAPI_Base):
         pl_model = MyTransformer(config=config, model_args=model_args, torch_dtype=config.torch_dtype, )
         model = pl_model.get_llm_model()
 
-        model.eval().half().cuda()
+        model.eval().half().cuda(device_id)
 
         self.model = model
+        self.config = self.model.config
         self.tokenizer = tokenizer
 
     def generate(self,input,**kwargs):
         default_kwargs = dict(
-            eos_token_id=self.model.config.eos_token_id,
-            pad_token_id=self.model.config.eos_token_id,
+            eos_token_id=self.config.eos_token_id,
+            pad_token_id=self.config.eos_token_id,
             do_sample=True, top_p=0.7, temperature=0.95,
         )
         default_kwargs.update(kwargs)

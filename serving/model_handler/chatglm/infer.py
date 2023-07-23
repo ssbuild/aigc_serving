@@ -7,13 +7,13 @@ from transformers import HfArgumentParser
 from aigc_zoo.model_zoo.chatglm.llm_model import MyTransformer, ChatGLMTokenizer, LoraArguments, setup_model_profile, \
     ChatGLMConfig
 from serving.model_handler.base import EngineAPI_Base
-from serving.config.constant_map import models_info_args
+from config.constant_map import models_info_args
 class NN_DataHelper(DataHelper):pass
 
 
 
 class EngineAPI(EngineAPI_Base):
-    def init_model(self):
+    def init_model(self,device_id=0):
         models_info_args['seed'] = None
         parser = HfArgumentParser((ModelArguments,))
         (model_args,) = parser.parse_dict(self.model_config_dict["model_config"], allow_extra_keys=True)
@@ -32,10 +32,10 @@ class EngineAPI(EngineAPI_Base):
         model = pl_model.get_llm_model()
         if not model.quantized:
             # 按需修改，目前只支持 4/8 bit 量化 ， 可以保存量化模型
-            model.half().quantize(4).cuda()
+            model.half().quantize(4).cuda(device_id)
         else:
             # 已经量化
-            model.half().cuda()
+            model.half().cuda(device_id)
         model = model.eval()
 
         self.model = model

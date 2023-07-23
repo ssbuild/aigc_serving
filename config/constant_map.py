@@ -7,15 +7,13 @@
 models_info_args = {
     "baichuan-7B":{
         "enable": False,
-        "device_id": None, # sample [0,1,...]
-        "deepspeed": {
-            "enable": False
-        },
-        "accelerate": {
-            "enable": False
-        },
-        "vllm":{
-            "enable": False
+         "workers": {
+            "mode": "deepspeed", # one of deepspeed,accelerate,hf
+            "worker": [
+                 {
+                    "device_id": [0] # 默认启动一个worker , 使用第一块显卡
+                 }
+             ]
         },
         "model_config" : {
             "model_type": "baichuan",
@@ -29,15 +27,16 @@ models_info_args = {
 
     "Baichuan-13B-Chat":{
         "enable": False,
-        "device_id": None, # sample [0,1,...]
-        "deepspeed": {
-            "enable": False
-        },
-        "accelerate": {
-            "enable": False
+        "workers": {
+            "mode": "deepspeed",  # one of deepspeed,accelerate,hf
+            "worker": [
+                {
+                    "device_id": [0] # 默认启动一个worker , 使用第一块显卡
+                }
+            ]
         },
         "vllm": {
-            "enable": False
+            "enable": False # 暂时未支持
         },
         "model_config": {
             "model_type": "baichuan",
@@ -52,15 +51,16 @@ models_info_args = {
 
     "chatglm-6b":{
         "enable": False,
-        "device_id": None,  # sample [0,1,...]
-        "deepspeed": {
-            "enable": False
-        },
-        "accelerate": {
-            "enable": False
+        "workers": {
+            "mode": "deepspeed", # one of deepspeed,accelerate,hf
+            "worker": [
+                 {
+                    "device_id": [0] # 默认启动一个worker , 使用第一块显卡
+                 }
+             ]
         },
         "vllm": {
-            "enable": False
+            "enable": False # 暂时未支持
         },
         "model_config": {
             "model_type": "chatglm",
@@ -73,15 +73,16 @@ models_info_args = {
     },
     "chatglm-6b-int4":{
         "enable": False,
-        "device_id": None, # sample [0,1,...]
-        "deepspeed": {
-            "enable": False
-        },
-        "accelerate": {
-            "enable": False
+        "workers": {
+            "mode": "deepspeed",  # one of deepspeed,accelerate,hf
+            "worker": [
+                {
+                    "device_id": [0] # 默认启动一个worker , 使用第一块显卡
+                }
+            ]
         },
         "vllm": {
-            "enable": False
+            "enable": False # 暂时未支持
         },
         "model_config": {
             "model_type": "chatglm",
@@ -95,15 +96,16 @@ models_info_args = {
     },
     "chatglm-6b-int8":{
         "enable": False,
-        "device_id": None, # sample [0,1,...]
-        "deepspeed": {
-            "enable": False
-        },
-        "accelerate": {
-            "enable": False
+        "workers": {
+            "mode": "deepspeed", # one of deepspeed,accelerate,hf
+            "worker": [
+                 {
+                    "device_id": [0] # 默认启动一个worker , 使用第一块显卡
+                 }
+             ]
         },
         "vllm": {
-            "enable": False
+            "enable": False # 暂时未支持
         },
         "model_config": {
             "model_type": "chatglm",
@@ -117,15 +119,16 @@ models_info_args = {
     },
     "chatglm2-6b-int4" : {
         "enable": False,
-        "device_id": None, # sample [0,1,...]
-        "deepspeed": {
-            "enable": False
-        },
-        "accelerate": {
-            "enable": False
+        "workers": {
+            "mode": "deepspeed", # one of deepspeed,accelerate,hf
+            "worker": [
+                 {
+                    "device_id": [0] # 默认启动一个worker , 使用第一块显卡
+                 }
+             ]
         },
         "vllm": {
-            "enable": False
+            "enable": False # 暂时未支持
         },
         "model_config" : {
             "model_type": "chatglm2",
@@ -138,15 +141,16 @@ models_info_args = {
     },
     "chatglm2-6b": {
         "enable": False,
-        "device_id": None, # sample [0,1,...]
-        "deepspeed": {
-            "enable": False
-        },
-        "accelerate": {
-            "enable": False
+        "workers": {
+            "mode": "deepspeed", # one of deepspeed,accelerate,hf
+            "worker": [
+                 {
+                    "device_id": [0] # 默认启动一个worker , 使用第一块显卡
+                 }
+             ]
         },
         "vllm": {
-            "enable": False
+            "enable": False # 暂时未支持
         },
         "model_config": {
             "model_type": "chatglm2",
@@ -160,15 +164,16 @@ models_info_args = {
     },
     "bloom-560m": {
         "enable": True,
-        "device_id": None, # sample [0,1,...]
-        "deepspeed": {
-            "enable": False
-        },
-        "accelerate": {
-            "enable": False
+        "workers": {
+            "mode": "deepspeed", # one of deepspeed,accelerate,hf
+            "worker": [
+                 {
+                    "device_id": [0] # 默认启动一个worker , 使用第一块显卡
+                 }
+             ]
         },
         "vllm": {
-            "enable": False
+            "enable": False # 暂时未支持
         },
         "model_config": {
             "model_type": "bloom",
@@ -182,15 +187,16 @@ models_info_args = {
     },
     "bloom-1b7": {
         "enable": False,
-        "device_id": None, # sample [0,1,...]
-        "deepspeed": {
-            "enable": False
-        },
-        "accelerate": {
-            "enable": False
+        "workers": {
+            "mode": "deepspeed", # one of deepspeed,accelerate,hf
+            "worker": [
+                 {
+                    "device_id": [0] # 默认启动一个worker , 使用第一块显卡
+                 }
+             ]
         },
         "vllm": {
-            "enable": False
+            "enable": False # 暂时未支持
         },
         "model_config": {
             "model_type": "bloom",
@@ -204,15 +210,16 @@ models_info_args = {
     },
     "opt-350m": {
         "enable": False,
-        "device_id": None, # sample [0,1,...]
-        "deepspeed": {
-            "enable": False
-        },
-        "accelerate": {
-            "enable": False
+        "workers": {
+            "mode": "deepspeed", # one of deepspeed,accelerate,hf
+            "worker": [
+                 {
+                    "device_id": [0] # 默认启动一个worker , 使用第一块显卡
+                 }
+             ]
         },
         "vllm": {
-            "enable": False
+            "enable": False # 暂时未支持
         },
         "model_config": {
             "model_type": "opt",
@@ -227,15 +234,16 @@ models_info_args = {
 
     "llama-7b-hf": {
         "enable": False,
-        "device_id": None, # sample [0,1,...]
-        "deepspeed": {
-            "enable": False
-        },
-        "accelerate": {
-            "enable": False
+        "workers": {
+            "mode": "deepspeed", # one of deepspeed,accelerate,hf
+            "worker": [
+                 {
+                    "device_id": [0] # 默认启动一个worker , 使用第一块显卡
+                 }
+             ]
         },
         "vllm": {
-            "enable": False
+            "enable": False # 暂时未支持
         },
         "model_config": {
             "model_type": "llama",
@@ -250,15 +258,16 @@ models_info_args = {
 
     "moss-moon-003-sft-int4":{
         "enable": False,
-        "device_id": None, # sample [0,1,...]
-        "deepspeed": {
-            "enable": False
-        },
-        "accelerate": {
-            "enable": False
+        "workers": {
+            "mode": "deepspeed", # one of deepspeed,accelerate,hf
+            "worker": [
+                 {
+                    "device_id": [0] # 默认启动一个worker , 使用第一块显卡
+                 }
+             ]
         },
         "vllm": {
-            "enable": False
+            "enable": False # 暂时未支持
         },
         "model_config": {
             "model_type": "moss",
@@ -274,15 +283,16 @@ models_info_args = {
     # 中英日语
     "rwkv-4-raven-3b-v12-Eng49%-Chn49%-Jpn1%-Other1%": {
         "enable": False,
-        "device_id": None, # sample [0,1,...]
-        "deepspeed": {
-            "enable": False
-        },
-        "accelerate": {
-            "enable": False
+        "workers": {
+            "mode": "deepspeed", # one of deepspeed,accelerate,hf
+            "worker": [
+                 {
+                    "device_id": [0] # 默认启动一个worker , 使用第一块显卡
+                 }
+             ]
         },
         "vllm": {
-            "enable": False
+            "enable": False # 暂时未支持
         },
         "model_config": {
             "model_type": "rwkv",
@@ -297,15 +307,16 @@ models_info_args = {
 
     "internlm-chat-7b": {
         "enable": False,
-        "device_id": None, # sample [0,1,...]
-        "deepspeed": {
-            "enable": False
-        },
-        "accelerate": {
-            "enable": False
+        "workers": {
+            "mode": "deepspeed", # one of deepspeed,accelerate,hf
+            "worker": [
+                 {
+                    "device_id": [0] # 默认启动一个worker , 使用第一块显卡
+                 }
+             ]
         },
         "vllm": {
-            "enable": False
+            "enable": False # 暂时未支持
         },
         "model_config": {
             "model_type": "internlm",
