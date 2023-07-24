@@ -13,7 +13,7 @@ class NN_DataHelper(DataHelper):pass
 
 
 class EngineAPI(EngineAPI_Base):
-    def init_model(self,device_id=0):
+    def init_model(self,device_id=None):
         models_info_args['seed'] = None
         parser = HfArgumentParser((ModelArguments,))
         (model_args,) = parser.parse_dict(self.model_config_dict["model_config"], allow_extra_keys=True)
@@ -32,11 +32,16 @@ class EngineAPI(EngineAPI_Base):
         model = pl_model.get_llm_model()
         if not model.quantized:
             # 按需修改，目前只支持 4/8 bit 量化 ， 可以保存量化模型
-            model.half().quantize(4).cuda(device_id)
+            model.half().quantize(4)
         else:
             # 已经量化
-            model.half().cuda(device_id)
+            model.half()
         model = model.eval()
+
+        if device_id is None:
+            model.cuda()
+        else:
+            model.cuda(device_id)
 
         self.model = model
         self.tokenizer = tokenizer

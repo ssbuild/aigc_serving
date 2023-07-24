@@ -13,7 +13,7 @@ class NN_DataHelper(DataHelper):pass
 
 
 class EngineAPI(EngineAPI_Base):
-    def init_model(self,device_id=0):
+    def init_model(self,device_id=None):
         parser = HfArgumentParser((ModelArguments,))
         (model_args,) = parser.parse_dict(self.model_config_dict["model_config"], allow_extra_keys=True)
 
@@ -29,7 +29,11 @@ class EngineAPI(EngineAPI_Base):
         model = model.eval()
         model.requires_grad_(False)
 
-        model = model.half().cuda(device_id)
+        model = model.half()
+        if device_id is None:
+            model.cuda()
+        else:
+            model.cuda(device_id)
 
         self.model = model
         self.tokenizer = tokenizer

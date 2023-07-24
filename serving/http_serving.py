@@ -121,7 +121,7 @@ def runner():
             instance = IPC_zmq(
                 CLS_worker=llm_worker.My_worker,
                 worker_args=(model_name, config,),  # must be tuple
-                worker_num=len(config['workers']['worker']),  # number of worker Process  大模型 建议使用1个 worker
+                worker_num=len(config['workers']),  # number of worker Process  大模型 建议使用1个 worker
                 group_name=group_name,  # share memory name
                 evt_quit=evt_quit,
                 queue_size=20,  # recv queue size

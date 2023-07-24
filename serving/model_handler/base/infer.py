@@ -12,6 +12,8 @@ import torch.multiprocessing as mp
 import multiprocessing
 import threading
 from enum import Enum
+from multiprocessing import Queue
+
 
 class WorkMode(Enum):
     STANDORD_HF = 0
@@ -19,14 +21,21 @@ class WorkMode(Enum):
     ACCELERATE = 2
 
 
+
+
+
 class EngineAPI_Base(ABC):
-    def __init__(self,model_config_dict,worker_idx=0):
+    def __init__(self,model_config_dict,group_name="",worker_idx=0):
+        self.model_config_dict = model_config_dict
+        self.group_name = group_name
+        self.worker_idx = worker_idx
+
         self.model_accelerate = None
         self.model_ds = None
         self.model = None
-        self.model_config_dict = model_config_dict
-        self.work_mode_str = model_config_dict['workers']['mode'].lower()
-        device_id = model_config_dict['workers']['worker'][worker_idx]['device_id']
+
+        self.work_mode_str = model_config_dict['work_mode'].lower()
+        device_id = model_config_dict['workers'][worker_idx]['device_id']
         if device_id is None:
             device_id = [0]
         self.device_id = device_id
@@ -35,21 +44,21 @@ class EngineAPI_Base(ABC):
         self._q_in = None
         self._q_out = None
 
-    # def __del__(self):
-    #     self.release()
+    def __del__(self):
+        self.release()
 
-    # def release(self):
-    #     if self.work_mode == WorkMode.STANDORD_HF:
-    #         pass
-    #     elif self.work_mode == WorkMode.DS:
-    #         pass
-    #     elif self.work_mode == WorkMode.ACCELERATE:
-    #         pass
-    #     if hasattr(self, '_spawn_context'):
-    #         for process in self._spawn_context.processes:
-    #             if process.is_alive():
-    #                 process.terminate()
-    #             process.join()
+    def release(self):
+        if self.work_mode == WorkMode.STANDORD_HF:
+            pass
+        elif self.work_mode == WorkMode.DS:
+            pass
+        elif self.work_mode == WorkMode.ACCELERATE:
+            pass
+        if hasattr(self, '_spawn_context'):
+            for process in self._spawn_context.processes:
+                if process.is_alive():
+                    process.terminate()
+                process.join()
 
     def init(self):
         skip_init = False
@@ -57,8 +66,9 @@ class EngineAPI_Base(ABC):
             if self.work_mode_str == 'deepspeed':
                 self.work_mode = WorkMode.DS
                 skip_init = True
-                self.thread = threading.Thread(target=self._init_woker_ds(), args=())
-                self.thread.start()
+                # self.thread = threading.Thread(target=self._init_woker_ds(), args=())
+                # self.thread.start()
+                target = self._init_woker_ds()
             elif self.work_mode_str == 'accelerate':
                 self.work_mode = WorkMode.ACCELERATE
                 skip_init = True
@@ -69,7 +79,7 @@ class EngineAPI_Base(ABC):
     def get_model(self):
         return self.model_ds or self.model_accelerate or self.model
 
-    def init_model(self,device_id=0):
+    def init_model(self,device_id=None):
         raise NotImplemented
 
     def chat(self,input,**kwargs):
@@ -80,19 +90,29 @@ class EngineAPI_Base(ABC):
 
     def worker_ds(self,rank):
         import deepspeed
-        from deepspeed.accelerator import get_accelerator
-        dist.init_process_group("nccl", rank=rank, world_size=self.world_size)
-        torch.cuda.set_device(rank)
-        self.init_model(rank)
+        from deepspeed.inference.config import DeepSpeedInferenceConfig
+        from deepspeed.inference.engine import InferenceEngine
         try:
-            self.model_ds = deepspeed.init_inference(self.model,
-                                                     mp_size=self.world_size,
-                                                     # dtype=torch.half,
-                                                     # checkpoint=None if args.pre_load_checkpoint else args.checkpoint_json,
-                                                     replace_with_kernel_inject=True)
-
+            torch.cuda.set_device(rank)
+            dist.init_process_group("nccl", rank=rank, world_size=self.world_size,group_name=self.group_name)
+            self.init_model()
+            old_current_device_function = deepspeed.get_accelerator().current_device_name
+            def tmp_current_device_fn():
+                deepspeed.get_accelerator().set_device(rank)
+                deepspeed.get_accelerator().current_device_name = old_current_device_function
+                return deepspeed.get_accelerator().current_device_name()
+            deepspeed.get_accelerator().current_device_name = tmp_current_device_fn
+            ds_config = DeepSpeedInferenceConfig(**dict(
+                                                 mp_size=self.world_size,
+                                                 # dtype=torch.half,
+                                                 # checkpoint=None if args.pre_load_checkpoint else args.checkpoint_json,
+                                                 replace_with_kernel_inject=True
+                                             ))
+            self.model_ds = InferenceEngine(self.model,config=ds_config)
+            if hasattr(self.model,'chat'):
+                self.model_ds.chat = self.model.chat
             self.model_ds.device = self.model.device
-            self.loop_forever()
+            self.loop_forever(rank)
         except Exception as e:
             traceback.print_exc()
             print(e)
@@ -100,7 +120,7 @@ class EngineAPI_Base(ABC):
 
 
 
-    def loop_forever(self):
+    def loop_forever(self,rank):
         while True:
             r = self._q_in.get()
             try:
@@ -111,18 +131,21 @@ class EngineAPI_Base(ABC):
                 result = None
                 code = -1
                 msg = str(e)
-            self._q_out.put((result,code,msg))
+            if rank == 0:
+                self._q_out.put((result,code,msg))
 
 
 
     def _init_woker_ds(self):
-        os.environ["MASTER_ADDR"] = "localhost"
-        os.environ["MASTER_PORT"] = "29501"
-        os.environ["TORCH_CPP_LOG_LEVEL"] = "INFO"
+        # os.environ["MASTER_ADDR"] = "localhost"
+        # os.environ["MASTER_PORT"] = "29502"
+        # os.environ["TORCH_CPP_LOG_LEVEL"] = "INFO"
         # os.environ[
         #     "TORCH_DISTRIBUTED_DEBUG"
         # ] = "DETAIL"  # set to DETAIL for runtime logging.
-
+        os_conf = self.model_config_dict['deepspeed']
+        for k,v in os_conf.items():
+            os.environ[k] = v
         self._q_in,self._q_out = multiprocessing.Manager().Queue(),multiprocessing.Manager().Queue()
         self._spawn_context = mp.spawn(self.worker_ds, nprocs=self.world_size, join=False)
 
@@ -162,7 +185,8 @@ class EngineAPI_Base(ABC):
     def trigger(self ,r: typing.Dict , is_first=True):
         if self.work_mode == WorkMode.DS:
             if is_first:
-                self._q_in.put(r)
+                for i in range(self.world_size):
+                    self._q_in.put(r)
                 result,code,msg = self._q_out.get()
                 return result,code,msg
 

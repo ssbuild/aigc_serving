@@ -18,6 +18,7 @@ pip install -r requirements.txt
 
 
 
+
 ## 启动
 ```commandline
 cd script
@@ -78,7 +79,11 @@ http://127.0.0.1:8081/chat
     纯粹而干净的代码
 
 
+## 注意事项
+```text
+1、 如果deepspeed ， 确保 num_attention_heads % len(device_id) == 0
 
+```
 
 ## Star History
 

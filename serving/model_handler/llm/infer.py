@@ -14,7 +14,7 @@ class NN_DataHelper(DataHelper):pass
 
 
 class EngineAPI(EngineAPI_Base):
-    def init_model(self,device_id=0):
+    def init_model(self,device_id=None):
         parser = HfArgumentParser((ModelArguments,))
         (model_args,) = parser.parse_dict(self.model_config_dict["model_config"], allow_extra_keys=True)
 
@@ -24,7 +24,11 @@ class EngineAPI(EngineAPI_Base):
         pl_model = MyTransformer(config=config, model_args=model_args, torch_dtype=config.torch_dtype, )
         model = pl_model.get_llm_model()
 
-        model.eval().half().cuda(device_id)
+        model.eval().half()
+        if device_id is None:
+            model.cuda()
+        else:
+            model.cuda(device_id)
 
         self.model = model
         self.config = self.model.config
