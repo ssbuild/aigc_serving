@@ -53,8 +53,7 @@ class EngineAPI_Base(ABC):
 
     def init(self):
         skip_init = False
-        print('*' * 30,self.world_size)
-        if self.world_size >= 1:
+        if self.world_size > 1:
             if self.work_mode_str == 'deepspeed':
                 self.work_mode = WorkMode.DS
                 skip_init = True
@@ -166,7 +165,7 @@ class EngineAPI_Base(ABC):
                 self._q_in.put(r)
                 result,code,msg = self._q_out.get()
                 return result,code,msg
-            
+
             if self.model_ds is None:
                 return [], -1, "ds_engine init failed"
 
