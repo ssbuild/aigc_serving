@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # @Author  : ssbuild
 # @Time    : 2023/7/21 8:55
+import logging
 import sys
 sys.path.append('..')
 import os
@@ -47,6 +48,7 @@ class HTTP_Serving(Process):
         @app.post("/generate")
         async def generate(r: typing.Dict):
             try:
+                logging.info(r)
                 r["method"] = "generate"
                 model_name = r.get('model', None)
                 texts = r.get('texts', [])
@@ -69,11 +71,17 @@ class HTTP_Serving(Process):
         @app.post("/chat")
         async def chat(r: typing.Dict):
             try:
+                logging.info(r)
                 r["method"] = "chat"
                 model_name = r.get('model', None)
-                texts = r.get('texts', [])
-                if len(texts) == 0 or texts is None:
+                history = r.get('history', [])
+                query = r.get('query', "")
+                if len(query) == 0 or query is None:
                     return {'code': -1, "msg": "invalid data"}
+                if len(history) != 0:
+                    assert isinstance(history[0],dict),ValueError('history require dict data')
+                    if 'q' not in history[0] or 'a' not in history[0]:
+                        raise ValueError('q,a is required in list item')
                 if model_name not in model_config_map:
                     msg = "mode not in " + ','.join([k for k, v in model_config_map.items() if v["enable"]])
                     print(msg)

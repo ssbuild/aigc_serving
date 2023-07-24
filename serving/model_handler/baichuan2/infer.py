@@ -59,6 +59,29 @@ class EngineAPI(EngineAPI_Base):
         response = self.tokenizer.decode(outputs)
         return response
 
+    def chat(self, query, history=None, **kwargs):
+        if history is None:
+            history = []
+        prompt = ""
+        for q, a in history:
+            prompt += q
+            prompt += a
+        prompt += query
+
+        default_kwargs = dict(eos_token_id=self.model.config.eos_token_id,
+                              pad_token_id=self.model.config.eos_token_id,
+                              do_sample=True, top_k=5, top_p=0.85, temperature=0.3,
+                              repetition_penalty=1.1,
+                              )
+        default_kwargs.update(kwargs)
+        response = Generate.generate(self.get_model(),
+                                     tokenizer=self.tokenizer,
+                                     query=prompt, **kwargs)
+        history = history + [(query, response)]
+        return response, history
+
+
+
     def generate(self,input,**kwargs):
         default_kwargs = dict(eos_token_id=self.model.config.eos_token_id,
             pad_token_id=self.model.config.eos_token_id,

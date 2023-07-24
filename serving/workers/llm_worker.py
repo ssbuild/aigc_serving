@@ -95,9 +95,24 @@ class My_worker(ZMQ_process_worker):
             msg = str(e)
             self._logger.info(e)
         end_time = time.time()
-        return {
-            "code": code,
-            "runtime": (end_time - start_time) * 1000,
-            "result": result,
-            "msg": msg
-        }
+        if code != 0:
+            return {
+                "code": code,
+                "runtime": (end_time - start_time) * 1000,
+                "msg": msg
+            }
+        if not isinstance(result,tuple):
+            return {
+                "code": code,
+                "runtime": (end_time - start_time) * 1000,
+                "result": result,
+                "msg": msg
+            }
+        else:
+            return {
+                "code": code,
+                "runtime": (end_time - start_time) * 1000,
+                "result": result[0],
+                "history": result[1],
+                "msg": msg
+            }

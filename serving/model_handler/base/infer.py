@@ -196,17 +196,27 @@ class EngineAPI_Base(ABC):
         result = []
         msg = "ok"
         code = 0
-        texts = r.get('texts', [])
-        params = r.get('params', {})
+
         method = r.get('method', "generate")
         method_fn = getattr(self, method)
         if method_fn is not None:
-            if isinstance(params, dict):
+            params = r.get('params', {})
+            if not isinstance(params, dict):
+                code = -1
+                msg = "params error"
+                return (result, code, msg)
+
+            if 'texts' in r:
+                texts = r.get('texts', [])
                 for text in texts:
                     result.append(method_fn(text, **params))
             else:
-                code = -1
-                msg = "params error"
+                query = r.get('query', "")
+                history = r.get('history', [])
+                history = [(_["q"],_["a"]) for _ in history]
+                results = method_fn(query,history=history, **params)
+                history = [{"q": _[0],"a": _[1]} for _ in results[1]]
+                result = (results[0],history)
         else:
             code = -1
             msg = "{} not exist method {}".format(self.model_config_dict['model_config']['model_type'], method)
