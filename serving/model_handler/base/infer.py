@@ -162,12 +162,14 @@ class EngineAPI_Base(ABC):
 
     def trigger(self ,r: typing.Dict , is_first=True):
         if self.work_mode == WorkMode.DS:
-            if self.model_ds is None:
-                return [], -1, "ds_engine init failed"
             if is_first:
                 self._q_in.put(r)
                 result,code,msg = self._q_out.get()
                 return result,code,msg
+            
+            if self.model_ds is None:
+                return [], -1, "ds_engine init failed"
+
         result = []
         msg = "ok"
         code = 0
