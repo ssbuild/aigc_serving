@@ -3,6 +3,9 @@
 # @Time    : 2023/7/21 8:55
 import logging
 import sys
+
+from starlette.responses import StreamingResponse
+
 sys.path.append('..')
 import os
 import typing
@@ -96,6 +99,14 @@ class HTTP_Serving(Process):
             except Exception as e:
                 raise {'code': -1, "msg": str(e)}
 
+
+
+        @app.post("/chat_stream")
+        def chat_stream():
+            def iterdata():
+                for i in range(100):
+                    yield str(i)
+            return StreamingResponse(iterdata(), media_type="text/plain")
         return app
 
     def close_server(self):
