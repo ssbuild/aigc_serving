@@ -110,6 +110,8 @@ class HTTP_Serving(Process):
     def close_server(self):
         if self.app is not None:
             self.app.stop()
+
+            
     def run(self):
         self.app = self.create_app()
         uvicorn.run(self.app, host=self.http_ip, port=self.http_port, workers=self.http_num_workers)

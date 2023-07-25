@@ -85,7 +85,7 @@ class My_worker(ZMQ_process_worker):
         start_time = time.time()
         try:
             if self.initial_error is None:
-                result,code,msg = self.api_client.trigger(r)
+                result,code,msg,complte_flag = self.api_client.trigger(r)
             else:
                 code = -1
                 msg = self.initial_error

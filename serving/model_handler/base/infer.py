@@ -84,10 +84,11 @@ class EngineAPI_Base(ABC):
         raise NotImplemented
 
     def worker_ds(self,rank):
-        import deepspeed
-        from deepspeed.inference.config import DeepSpeedInferenceConfig
-        from deepspeed.inference.engine import InferenceEngine
         try:
+            import deepspeed
+            from deepspeed.inference.config import DeepSpeedInferenceConfig
+            from deepspeed.inference.engine import InferenceEngine
+
             torch.cuda.set_device(rank)
             dist.init_process_group("nccl", rank=rank, world_size=self.world_size,group_name=self.group_name)
             self.init_model()
@@ -121,15 +122,16 @@ class EngineAPI_Base(ABC):
         while True:
             r = self._q_in.get()
             try:
-                result, code, msg = self.trigger(r=r, is_first=False)
+                result, code, msg,complete_flag = self.trigger(r=r, is_first=False)
             except KeyboardInterrupt:
                 break
             except Exception as e:
                 result = None
                 code = -1
                 msg = str(e)
+                complete_flag = True
             if rank == 0:
-                self._q_out.put((result,code,msg))
+                self._q_out.put((result,code,msg,complete_flag))
 
 
 
@@ -177,21 +179,25 @@ class EngineAPI_Base(ABC):
 
 
 
-    def trigger(self ,r: typing.Dict , is_first=True):
+    def trigger(self ,r: typing.Dict,is_first=True):
         if self.work_mode == WorkMode.DS:
             if is_first:
                 for i in range(self.world_size):
                     self._q_in.put(r)
-                result,code,msg = self._q_out.get()
-                return result,code,msg
+                result_tuple = self._q_out.get()
+                if isinstance(result_tuple,result_tuple):
+                    while not result_tuple[-1]:
+                        yield result_tuple
+                    return [], 0, "ok", True
+                else:
+                    return result_tuple
 
             if self.model_ds is None:
-                return [], -1, "ds_engine init failed"
+                return [], -1, "ds_engine init failed",True
 
         result = []
         msg = "ok"
         code = 0
-        # is_end = True
 
         method = r.get('method', "generate")
         method_fn = getattr(self, method)
@@ -200,7 +206,7 @@ class EngineAPI_Base(ABC):
             if not isinstance(params, dict):
                 code = -1
                 msg = "params error"
-                return (result, code, msg)
+                return (result, code, msg,True)
 
             if method == 'generate':
                 texts = r.get('texts', [])
@@ -213,17 +219,19 @@ class EngineAPI_Base(ABC):
                 results = method_fn(query, history=history, **params)
                 history = [{"q": _[0], "a": _[1]} for _ in results[1]]
                 result = (results[0], history)
-            # elif method == 'chat_stream':
-            #     query = r.get('query', "")
-            #     history = r.get('history', [])
-            #     history = [(_["q"],_["a"]) for _ in history]
-            #     results = method_fn(query,history=history, **params)
-            #     history = [{"q": _[0],"a": _[1]} for _ in results[1]]
-            #     result = (results[0],history)
+            elif method == 'chat_stream':
+                query = r.get('query', "")
+                history = r.get('history', [])
+                history = [(_["q"],_["a"]) for _ in history]
+                for results in method_fn(query,history=history, **params):
+                    result = results[0]
+                    self._q_out.put((result,code,msg,False))
+                result = ""
+                code = 0
             else:
                 code = -1
                 msg = "{} not exist method {}".format(self.model_config_dict['model_config']['model_type'], method)
         else:
             code = -1
             msg = "{} not exist method {}".format(self.model_config_dict['model_config']['model_type'], method)
-        return (result,code,msg,)
+        return (result,code,msg,True)
