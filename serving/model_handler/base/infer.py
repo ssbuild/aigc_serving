@@ -146,6 +146,10 @@ class EngineAPI_Base(ABC):
         self.init_model()
         self.device_map = self.infer_auto_device_map()
         self.model_accelerate = dispatch_model(self.model, device_map=self.device_map)
+        if hasattr(self.model, 'chat'):
+            self.model_accelerate.chat = self.model.chat
+        if hasattr(self.model, 'chat_stream'):
+            self.model_accelerate.chat_stream = self.model.chat_stream
 
 
     def infer_auto_device_map(self):
