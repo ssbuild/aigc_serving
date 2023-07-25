@@ -1,4 +1,4 @@
-ipc-worker>=0.0.10
+ipc-worker>=0.0.11
 pyzmq
 fastapi
 uvicorn

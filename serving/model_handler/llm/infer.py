@@ -36,6 +36,20 @@ class EngineAPI(EngineAPI_Base):
         self.config = self.model.config
         self.tokenizer = tokenizer
 
+    def chat_stream(self, input,history=None, **kwargs):
+        if history is None:
+            history = []
+        default_kwargs = dict(
+            # eos_token_id=self.config.eos_token_id,
+            # pad_token_id=self.config.eos_token_id,
+            do_sample=True, top_p=0.7, temperature=0.95,
+        )
+        default_kwargs.update(kwargs)
+        # response, history = self.model.stream_chat(self.tokenizer, query=input, **kwargs)
+        # yield response, history
+        for i in range(10):
+            yield str(i),history
+
     def chat(self, query, history=None, **kwargs):
         if history is None:
             history = []

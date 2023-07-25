@@ -3,6 +3,8 @@
 # @Time    : 2023/7/21 8:55
 import logging
 import sys
+import traceback
+
 sys.path.append('..')
 from starlette.responses import StreamingResponse
 import os
@@ -17,6 +19,8 @@ from starlette.middleware.cors import CORSMiddleware
 from ipc_worker.ipc_zmq_loader import IPC_zmq, ZMQ_process_worker # noqa
 from config.constant_map import models_info_args as model_config_map
 from serving.workers import llm_worker
+
+logger = logging.Logger("http_serving")
 
 class HTTP_Serving(Process):
     def __init__(self,
@@ -49,7 +53,7 @@ class HTTP_Serving(Process):
         @app.post("/generate")
         async def generate(r: typing.Dict):
             try:
-                logging.info(r)
+                logger.info(r)
                 r["method"] = "generate"
                 model_name = r.get('model', None)
                 texts = r.get('texts', [])
@@ -63,16 +67,17 @@ class HTTP_Serving(Process):
                 instance = self.queue_mapper[model_name]
                 request_id = instance.put(r)
                 result = instance.get(request_id)
-                if isinstance(result, np.ndarray):
-                    result = result.tolist()
+                
                 return result
             except Exception as e:
-                raise {'code': -1, "msg": str(e)}
+                traceback.print_exc()
+                print(e)
+                return {'code': -1, "msg": str(e)}
 
         @app.post("/chat")
         async def chat(r: typing.Dict):
             try:
-                logging.info(r)
+                logger.info(r)
                 r["method"] = "chat"
                 model_name = r.get('model', None)
                 history = r.get('history', [])
@@ -91,19 +96,52 @@ class HTTP_Serving(Process):
                 instance = self.queue_mapper[model_name]
                 request_id = instance.put(r)
                 result = instance.get(request_id)
-                if isinstance(result, np.ndarray):
-                    result = result.tolist()
+                
                 return result
             except Exception as e:
-                raise {'code': -1, "msg": str(e)}
+                traceback.print_exc()
+                print(e)
+                return {'code': -1, "msg": str(e)}
 
 
 
         @app.post("/chat_stream")
-        def chat_stream():
-            def iterdata():
-                for i in range(100):
-                    yield str(i)
+        def chat_stream(r: typing.Dict):
+            try:
+                logger.info(r)
+                r["method"] = "chat_stream"
+                model_name = r.get('model', None)
+                history = r.get('history', [])
+                query = r.get('query', "")
+                if len(query) == 0 or query is None:
+                    return {'code': -1, "msg": "invalid data"}
+                if len(history) != 0:
+                    assert isinstance(history[0], dict), ValueError('history require dict data')
+                    if 'q' not in history[0] or 'a' not in history[0]:
+                        raise ValueError('q,a is required in list item')
+                if model_name not in model_config_map:
+                    msg = "mode not in " + ','.join([k for k, v in model_config_map.items() if v["enable"]])
+                    print(msg)
+                    return {'code': -1, "msg": msg}
+
+                instance = self.queue_mapper[model_name]
+                request_id = instance.put(r)
+
+                def iterdata():
+                    result = instance.get(request_id)
+                    while not result["complete"]:
+                        result = instance.get(request_id)
+                        if result["code"] == 0:
+                            yield result["result"]
+                        yield result
+
+
+            except Exception as e:
+                traceback.print_exc()
+                print(e)
+                raise {'code': -1, "msg": str(e)}
+            
+
             return StreamingResponse(iterdata(), media_type="text/plain")
         return app
 

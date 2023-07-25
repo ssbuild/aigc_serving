@@ -85,7 +85,38 @@ class My_worker(ZMQ_process_worker):
         start_time = time.time()
         try:
             if self.initial_error is None:
-                result,code,msg,complte_flag = self.api_client.trigger(r)
+                method = r.get('method', "generate")
+                if method == 'chat_stream':
+                    gen = self.api_client.trigger_generator(r)
+                    for (result,code,msg,complte_flag) in gen:
+                        end_time = time.time()
+                        if code != 0:
+                            yield {
+                                "code": code,
+                                "runtime": (end_time - start_time) * 1000,
+                                "msg": msg,
+                                "complete": complte_flag
+                            }
+                        if not isinstance(result, tuple):
+                            yield {
+                                "code": code,
+                                "runtime": (end_time - start_time) * 1000,
+                                "result": result,
+                                "msg": msg,
+                                "complete": complte_flag
+                            }
+                        else:
+                            yield {
+                                "code": code,
+                                "runtime": (end_time - start_time) * 1000,
+                                "result": result[0],
+                                "history": result[1],
+                                "msg": msg,
+                                "complete": complte_flag
+                            }
+                    return None
+                else:
+                    result,code,msg,complte_flag = self.api_client.trigger(r)
             else:
                 code = -1
                 msg = self.initial_error
@@ -96,23 +127,26 @@ class My_worker(ZMQ_process_worker):
             self._logger.info(e)
         end_time = time.time()
         if code != 0:
-            return {
+            yield {
                 "code": code,
                 "runtime": (end_time - start_time) * 1000,
-                "msg": msg
+                "msg": msg,
+                "complete": True
             }
         if not isinstance(result,tuple):
-            return {
+            yield {
                 "code": code,
                 "runtime": (end_time - start_time) * 1000,
                 "result": result,
-                "msg": msg
+                "msg": msg,
+                "complete": True
             }
         else:
-            return {
+            yield {
                 "code": code,
                 "runtime": (end_time - start_time) * 1000,
                 "result": result[0],
                 "history": result[1],
-                "msg": msg
+                "msg": msg,
+                "complete": True
             }

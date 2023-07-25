@@ -65,6 +65,9 @@ class EngineAPI_Base(ABC):
                 self.work_mode = WorkMode.ACCELERATE
                 skip_init = True
                 self._init_accelerate()
+        else:
+            self.work_mode_str = 'hf'
+
         if not skip_init:
             self.init_model()
 
@@ -177,6 +180,40 @@ class EngineAPI_Base(ABC):
         return device_map
 
 
+    def trigger_generator(self ,r: typing.Dict,is_first=True):
+        if self.work_mode == WorkMode.DS:
+            if is_first:
+                for i in range(self.world_size):
+                    self._q_in.put(r)
+                result_tuple = self._q_out.get()
+                while not result_tuple[-1]:
+                    yield result_tuple
+                yield [], 0, "ok", True
+
+            if self.model_ds is None:
+                yield [], -1, "ds_engine init failed",True
+
+        result = []
+        msg = "ok"
+        code = 0
+
+        # method = r.get('method', "generate")
+        method = 'chat_stream'
+        method_fn = getattr(self, method)
+        if method_fn is not None:
+            params = r.get('params', {})
+            query = r.get('query', "")
+            history = r.get('history', [])
+            history = [(_["q"], _["a"]) for _ in history]
+            for results in method_fn(query, history=history, **params):
+                result = results[0]
+                self._q_out.put((result, code, msg, False))
+            result = ""
+            code = 0
+        else:
+            code = -1
+            msg = "{} not exist method {}".format(self.model_config_dict['model_config']['model_type'], method)
+        yield result,code,msg,True
 
 
     def trigger(self ,r: typing.Dict,is_first=True):
@@ -185,12 +222,7 @@ class EngineAPI_Base(ABC):
                 for i in range(self.world_size):
                     self._q_in.put(r)
                 result_tuple = self._q_out.get()
-                if isinstance(result_tuple,typing.Iterator):
-                    while not result_tuple[-1]:
-                        yield result_tuple
-                    return [], 0, "ok", True
-                else:
-                    return result_tuple
+                return result_tuple
 
             if self.model_ds is None:
                 return [], -1, "ds_engine init failed",True
@@ -206,7 +238,7 @@ class EngineAPI_Base(ABC):
             if not isinstance(params, dict):
                 code = -1
                 msg = "params error"
-                return (result, code, msg,True)
+                return result, code, msg,True
 
             if method == 'generate':
                 texts = r.get('texts', [])
@@ -219,19 +251,10 @@ class EngineAPI_Base(ABC):
                 results = method_fn(query, history=history, **params)
                 history = [{"q": _[0], "a": _[1]} for _ in results[1]]
                 result = (results[0], history)
-            elif method == 'chat_stream':
-                query = r.get('query', "")
-                history = r.get('history', [])
-                history = [(_["q"],_["a"]) for _ in history]
-                for results in method_fn(query,history=history, **params):
-                    result = results[0]
-                    self._q_out.put((result,code,msg,False))
-                result = ""
-                code = 0
             else:
                 code = -1
                 msg = "{} not exist method {}".format(self.model_config_dict['model_config']['model_type'], method)
         else:
             code = -1
             msg = "{} not exist method {}".format(self.model_config_dict['model_config']['model_type'], method)
-        return (result,code,msg,True)
+        return result,code,msg,True
