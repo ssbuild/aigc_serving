@@ -313,7 +313,7 @@ def get_free_tcp_port():
 
 
 
-
+_is_check_deepseed = False
 for model_name,model_config in models_info_args.items():
     if not model_config['enable']:
         continue
@@ -329,12 +329,11 @@ for model_name,model_config in models_info_args.items():
     model_config['deepspeed'] = {}
     conf = model_config['deepspeed']
     if flag:
+        _is_check_deepseed = True
         port = get_free_tcp_port()
         conf["MASTER_ADDR"] = "127.0.0.1"
         conf["MASTER_PORT"] = str(port)
         conf["TORCH_CPP_LOG_LEVEL"] = "INFO"
-
-
 
 
 
