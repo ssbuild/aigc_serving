@@ -185,7 +185,7 @@ class EngineAPI_Base(ABC):
                 for i in range(self.world_size):
                     self._q_in.put(r)
                 result_tuple = self._q_out.get()
-                if isinstance(result_tuple,result_tuple):
+                if isinstance(result_tuple,typing.Iterator):
                     while not result_tuple[-1]:
                         yield result_tuple
                     return [], 0, "ok", True
