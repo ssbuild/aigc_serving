@@ -3,7 +3,7 @@
 # @Time    : 2023/7/24 15:56
 import requests
 
-url = 'http://192.168.1.157:8081/generate'
+url = 'http://192.168.2.180:8081/generate'
 
 data = {
     "texts": ["2023年是什么年"],

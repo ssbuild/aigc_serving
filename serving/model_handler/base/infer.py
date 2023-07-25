@@ -11,17 +11,8 @@ import torch.distributed as dist
 import torch.multiprocessing as mp
 import multiprocessing
 import threading
-from enum import Enum
 from multiprocessing import Queue
-
-
-class WorkMode(Enum):
-    STANDORD_HF = 0
-    DS = 1
-    ACCELERATE = 2
-
-
-
+from serving.model_handler.base.data_define import WorkMode
 
 
 class EngineAPI_Base(ABC):
@@ -45,20 +36,21 @@ class EngineAPI_Base(ABC):
         self._q_out = None
 
     def __del__(self):
-        self.release()
+        self._release()
 
-    def release(self):
+    def _release(self):
         if self.work_mode == WorkMode.STANDORD_HF:
             pass
         elif self.work_mode == WorkMode.DS:
             pass
         elif self.work_mode == WorkMode.ACCELERATE:
             pass
-        if hasattr(self, '_spawn_context'):
+        if getattr(self, '_spawn_context',None) is not None:
             for process in self._spawn_context.processes:
                 if process.is_alive():
                     process.terminate()
                 process.join()
+            self._spawn_context = None
 
     def init(self):
         skip_init = False
@@ -80,6 +72,9 @@ class EngineAPI_Base(ABC):
         return self.model_ds or self.model_accelerate or self.model
 
     def init_model(self,device_id=None):
+        raise NotImplemented
+
+    def chat_stream(self,input,**kwargs):
         raise NotImplemented
 
     def chat(self,input,**kwargs):
@@ -111,6 +106,8 @@ class EngineAPI_Base(ABC):
             self.model_ds = InferenceEngine(self.model,config=ds_config)
             if hasattr(self.model,'chat'):
                 self.model_ds.chat = self.model.chat
+            if hasattr(self.model,'chat_stream'):
+                self.model_ds.chat_stream = self.model.chat_stream
             self.model_ds.device = self.model.device
             self.loop_forever(rank)
         except Exception as e:
@@ -137,12 +134,6 @@ class EngineAPI_Base(ABC):
 
 
     def _init_woker_ds(self):
-        # os.environ["MASTER_ADDR"] = "localhost"
-        # os.environ["MASTER_PORT"] = "29502"
-        # os.environ["TORCH_CPP_LOG_LEVEL"] = "INFO"
-        # os.environ[
-        #     "TORCH_DISTRIBUTED_DEBUG"
-        # ] = "DETAIL"  # set to DETAIL for runtime logging.
         os_conf = self.model_config_dict['deepspeed']
         for k,v in os_conf.items():
             os.environ[k] = v
@@ -196,6 +187,7 @@ class EngineAPI_Base(ABC):
         result = []
         msg = "ok"
         code = 0
+        # is_end = True
 
         method = r.get('method', "generate")
         method_fn = getattr(self, method)
@@ -206,18 +198,28 @@ class EngineAPI_Base(ABC):
                 msg = "params error"
                 return (result, code, msg)
 
-            if 'texts' in r:
+            if method == 'generate':
                 texts = r.get('texts', [])
                 for text in texts:
                     result.append(method_fn(text, **params))
-            else:
+            elif method == 'chat':
                 query = r.get('query', "")
                 history = r.get('history', [])
-                history = [(_["q"],_["a"]) for _ in history]
-                results = method_fn(query,history=history, **params)
-                history = [{"q": _[0],"a": _[1]} for _ in results[1]]
-                result = (results[0],history)
+                history = [(_["q"], _["a"]) for _ in history]
+                results = method_fn(query, history=history, **params)
+                history = [{"q": _[0], "a": _[1]} for _ in results[1]]
+                result = (results[0], history)
+            # elif method == 'chat_stream':
+            #     query = r.get('query', "")
+            #     history = r.get('history', [])
+            #     history = [(_["q"],_["a"]) for _ in history]
+            #     results = method_fn(query,history=history, **params)
+            #     history = [{"q": _[0],"a": _[1]} for _ in results[1]]
+            #     result = (results[0],history)
+            else:
+                code = -1
+                msg = "{} not exist method {}".format(self.model_config_dict['model_config']['model_type'], method)
         else:
             code = -1
             msg = "{} not exist method {}".format(self.model_config_dict['model_config']['model_type'], method)
-        return (result,code,msg)
+        return (result,code,msg,)

@@ -20,6 +20,8 @@ class EngineAPI(EngineAPI_Base):
 
         dataHelper = NN_DataHelper(model_args)
         tokenizer, config, _, _ = dataHelper.load_tokenizer_and_config()
+        if config.pad_token_id is None or config.pad_token_id >= config.vocab_size:
+            config.pad_token_id = tokenizer.eos_token_id
 
         pl_model = MyTransformer(config=config, model_args=model_args, torch_dtype=config.torch_dtype, )
         model = pl_model.get_llm_model()

@@ -46,6 +46,15 @@ class EngineAPI(EngineAPI_Base):
         self.model = model
         self.tokenizer = tokenizer
 
+    def chat_stream(self,input,**kwargs):
+        default_kwargs = dict(history=[],
+                              eos_token_id=self.model.config.eos_token_id,
+                              do_sample=True, top_p=0.7, temperature=0.95,
+                              )
+        default_kwargs.update(kwargs)
+        response, history = self.model.stream_chat(self.tokenizer, query=input, **kwargs)
+        yield response, history
+
     def chat(self,input,**kwargs):
         default_kwargs = dict(history=[], 
             eos_token_id=self.model.config.eos_token_id,

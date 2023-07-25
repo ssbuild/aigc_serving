@@ -3,10 +3,8 @@
 # @Time    : 2023/7/21 8:55
 import logging
 import sys
-
-from starlette.responses import StreamingResponse
-
 sys.path.append('..')
+from starlette.responses import StreamingResponse
 import os
 import typing
 import multiprocessing

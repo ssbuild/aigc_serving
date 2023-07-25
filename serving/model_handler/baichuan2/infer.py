@@ -4,8 +4,8 @@
 # @File：evaluate
 import torch
 from deep_training.data_helper import ModelArguments, DataArguments,DataHelper
-from transformers import HfArgumentParser, BitsAndBytesConfig
-from aigc_zoo.model_zoo.baichuan2.llm_model import MyTransformer,BaichuanConfig,BaichuanTokenizer
+from transformers import HfArgumentParser, BitsAndBytesConfig, GenerationConfig
+from aigc_zoo.model_zoo.baichuan2.llm_model import MyTransformer,BaichuanConfig,BaichuanTokenizer,BaichuanForCausalLM
 from aigc_zoo.utils.llm_generate import Generate
 from serving.model_handler.base import EngineAPI_Base
 from config.constant_map import models_info_args
@@ -25,7 +25,7 @@ class EngineAPI(EngineAPI_Base):
         pl_model = MyTransformer(config=config, model_args=model_args,
                                  torch_dtype=torch.float16, )
 
-        model = pl_model.get_llm_model()
+        model: BaichuanForCausalLM = pl_model.get_llm_model()
         model = model.eval()
         model.requires_grad_(False)
 
@@ -34,6 +34,7 @@ class EngineAPI(EngineAPI_Base):
             model.cuda()
         else:
             model.cuda(device_id)
+
 
         self.model = model
         self.tokenizer = tokenizer
@@ -62,11 +63,21 @@ class EngineAPI(EngineAPI_Base):
     def chat(self, query, history=None, **kwargs):
         if history is None:
             history = []
-        prompt = ""
+        messages = []
         for q, a in history:
-            prompt += q
-            prompt += a
-        prompt += query
+            messages.append({
+                "role": "user",
+                "content": q
+            })
+            messages.append({
+                "role": "assistant",
+                "content": a
+            })
+
+        messages.append({
+            "role": "user",
+            "content": query
+        })
 
         default_kwargs = dict(eos_token_id=self.model.config.eos_token_id,
                               pad_token_id=self.model.config.eos_token_id,
@@ -74,9 +85,8 @@ class EngineAPI(EngineAPI_Base):
                               repetition_penalty=1.1,
                               )
         default_kwargs.update(kwargs)
-        response = Generate.generate(self.get_model(),
-                                     tokenizer=self.tokenizer,
-                                     query=prompt, **kwargs)
+        generation_config = GenerationConfig(**default_kwargs)
+        response = self.get_model().chat(tokenizer=self.tokenizer,messages=messages, generation_config=generation_config)
         history = history + [(query, response)]
         return response, history
 

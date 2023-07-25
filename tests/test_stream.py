@@ -4,7 +4,7 @@
 
 import requests
 
-url = 'http://192.168.1.157:8081/chat_stream'
+url = 'http://192.168.2.180:8081/chat_stream'
 
 data = {
     "texts": ["2023年是什么年"],
