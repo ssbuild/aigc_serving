@@ -90,9 +90,8 @@ class EngineAPI(EngineAPI_Base):
         streamer = GenTextStreamer(process_token_fn, chunk, tokenizer=self.tokenizer)
         _ = self.get_model().chat( tokenizer=self.tokenizer, streamer=streamer, query=query, **default_kwargs)
         if gtype == 'total':
-            self.push_response((('', history), 0, "ok", True))
-        else:
-            self.push_response(((chunk.text, history), 0, "ok", True))
+            self.push_response(((chunk.text, history), 0, "ok", False))
+        self.push_response((('', history), 0, "ok", True))
         return None
 
 

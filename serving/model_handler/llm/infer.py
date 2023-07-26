@@ -64,17 +64,16 @@ class EngineAPI(EngineAPI_Base):
             if chunk.idx % n == 0 or stream_end or chunk.idx == 1:
                 if gtype == 'total':
                     self.push_response(((chunk.text, history), 0, "ok", False))
-                    chunk.idx = 0
                 else:
                     self.push_response(((chunk.text, history), 0, "ok", False))
                     chunk.clear()
 
         streamer = GenTextStreamer(process_token_fn,chunk,tokenizer=self.tokenizer)
         _ = Generate.generate(self.get_model(),tokenizer=self.tokenizer,streamer=streamer, query=prompt, **default_kwargs)
+
         if gtype == 'total':
-            self.push_response((('', history), 0, "ok", True))
-        else:
-            self.push_response(((chunk.text, history), 0, "ok", True))
+            self.push_response(((chunk.text, history), 0, "ok", False))
+        self.push_response((('', history), 0, "ok", True))
         return None
 
 

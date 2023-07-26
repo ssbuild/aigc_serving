@@ -91,31 +91,20 @@ class My_worker(ZMQ_process_worker):
                     for node_result in gen:
                         result, code, msg, complte_flag = node_result
                         end_time = time.time()
-                        if code != 0:
-                            yield {
-                                "code": code,
-                                "runtime": (end_time - start_time) * 1000,
-                                "msg": msg,
-                                "complete": complte_flag
-                            }
-                        if not isinstance(result, tuple):
-                            yield {
-                                "code": code,
-                                "runtime": (end_time - start_time) * 1000,
-                                "result": result,
-                                "msg": msg,
-                                "complete": complte_flag
-                            }
-                        else:
+                        ret = {
+                            "code": code,
+                            "runtime": (end_time - start_time) * 1000,
+                            "msg": msg,
+                            "complete": complte_flag
+                        }
+                        if code == 0:
+                            if not isinstance(result, tuple):
+                                ret["result"] = result
+                            else:
+                                ret["result"] = result[0]
+                                ret["history"] = result[1]
+                        yield ret
 
-                            yield {
-                                "code": code,
-                                "runtime": (end_time - start_time) * 1000,
-                                "result": result[0],
-                                "history": result[1],
-                                "msg": msg,
-                                "complete": complte_flag
-                            }
                     return None
 
                 else:
@@ -129,27 +118,18 @@ class My_worker(ZMQ_process_worker):
             msg = str(e)
             self._logger.info(e)
         end_time = time.time()
-        if code != 0:
-            yield {
-                "code": code,
-                "runtime": (end_time - start_time) * 1000,
-                "msg": msg,
-                "complete": True
-            }
-        if not isinstance(result,tuple):
-            yield {
-                "code": code,
-                "runtime": (end_time - start_time) * 1000,
-                "result": result,
-                "msg": msg,
-                "complete": True
-            }
-        else:
-            yield {
-                "code": code,
-                "runtime": (end_time - start_time) * 1000,
-                "result": result[0],
-                "history": result[1],
-                "msg": msg,
-                "complete": True
-            }
+
+        ret = {
+            "code": code,
+            "runtime": (end_time - start_time) * 1000,
+            "msg": msg,
+            "complete": True
+        }
+        if code == 0:
+            if not isinstance(result, tuple):
+                ret["result"] = result
+            else:
+                ret["result"] = result[0]
+                ret["history"] = result[1]
+        yield ret
+
