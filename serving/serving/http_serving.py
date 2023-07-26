@@ -1,25 +1,17 @@
 # -*- coding: utf-8 -*-
 # @Author  : ssbuild
 # @Time    : 2023/7/21 8:55
-import sys
-sys.path.append('..')
-
 import json
 import logging
 import traceback
 from starlette.responses import StreamingResponse
-import os
 import typing
-import multiprocessing
 from multiprocessing import Process
-from typing import Union
-import numpy as np
 import uvicorn
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
-from ipc_worker.ipc_zmq_loader import IPC_zmq, ZMQ_process_worker # noqa
+
 from config.constant_map import models_info_args as model_config_map
-from serving.workers import llm_worker
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
@@ -166,53 +158,4 @@ class HTTP_Serving(Process):
 
 
 
-def runner():
-    tmp_dir = './tmp'
-    if not os.path.exists(tmp_dir):
-        os.mkdir(tmp_dir)
-
-    os.environ['ZEROMQ_SOCK_TMP_DIR'] = tmp_dir
-
-    if __name__ == '__main__':
-        evt_quit = multiprocessing.Manager().Event()
-        queue_mapper = {}
-        process_list = []
-
-        for model_name, config in model_config_map.items():
-            if not config["enable"]:
-                continue
-            group_name = 'serving_group_{}_1'.format(model_name)
-            # group_name
-            # manager is an agent  and act as a load balancing
-            # worker is real doing your work
-            instance = IPC_zmq(
-                CLS_worker=llm_worker.My_worker,
-                worker_args=(model_name, config,),  # must be tuple
-                worker_num=len(config['workers']),  # number of worker Process  大模型 建议使用1个 worker
-                group_name=group_name,  # share memory name
-                evt_quit=evt_quit,
-                queue_size=20,  # recv queue size
-                is_log_time=True,  # whether log compute time
-            )
-            process_list.append(instance)
-            queue_mapper[model_name] = instance
-            instance.start()
-
-        http_ = HTTP_Serving(queue_mapper,
-                             http_ip='0.0.0.0',
-                             http_port=8081, )
-        http_.start()
-        process_list.append(http_)
-        try:
-            for p in process_list:
-                p.join()
-        except Exception as e: # noqa
-            evt_quit.set()
-            for p in process_list:
-                p.terminate()
-        del evt_quit
-
-
-if __name__ == '__main__':
-  runner()
 

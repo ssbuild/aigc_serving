@@ -1,7 +1,7 @@
 
 ## 简介
 
-   aigc_serving lightweight and efficient 大语言模型高性能纯python推理服务
+   aigc_serving light and efficient 大语言模型高性能纯python推理服务
 
 
 ## update information
@@ -12,12 +12,10 @@
 ```
    注意:
    linux python >=3.8
-   因对进程的管理和共享内存机制，暂时不支持windows
     
 
 ## install
 pip install -r requirements.txt
-
 
 
 
