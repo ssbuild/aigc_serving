@@ -6,6 +6,7 @@
 
 ## update information
 ```text
+    07-26 support streaming
     07-24 support chat
     07-23 support deepspeed , accelerate
 ```
@@ -26,7 +27,7 @@ cd script
 bash start.sh
 ```
 
-## generate 接口
+## generate  参考 tests/test_client.py
 
 params参数参考 [https://huggingface.co/docs/transformers/main/en/main_classes/text_generation#transformers.GenerationConfig](https://huggingface.co/docs/transformers/main/en/main_classes/text_generation#transformers.GenerationConfig)
 
@@ -54,7 +55,7 @@ curl http://127.0.0.1:8081/generate -H "Content-Type: application/json" -X POST 
 }
 ```
 
-## chat 接口
+## chat  参考 tests/test_chat.py
 
 ```text
 http://127.0.0.1:8081/chat
@@ -90,6 +91,36 @@ http://127.0.0.1:8081/chat
 }
 ```
 
+
+
+## chat  参考 tests/test_stream.py
+```text
+
+请求
+{
+    "query": "你是谁",
+    "model": model,
+    "params": {
+        "gtype": "total", # one of total,increace
+        "max_new_tokens": 512,"do_sample": True,"temperature": 0.95,"top_p": 0.8,"repetition_penalty": 1.01}
+}
+返回
+
+{'code': 0, 'runtime': 784.7540378570557, 'result': '我是一个名为 Chat', 'msg': 'ok', 'complete': False}
+{'code': 0, 'runtime': 1467.4859046936035, 'result': '我是一个名为 ChatGLM2-', 'msg': 'ok', 'complete': False}
+{'code': 0, 'runtime': 2151.3359546661377, 'result': '我是一个名为 ChatGLM2-6B 的人工', 'msg': 'ok', 'complete': False}
+{'code': 0, 'runtime': 2835.114002227783, 'result': '我是一个名为 ChatGLM2-6B 的人工智能助手，是基于', 'msg': 'ok', 'complete': False}
+{'code': 0, 'runtime': 3520.101308822632, 'result': '我是一个名为 ChatGLM2-6B 的人工智能助手，是基于清华大学 KEG', 'msg': 'ok', 'complete': False}
+{'code': 0, 'runtime': 4205.242872238159, 'result': '我是一个名为 ChatGLM2-6B 的人工智能助手，是基于清华大学 KEG 实验室和智谱', 'msg': 'ok', 'complete': False}
+{'code': 0, 'runtime': 4891.727447509766, 'result': '我是一个名为 ChatGLM2-6B 的人工智能助手，是基于清华大学 KEG 实验室和智谱 AI 公司于', 'msg': 'ok', 'complete': False}
+{'code': 0, 'runtime': 5578.71413230896, 'result': '我是一个名为 ChatGLM2-6B 的人工智能助手，是基于清华大学 KEG 实验室和智谱 AI 公司于 2023', 'msg': 'ok', 'complete': False}
+{'code': 0, 'runtime': 6267.045497894287, 'result': '我是一个名为 ChatGLM2-6B 的人工智能助手，是基于清华大学 KEG 实验室和智谱 AI 公司于 2023 年共同训练的语言', 'msg': 'ok', 'complete': False}
+{'code': 0, 'runtime': 6956.869840621948, 'result': '我是一个名为 ChatGLM2-6B 的人工智能助手，是基于清华大学 KEG 实验室和智谱 AI 公司于 2023 年共同训练的语言模型开发的。我的', 'msg': 'ok', 'complete': False}
+{'code': 0, 'runtime': 7646.951675415039, 'result': '我是一个名为 ChatGLM2-6B 的人工智能助手，是基于清华大学 KEG 实验室和智谱 AI 公司于 2023 年共同训练的语言模型开发的。我的任务是针对用户', 'msg': 'ok', 'complete': False}
+{'code': 0, 'runtime': 8337.846517562866, 'result': '我是一个名为 ChatGLM2-6B 的人工智能助手，是基于清华大学 KEG 实验室和智谱 AI 公司于 2023 年共同训练的语言模型开发的。我的任务是针对用户的问题和要求提供适当的', 'msg': 'ok', 'complete': False}
+{'code': 0, 'runtime': 9029.44540977478, 'result': '我是一个名为 ChatGLM2-6B 的人工智能助手，是基于清华大学 KEG 实验室和智谱 AI 公司于 2023 年共同训练的语言模型开发的。我的任务是针对用户的问题和要求提供适当的答复和支持。', 'msg': 'ok', 'complete': False}
+{'code': 0, 'runtime': 9029.971837997437, 'result': '', 'msg': 'ok', 'complete': True}
+```
 
 
 ## 

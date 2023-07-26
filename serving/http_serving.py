@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 # @Author  : ssbuild
 # @Time    : 2023/7/21 8:55
-import logging
 import sys
-import traceback
-
 sys.path.append('..')
+
+import json
+import logging
+import traceback
 from starlette.responses import StreamingResponse
 import os
 import typing
@@ -20,7 +21,9 @@ from ipc_worker.ipc_zmq_loader import IPC_zmq, ZMQ_process_worker # noqa
 from config.constant_map import models_info_args as model_config_map
 from serving.workers import llm_worker
 
-logger = logging.Logger("http_serving")
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 class HTTP_Serving(Process):
     def __init__(self,
@@ -60,7 +63,7 @@ class HTTP_Serving(Process):
                 if len(texts) == 0 or texts is None:
                     return {'code': -1, "msg": "invalid data"}
                 if model_name not in model_config_map:
-                    msg = "mode not in " + ','.join( [k for k,v in model_config_map.items() if v["enable"]])
+                    msg = "model not in " + ','.join( [k for k,v in model_config_map.items() if v["enable"]])
                     print(msg)
                     return {'code': -1, "msg": msg}
 
@@ -89,7 +92,7 @@ class HTTP_Serving(Process):
                     if 'q' not in history[0] or 'a' not in history[0]:
                         raise ValueError('q,a is required in list item')
                 if model_name not in model_config_map:
-                    msg = "mode not in " + ','.join([k for k, v in model_config_map.items() if v["enable"]])
+                    msg = "model not in " + ','.join([k for k, v in model_config_map.items() if v["enable"]])
                     print(msg)
                     return {'code': -1, "msg": msg}
 
@@ -113,6 +116,15 @@ class HTTP_Serving(Process):
                 model_name = r.get('model', None)
                 history = r.get('history', [])
                 query = r.get('query', "")
+                n = r.get('n', 4)
+                gtype = r.get('gtype', 'total')
+
+                do_sample = r.get('do_sample',True)
+                assert do_sample, ValueError("stream not support do_sample=False")
+                r['do_sample'] = True
+                assert isinstance(n,int) and n > 0, ValueError("require n > 0")
+                assert gtype in ['total','increace'], ValueError("gtype one of increace , total")
+
                 if len(query) == 0 or query is None:
                     return {'code': -1, "msg": "invalid data"}
                 if len(history) != 0:
@@ -120,7 +132,7 @@ class HTTP_Serving(Process):
                     if 'q' not in history[0] or 'a' not in history[0]:
                         raise ValueError('q,a is required in list item')
                 if model_name not in model_config_map:
-                    msg = "mode not in " + ','.join([k for k, v in model_config_map.items() if v["enable"]])
+                    msg = "model not in " + ','.join([k for k, v in model_config_map.items() if v["enable"]])
                     print(msg)
                     return {'code': -1, "msg": msg}
 
@@ -128,21 +140,19 @@ class HTTP_Serving(Process):
                 request_id = instance.put(r)
 
                 def iterdata():
-                    result = instance.get(request_id)
-                    while not result["complete"]:
+                    while True:
                         result = instance.get(request_id)
-                        if result["code"] == 0:
-                            yield result["result"]
-                        yield result
-
-
+                        yield json.dumps(result, ensure_ascii=False)
+                        if result["complete"]:
+                            break
             except Exception as e:
                 traceback.print_exc()
                 print(e)
-                raise {'code': -1, "msg": str(e)}
+                def iterdata():
+                    yield json.dumps({'code': -1, "msg": str(e)},ensure_ascii=False)
             
 
-            return StreamingResponse(iterdata(), media_type="text/plain")
+            return StreamingResponse(iterdata(), media_type="application/json")
         return app
 
     def close_server(self):

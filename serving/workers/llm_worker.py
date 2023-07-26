@@ -88,7 +88,8 @@ class My_worker(ZMQ_process_worker):
                 method = r.get('method', "generate")
                 if method == 'chat_stream':
                     gen = self.api_client.trigger_generator(r)
-                    for (result,code,msg,complte_flag) in gen:
+                    for node_result in gen:
+                        result, code, msg, complte_flag = node_result
                         end_time = time.time()
                         if code != 0:
                             yield {
@@ -106,6 +107,7 @@ class My_worker(ZMQ_process_worker):
                                 "complete": complte_flag
                             }
                         else:
+
                             yield {
                                 "code": code,
                                 "runtime": (end_time - start_time) * 1000,
@@ -115,6 +117,7 @@ class My_worker(ZMQ_process_worker):
                                 "complete": complte_flag
                             }
                     return None
+
                 else:
                     result,code,msg,complte_flag = self.api_client.trigger(r)
             else:

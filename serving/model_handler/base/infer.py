@@ -34,6 +34,7 @@ class EngineAPI_Base(ABC):
         self.work_mode = WorkMode.STANDORD_HF
         self._q_in = None
         self._q_out = None
+        self.rank = 0
 
     def __del__(self):
         self._release()
@@ -52,15 +53,20 @@ class EngineAPI_Base(ABC):
                 process.join()
             self._spawn_context = None
 
+    def _init_data(self):
+        if self._q_in is None:
+            self._q_in = multiprocessing.Manager().Queue()
+        if self._q_out is None:
+            self._q_out = multiprocessing.Manager().Queue()
+
     def init(self):
         skip_init = False
+        self._init_data()
         if self.world_size > 1:
             if self.work_mode_str == 'deepspeed':
                 self.work_mode = WorkMode.DS
                 skip_init = True
-                # self.thread = threading.Thread(target=self._init_woker_ds(), args=())
-                # self.thread.start()
-                target = self._init_woker_ds()
+                self._init_worker_ds()
             elif self.work_mode_str == 'accelerate':
                 self.work_mode = WorkMode.ACCELERATE
                 skip_init = True
@@ -70,6 +76,8 @@ class EngineAPI_Base(ABC):
 
         if not skip_init:
             self.init_model()
+        self._init_thead_generator()
+        print('serving ready')
 
     def get_model(self):
         return self.model_ds or self.model_accelerate or self.model
@@ -77,7 +85,7 @@ class EngineAPI_Base(ABC):
     def init_model(self,device_id=None):
         raise NotImplemented
 
-    def chat_stream(self,input,**kwargs):
+    def chat_stream(self,query,n,gtype='total',**kwargs):
         raise NotImplemented
 
     def chat(self,input,**kwargs):
@@ -88,6 +96,7 @@ class EngineAPI_Base(ABC):
 
     def worker_ds(self,rank):
         try:
+            self.rank = rank
             import deepspeed
             from deepspeed.inference.config import DeepSpeedInferenceConfig
             from deepspeed.inference.engine import InferenceEngine
@@ -119,13 +128,29 @@ class EngineAPI_Base(ABC):
             print(e)
             self.model_ds = None
 
+    def push_request(self,data):
+        return self._q_in.put(data)
 
+    def pull_request(self):
+        return self._q_in.get()
+
+    def pull_response(self):
+        return self._q_out.get()
+
+    def push_response(self, data):
+        if self.rank == 0:
+            self._q_out.put(data)
 
     def loop_forever(self,rank):
         while True:
-            r = self._q_in.get()
+            r = self.pull_request()
             try:
-                result, code, msg,complete_flag = self.trigger(r=r, is_first=False)
+                if r.get('method', "generate") == 'chat_stream':
+                    for item in self.trigger_generator(r=r, is_first=False):
+                        self.push_response(item)
+                    continue
+                else:
+                    result, code, msg,complete_flag = self.trigger(r=r, is_first=False)
             except KeyboardInterrupt:
                 break
             except Exception as e:
@@ -134,15 +159,14 @@ class EngineAPI_Base(ABC):
                 msg = str(e)
                 complete_flag = True
             if rank == 0:
-                self._q_out.put((result,code,msg,complete_flag))
+                self.push_response((result, code, msg, complete_flag))
 
 
 
-    def _init_woker_ds(self):
+    def _init_worker_ds(self):
         os_conf = self.model_config_dict['deepspeed']
         for k,v in os_conf.items():
             os.environ[k] = v
-        self._q_in,self._q_out = multiprocessing.Manager().Queue(),multiprocessing.Manager().Queue()
         self._spawn_context = mp.spawn(self.worker_ds, nprocs=self.world_size, join=False)
 
 
@@ -156,6 +180,26 @@ class EngineAPI_Base(ABC):
         if hasattr(self.model, 'chat_stream'):
             self.model_accelerate.chat_stream = self.model.chat_stream
 
+    def _init_thead_generator(self):
+        if self.work_mode != WorkMode.DS:
+            self._thread_generator = threading.Thread(target=self._loop_thread)
+            self._thread_generator.start()
+
+    def _loop_thread(self):
+        while True:
+            r = self.pull_request()
+            try:
+                gen_out = self.trigger_generator(r=r, is_first=False)
+                for out in gen_out:
+                    self.push_response(out)
+            except KeyboardInterrupt:
+                break
+            except Exception as e:
+                result = None
+                code = -1
+                msg = str(e)
+                complete_flag = True
+                self.push_response((result, code, msg, complete_flag))
 
     def infer_auto_device_map(self):
         from accelerate.utils import get_balanced_memory, infer_auto_device_map
@@ -184,35 +228,52 @@ class EngineAPI_Base(ABC):
         if self.work_mode == WorkMode.DS:
             if is_first:
                 for i in range(self.world_size):
-                    self._q_in.put(r)
-                result_tuple = self._q_out.get()
-                while not result_tuple[-1]:
+                    self.push_request(r)
+                while True:
+                    result_tuple = self.pull_response()
                     yield result_tuple
-                yield [], 0, "ok", True
+                    if result_tuple[-1]:
+                        break
+                return None
 
             if self.model_ds is None:
                 yield [], -1, "ds_engine init failed",True
+        else:
+            if is_first:
+                self.push_request(r)
+                while True:
+                    result_tuple = self.pull_response()
+                    yield result_tuple
+                    if result_tuple[-1]:
+                        break
+                return None
 
         result = []
         msg = "ok"
         code = 0
 
-        # method = r.get('method', "generate")
-        method = 'chat_stream'
-        method_fn = getattr(self, method)
-        if method_fn is not None:
+        try:
             params = r.get('params', {})
             query = r.get('query', "")
             history = r.get('history', [])
             history = [(_["q"], _["a"]) for _ in history]
-            for results in method_fn(query, history=history, **params):
+            n = r.get('n', 4)
+            gen_results = self.chat_stream(query, n=n, history=history, **params)
+            if gen_results is None:
+                return None
+            for results in gen_results:
                 result = results[0]
-                self._q_out.put((result, code, msg, False))
+                if self.work_mode == WorkMode.DS:
+                    self.push_response((result, code, msg, False))
+                else:
+                    yield result, code, msg, False
             result = ""
             code = 0
-        else:
+        except Exception as e:
+            traceback.print_exc()
+            print(e)
             code = -1
-            msg = "{} not exist method {}".format(self.model_config_dict['model_config']['model_type'], method)
+            msg = str(e)
         yield result,code,msg,True
 
 
@@ -220,8 +281,8 @@ class EngineAPI_Base(ABC):
         if self.work_mode == WorkMode.DS:
             if is_first:
                 for i in range(self.world_size):
-                    self._q_in.put(r)
-                result_tuple = self._q_out.get()
+                    self.push_request(r)
+                result_tuple = self.push_request()
                 return result_tuple
 
             if self.model_ds is None:

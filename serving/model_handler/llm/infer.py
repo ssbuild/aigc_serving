@@ -4,11 +4,16 @@
 # @File：evaluate
 import torch
 from deep_training.data_helper import ModelArguments, DataArguments, DataHelper
-from transformers import HfArgumentParser
+from transformers import HfArgumentParser, TextStreamer
 from aigc_zoo.model_zoo.llm.llm_model import MyTransformer
 from aigc_zoo.utils.llm_generate import Generate
 from serving.model_handler.base import EngineAPI_Base
 from config.constant_map import models_info_args
+from aigc_zoo.utils.streamgenerator import GenTextStreamer
+
+from serving.model_handler.base.data_define import ChunkData
+
+
 class NN_DataHelper(DataHelper):pass
 
 
@@ -36,19 +41,42 @@ class EngineAPI(EngineAPI_Base):
         self.config = self.model.config
         self.tokenizer = tokenizer
 
-    def chat_stream(self, input,history=None, **kwargs):
+    def chat_stream(self, query, n,gtype='total', history=None, **kwargs):
         if history is None:
             history = []
+        prompt = ""
+        for q, a in history:
+            prompt += q
+            prompt += a
+        prompt += query
+
         default_kwargs = dict(
-            # eos_token_id=self.config.eos_token_id,
-            # pad_token_id=self.config.eos_token_id,
+            eos_token_id=self.config.eos_token_id,
+            pad_token_id=self.config.eos_token_id,
             do_sample=True, top_p=0.7, temperature=0.95,
         )
         default_kwargs.update(kwargs)
-        # response, history = self.model.stream_chat(self.tokenizer, query=input, **kwargs)
-        # yield response, history
-        for i in range(10):
-            yield str(i),history
+        chunk = ChunkData()
+
+        def process_token_fn(text,stream_end,chunk: ChunkData):
+            chunk.text += text
+            chunk.idx += 1
+            if chunk.idx % n == 0 or stream_end or chunk.idx == 1:
+                if gtype == 'total':
+                    self.push_response(((chunk.text, history), 0, "ok", False))
+                    chunk.idx = 0
+                else:
+                    self.push_response(((chunk.text, history), 0, "ok", False))
+                    chunk.clear()
+
+        streamer = GenTextStreamer(process_token_fn,chunk,tokenizer=self.tokenizer)
+        _ = Generate.generate(self.get_model(),tokenizer=self.tokenizer,streamer=streamer, query=prompt, **default_kwargs)
+        if gtype == 'total':
+            self.push_response((('', history), 0, "ok", True))
+        else:
+            self.push_response(((chunk.text, history), 0, "ok", True))
+        return None
+
 
     def chat(self, query, history=None, **kwargs):
         if history is None:

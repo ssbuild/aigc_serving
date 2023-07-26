@@ -3,12 +3,16 @@
 # @Author: tk
 # @File：evaluate
 import torch
+from aigc_zoo.utils.streamgenerator import GenTextStreamer
 from deep_training.data_helper import ModelArguments, DataArguments,DataHelper
 from transformers import HfArgumentParser, BitsAndBytesConfig, GenerationConfig
 from aigc_zoo.model_zoo.baichuan2.llm_model import MyTransformer,BaichuanConfig,BaichuanTokenizer,BaichuanForCausalLM
 from aigc_zoo.utils.llm_generate import Generate
 from serving.model_handler.base import EngineAPI_Base
 from config.constant_map import models_info_args
+from serving.model_handler.base.data_define import ChunkData
+
+
 class NN_DataHelper(DataHelper):pass
 
 
@@ -60,6 +64,61 @@ class EngineAPI(EngineAPI_Base):
         response = self.tokenizer.decode(outputs)
         return response
 
+    def chat_stream(self,  query, n,gtype='total', history=None,**kwargs):
+        if history is None:
+            history = []
+        messages = []
+        for q, a in history:
+            messages.append({
+                "role": "user",
+                "content": q
+            })
+            messages.append({
+                "role": "assistant",
+                "content": a
+            })
+
+        messages.append({
+            "role": "user",
+            "content": query
+        })
+
+        default_kwargs = dict(eos_token_id=self.model.config.eos_token_id,
+                              pad_token_id=self.model.config.eos_token_id,
+                              do_sample=True, top_k=5, top_p=0.85, temperature=0.3,
+                              repetition_penalty=1.1,
+                              )
+        default_kwargs.update(kwargs)
+        generation_config = GenerationConfig(**default_kwargs)
+
+
+        chunk = ChunkData()
+        chunk.idx = 0
+        n_id = 0
+
+        response = None
+        self.model.chat()
+        for response in self.get_model().chat(tokenizer=self.tokenizer,
+                                         messages=messages,
+                                         stream=True,
+                                         generation_config=generation_config):
+            n_id += 1
+            chunk.text = response
+            if n_id % n == 0:
+                if gtype == 'total':
+                    yield (chunk.text, history)
+                else:
+                    yield (chunk.text[chunk.idx:], history)
+                    chunk.idx = len(response)
+
+        history = history + [(query, response)]
+
+        if gtype != 'total' and chunk.idx != len(chunk.text):
+            yield (chunk.text[chunk.idx:], history)
+
+        return response, history
+
+
     def chat(self, query, history=None, **kwargs):
         if history is None:
             history = []
@@ -86,7 +145,9 @@ class EngineAPI(EngineAPI_Base):
                               )
         default_kwargs.update(kwargs)
         generation_config = GenerationConfig(**default_kwargs)
-        response = self.get_model().chat(tokenizer=self.tokenizer,messages=messages, generation_config=generation_config)
+        response = self.get_model().chat(tokenizer=self.tokenizer,
+                                         messages=messages,
+                                         generation_config=generation_config)
         history = history + [(query, response)]
         return response, history
 

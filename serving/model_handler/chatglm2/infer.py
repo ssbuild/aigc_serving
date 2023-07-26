@@ -8,6 +8,9 @@ from aigc_zoo.model_zoo.chatglm2.chatglm_model import MyTransformer, ChatGLMToke
     setup_model_profile, ChatGLMConfig
 from serving.model_handler.base import EngineAPI_Base
 from config.constant_map import models_info_args
+from serving.model_handler.base.data_define import ChunkData
+
+
 class NN_DataHelper(DataHelper):pass
 
 
@@ -39,22 +42,40 @@ class EngineAPI(EngineAPI_Base):
         self.model = model
         self.tokenizer = tokenizer
 
-    def chat_stream(self,input,**kwargs):
-        default_kwargs = dict(history=[],
+
+    def chat_stream(self, query, n,gtype='total', history=None, **kwargs):
+        if history is None:
+            history = []
+        default_kwargs = dict(history=history,
                               eos_token_id=self.model.config.eos_token_id,
                               do_sample=True, top_p=0.7, temperature=0.95,
                               )
         default_kwargs.update(kwargs)
-        response, history = self.model.stream_chat(self.tokenizer, query=input, **kwargs)
-        yield response, history
 
-    def chat(self, input, **kwargs):
+
+        chunk = ChunkData()
+        chunk.idx = 0
+        n_id = 0
+        for response, history in self.model.stream_chat(self.tokenizer, query=query, **default_kwargs):
+            n_id += 1
+            chunk.text = response
+            if n_id % n == 0:
+                if gtype == 'total':
+                    yield (chunk.text, history)
+                else:
+                    yield (chunk.text[chunk.idx:], history)
+                    chunk.idx = len(response)
+
+        if gtype != 'total' and chunk.idx != len(chunk.text):
+            yield (chunk.text[chunk.idx:], history)
+
+    def chat(self, query, **kwargs):
         default_kwargs = dict(history=[], 
             eos_token_id=self.model.config.eos_token_id,
             do_sample=True, top_p=0.7, temperature=0.95,
         )
         default_kwargs.update(kwargs)
-        response, history = self.model.chat(self.tokenizer, query=input,  **default_kwargs)
+        response, history = self.model.chat(self.tokenizer, query=query,  **default_kwargs)
         return response, history
 
     def generate(self,input,**kwargs):

@@ -37,6 +37,7 @@ class EngineAPI(EngineAPI_Base):
         self.gen_core = Generate(model,tokenizer)
 
 
+
     def chat(self, query, history=None, **kwargs):
         if history is None:
             history = []

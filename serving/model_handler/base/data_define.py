@@ -11,6 +11,12 @@ class WorkMode(Enum):
     DS = 1
     ACCELERATE = 2
 
+class ChunkData:
+    idx = 0
+    text = ''
+
+    def clear(self):
+        self.text = ''
 
 class QueueData:
     def __init__(self,maxsize=0):
