@@ -27,7 +27,7 @@ cd script
 bash start.sh
 ```
 
-## generate  参考 tests/test_client.py
+## generate 接口  demo tests/test_client.py
 
 params参数参考 [https://huggingface.co/docs/transformers/main/en/main_classes/text_generation#transformers.GenerationConfig](https://huggingface.co/docs/transformers/main/en/main_classes/text_generation#transformers.GenerationConfig)
 
@@ -55,7 +55,7 @@ curl http://127.0.0.1:8081/generate -H "Content-Type: application/json" -X POST 
 }
 ```
 
-## chat  参考 tests/test_chat.py
+## chat  接口  demo tests/test_chat.py
 
 ```text
 http://127.0.0.1:8081/chat
@@ -93,7 +93,7 @@ http://127.0.0.1:8081/chat
 
 
 
-## chat  参考 tests/test_stream.py
+## test_stream  接口  demo tests/test_stream.py
 ```text
 
 请求
