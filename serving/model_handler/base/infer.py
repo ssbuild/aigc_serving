@@ -282,7 +282,7 @@ class EngineAPI_Base(ABC):
             if is_first:
                 for i in range(self.world_size):
                     self.push_request(r)
-                result_tuple = self.push_request()
+                result_tuple = self.pull_response()
                 return result_tuple
 
             if self.model_ds is None:
