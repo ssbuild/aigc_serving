@@ -110,6 +110,7 @@ class HTTP_Serving(Process):
         @app.post("/v1/chat/completions")
         async def create_chat_completion(request: ChatCompletionRequest):
             try:
+                logger.info(request)
                 if len(request.messages) == 0:
                     raise ValueError("Invalid parameters")
 
