@@ -2,9 +2,14 @@
 # @Time:  23:28
 # @Author: tk
 # @File：main.py
+import os
 import sys
-sys.path.append('..')
-from serving.serving.api_server import runner
+root_dir = os.path.join(os.path.dirname(__file__),"..")
+root_dir = os.path.abspath(root_dir)
+sys.path.append(root_dir)
+
+from serving.serve.api_server import main
 
 if __name__ == '__main__':
-    runner()
+    print('starting...')
+    main()

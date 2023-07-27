@@ -7,18 +7,20 @@ import json
 import logging
 import traceback
 
-from fastapi.openapi.models import HTTPBearer
-from fastapi.security import HTTPAuthorizationCredentials
-from pydantic import BaseSettings
 from starlette.responses import StreamingResponse
 import typing
 from multiprocessing import Process
 import uvicorn
+from fastapi.openapi.models import HTTPBearer
+from fastapi.security import HTTPAuthorizationCredentials
+from pydantic import BaseSettings
 from fastapi import FastAPI, Depends, HTTPException
 from starlette.middleware.cors import CORSMiddleware
 
 from config.constant_map import models_info_args as model_config_map
-from serving.openai_api.openai_api_protocol import ModelCard, ModelPermission, ModelList
+from serving.openai_api.openai_api_protocol import ModelCard, ModelPermission, ModelList, ChatCompletionResponse, \
+    ChatCompletionRequest, Role, ChatCompletionResponseChoice, UsageInfo, ChatMessage, Finish, \
+    ChatCompletionResponseStreamChoice, DeltaMessage, ChatCompletionStreamResponse
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
@@ -55,6 +57,16 @@ async def check_api_key(
         # api_keys not set; allow all
         return None
 
+
+
+
+
+
+
+
+
+
+
 class HTTP_Serving(Process):
     def __init__(self,
                  queue_mapper: dict,
@@ -83,7 +95,8 @@ class HTTP_Serving(Process):
         def read_root():
             return {"Hello": "World"}
 
-        @app.get("/v1/models", dependencies=[Depends(check_api_key)])
+        #@app.get("/v1/models", dependencies=[Depends(check_api_key)])
+        @app.get("/v1/models")
         async def show_available_models():
             models = [k for k, v in model_config_map.items() if v["enable"]]
             models.sort()
@@ -93,67 +106,95 @@ class HTTP_Serving(Process):
                 model_cards.append(ModelCard(id=m, root=m, permission=[ModelPermission()]))
             return ModelList(data=model_cards)
 
-        @app.post("/api/v1/chat/completions")
-        async def create_chat_completion(request: APIChatCompletionRequest):
-            """Creates a completion for the chat message"""
-            error_check_ret = await check_model(request)
-            if error_check_ret is not None:
-                return error_check_ret
-            error_check_ret = check_requests(request)
-            if error_check_ret is not None:
-                return error_check_ret
-
-            gen_params = await get_gen_params(
-                request.model,
-                request.messages,
-                temperature=request.temperature,
-                top_p=request.top_p,
-                max_tokens=request.max_tokens,
-                echo=False,
-                stream=request.stream,
-                stop=request.stop,
-            )
-
-            if request.repetition_penalty is not None:
-                gen_params["repetition_penalty"] = request.repetition_penalty
-
-            error_check_ret = await check_length(
-                request, gen_params["prompt"], gen_params["max_new_tokens"]
-            )
-            if error_check_ret is not None:
-                return error_check_ret
-
-            if request.stream:
-                generator = chat_completion_stream_generator(
-                    request.model, gen_params, request.n
-                )
-                return StreamingResponse(generator, media_type="text/event-stream")
-
-            choices = []
-            chat_completions = []
-            for i in range(request.n):
-                content = asyncio.create_task(generate_completion(gen_params))
-                chat_completions.append(content)
+        @app.post("/v1/completions")
+        async def create_chat_completion(request: ChatCompletionRequest):
             try:
-                all_tasks = await asyncio.gather(*chat_completions)
-            except Exception as e:
-                return create_error_response(ErrorCode.INTERNAL_ERROR, str(e))
-            usage = UsageInfo()
-            for i, content in enumerate(all_tasks):
-                if content["error_code"] != 0:
-                    return create_error_response(content["error_code"], content["text"])
-                choices.append(
-                    ChatCompletionResponseChoice(
-                        index=i,
-                        message=ChatMessage(role="assistant", content=content["text"]),
-                        finish_reason=content.get("finish_reason", "stop"),
-                    )
-                )
-                task_usage = UsageInfo.parse_obj(content["usage"])
-                for usage_key, usage_value in task_usage.dict().items():
-                    setattr(usage, usage_key, getattr(usage, usage_key) + usage_value)
+                if len(request.messages) == 0:
+                    raise HTTPException(status_code=400, detail="Invalid request")
 
-            return ChatCompletionResponse(model=request.model, choices=choices, usage=usage)
+                if request.messages[-1].role != Role.USER:
+                    raise HTTPException(status_code=400, detail="Invalid request")
+
+                if request.model not in model_config_map:
+                    msg = "model not in " + ','.join([k for k, v in model_config_map.items() if v["enable"]])
+                    raise HTTPException(status_code=400, detail=msg)
+                if request.stream:
+                    _openai_chat_stream_generate = _openai_chat_stream(request)
+                    return StreamingResponse(_openai_chat_stream_generate, media_type="text/event-stream")
+                else:
+                    return await _openai_chat(request)
+            except Exception as e:
+                traceback.print_exc()
+                traceback.print_last()
+                print(e)
+                return HTTPException(status_code=501, detail=str(e))
+
+        async def _openai_chat(request: ChatCompletionRequest):
+            r = request.build_request_chat()
+            instance = self.queue_mapper[request.model]
+            request_id = instance.put(r)
+            result = instance.get(request_id)
+            if result["code"] != 0:
+                raise HTTPException(status_code=400, detail=result["msg"])
+
+            prompt_length, response_length = 0, 0
+            for x in r["history"]:
+                prompt_length += len(x['q'])
+                prompt_length += len(x['a'])
+            prompt_length += len(r['query'])
+
+            response_length = len(result["result"])
+            usage = UsageInfo(
+                prompt_tokens=prompt_length,
+                completion_tokens=response_length,
+                total_tokens=prompt_length + response_length
+            )
+
+            choice_data = ChatCompletionResponseChoice(
+                index=0,
+                message=ChatMessage(role=Role.ASSISTANT, content=result["result"]),
+                finish_reason=Finish.STOP
+            )
+            return ChatCompletionResponse(model=request.model, choices=[choice_data], usage=usage)
+
+
+
+        def _openai_chat_stream(request: ChatCompletionRequest):
+            choice_data = ChatCompletionResponseStreamChoice(
+                index=0,
+                delta=DeltaMessage(role=Role.ASSISTANT),
+                finish_reason=None
+            )
+            chunk = ChatCompletionStreamResponse(model=request.model, choices=[choice_data])
+            yield chunk.json(exclude_unset=True, ensure_ascii=False)
+
+            r = request.build_request_streaming()
+            instance = self.queue_mapper[request.model]
+            request_id = instance.put(r)
+
+            while True:
+                result = instance.get(request_id)
+                if result["code"] == 0:
+                    choice_data = ChatCompletionResponseStreamChoice(
+                        index=0,
+                        delta=DeltaMessage(content=result["result"]),
+                        finish_reason=None
+                    )
+                    chunk = ChatCompletionStreamResponse(model=request.model, choices=[choice_data])
+                    yield chunk.json(exclude_unset=True, ensure_ascii=False)
+
+                if result["complete"]:
+                    break
+
+
+            choice_data = ChatCompletionResponseStreamChoice(
+                index=0,
+                delta=DeltaMessage(),
+                finish_reason=Finish.STOP
+            )
+            chunk = ChatCompletionStreamResponse(model=request.model, choices=[choice_data])
+            yield chunk.json(exclude_unset=True, ensure_ascii=False)
+            yield "[DONE]\n\n"
 
         @app.post("/generate")
         async def generate(r: typing.Dict):

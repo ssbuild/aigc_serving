@@ -6,6 +6,7 @@
 
 ## update information
 ```text
+    07-27 support openai client
     07-26 support streaming
     07-24 support chat
     07-23 support deepspeed , accelerate
@@ -23,6 +24,42 @@ pip install -r requirements.txt
 ```commandline
 cd script
 bash start.sh
+```
+
+## openai 接口  demo tests/openai_client.py
+
+```text
+Models: {
+  "data": [
+    {
+      "created": 1690434104,
+      "id": "bloom-560m",
+      "object": "model",
+      "owned_by": "fastchat",
+      "parent": null,
+      "permission": [
+        {
+          "allow_create_engine": false,
+          "allow_fine_tuning": false,
+          "allow_logprobs": true,
+          "allow_sampling": true,
+          "allow_search_indices": true,
+          "allow_view": true,
+          "created": 1690434104,
+          "group": null,
+          "id": "modelperm-fd413444-e293-4500-a4f6-653c773f17f8",
+          "is_blocking": false,
+          "object": "model_permission",
+          "organization": "*"
+        }
+      ],
+      "root": "bloom-560m"
+    }
+  ],
+  "object": "list"
+}
+Completion result: ？我的父亲。我曾以为我是一个很坚强的女孩,但是当我遇到这个男孩的时候我才发现原来我没有那么的坚强！曾经我们相恋了三个月的时间,他却让我失去了理智并且对我很冷淡.一次又一次地伤害了我！我开始怀疑自己的感情是不是真的能够长久的存在下去！于是我在网上看到了这样一篇文章:其实爱情是很容易变质的！也许是你喜欢上了别人才变的爱你；也可能是你因为爱而爱上另一个人才会把你放弃；而或许是你不懂珍惜一个人就已经不在乎了！</s>
+
 ```
 
 ## generate 接口  demo tests/test_client.py
