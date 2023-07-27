@@ -43,7 +43,7 @@ class ModelCard(BaseModel):
     id: str
     object: str = "model"
     created: int = Field(default_factory=lambda: int(time.time()))
-    owned_by: str = "fastchat"
+    owned_by: str = "aigc_serving"
     root: Optional[str] = None
     parent: Optional[str] = None
     permission: List[ModelPermission] = []
@@ -172,7 +172,7 @@ class DeltaMessage(BaseModel):
 class ChatCompletionResponseStreamChoice(BaseModel):
     index: int
     delta: DeltaMessage
-    finish_reason: Optional[Literal["stop", "length"]]
+    finish_reason: Optional[Literal["stop", "length","error"]]
 
 
 class ChatCompletionStreamResponse(BaseModel):

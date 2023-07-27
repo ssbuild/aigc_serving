@@ -159,14 +159,14 @@ class HTTP_Serving(Process):
 
 
 
-        def _openai_chat_stream(request: ChatCompletionRequest):
+        async def _openai_chat_stream(request: ChatCompletionRequest):
             choice_data = ChatCompletionResponseStreamChoice(
                 index=0,
                 delta=DeltaMessage(role=Role.ASSISTANT),
                 finish_reason=None
             )
             chunk = ChatCompletionStreamResponse(model=request.model, choices=[choice_data])
-            yield chunk.json(exclude_unset=True, ensure_ascii=False)
+            yield f"data: {chunk.json(exclude_unset=True, ensure_ascii=False)}\n\n"
 
             r = request.build_request_streaming()
             instance = self.queue_mapper[request.model]
@@ -174,14 +174,16 @@ class HTTP_Serving(Process):
 
             while True:
                 result = instance.get(request_id)
-                if result["code"] == 0:
+                if result["code"] != 0:
+                    yield f"data: {json.dumps(result, ensure_ascii=False)}\n\n"
+                elif len(result["result"]) > 0:
                     choice_data = ChatCompletionResponseStreamChoice(
                         index=0,
                         delta=DeltaMessage(content=result["result"]),
                         finish_reason=None
                     )
                     chunk = ChatCompletionStreamResponse(model=request.model, choices=[choice_data])
-                    yield chunk.json(exclude_unset=True, ensure_ascii=False)
+                    yield f"data: {chunk.json(exclude_unset=True, ensure_ascii=False)}\n\n"
 
                 if result["complete"]:
                     break
@@ -193,8 +195,8 @@ class HTTP_Serving(Process):
                 finish_reason=Finish.STOP
             )
             chunk = ChatCompletionStreamResponse(model=request.model, choices=[choice_data])
-            yield chunk.json(exclude_unset=True, ensure_ascii=False)
-            yield "[DONE]\n\n"
+            yield f"data: {chunk.json(exclude_unset=True, ensure_ascii=False)}\n\n"
+            yield "data: [DONE]\n\n"
 
         @app.post("/generate")
         async def generate(r: typing.Dict):

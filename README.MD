@@ -35,7 +35,7 @@ Models: {
       "created": 1690434104,
       "id": "bloom-560m",
       "object": "model",
-      "owned_by": "fastchat",
+      "owned_by": "aigc_serving",
       "parent": null,
       "permission": [
         {
