@@ -85,7 +85,7 @@ class EngineAPI_Base(ABC):
     def init_model(self,device_id=None):
         raise NotImplemented
 
-    def chat_stream(self,query,nchar=4,gtype='total',**kwargs):
+    def chat_stream(self,query,nchar=1,gtype='total',**kwargs):
         raise NotImplemented
 
     def chat(self,input,**kwargs):

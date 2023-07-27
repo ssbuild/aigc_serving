@@ -12,7 +12,7 @@ model = "chatglm2-6b-int4"
 # print("Models:", models)
 
 # Test completion API
-stream = True
+stream = False
 
 data = {
     "model": model,

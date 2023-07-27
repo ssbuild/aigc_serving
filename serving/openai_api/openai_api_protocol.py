@@ -115,12 +115,12 @@ class ChatCompletionRequest(BaseModel):
         return (query,history)
 
     def _update_params(self,r):
+
         params = {
             "max_new_tokens": self.max_tokens,
-            "repetition_penalty": self.frequency_penalty,
+
             "top_p": self.top_p,
             "temperature": self.temperature,
-
             "min_length": self.min_length,
             "min_new_tokens": self.min_new_tokens,
             "early_stopping": self.early_stopping,
@@ -139,8 +139,15 @@ class ChatCompletionRequest(BaseModel):
             "guidance_scale": self.guidance_scale,
             "low_memory": self.low_memory,
         }
+        if self.frequency_penalty is not None and self.frequency_penalty > 0:
+            params["repetition_penalty"] = self.frequency_penalty
+
+        if self.presence_penalty is not None and self.presence_penalty > 0:
+            params["presence_penalty"] = self.presence_penalty
+
         if self.repetition_penalty is not None:
             params["repetition_penalty"] = self.repetition_penalty
+
         if self.stream:
             params["gtype"] = self.gtype
             params["nchar"] = self.nchar
@@ -263,11 +270,11 @@ class CompletionRequest(BaseModel):
     max_tokens: Optional[int] = 16
     stop: Optional[Union[str, List[str]]] = None
     stream: Optional[bool] = False
-    top_p: Optional[float] = 1.0
+    top_p: Optional[float] = None
     logprobs: Optional[int] = None
-    echo: Optional[bool] = False
-    presence_penalty: Optional[float] = 0.0
-    frequency_penalty: Optional[float] = 0.0
+    echo: Optional[bool] = None
+    presence_penalty: Optional[float] = None
+    frequency_penalty: Optional[float] = None
     user: Optional[str] = None
 
 

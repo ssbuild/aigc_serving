@@ -43,7 +43,7 @@ class EngineAPI(EngineAPI_Base):
         self.tokenizer = tokenizer
 
 
-    def chat_stream(self, query, nchar=4,gtype='total', history=None, **kwargs):
+    def chat_stream(self, query, nchar=1,gtype='total', history=None, **kwargs):
         if history is None:
             history = []
         default_kwargs = dict(history=history,

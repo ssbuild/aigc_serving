@@ -107,19 +107,22 @@ class HTTP_Serving(Process):
             return ModelList(data=model_cards)
 
         @app.post("/v1/completions")
+        @app.post("/v1/chat/completions")
         async def create_chat_completion(request: ChatCompletionRequest):
             try:
                 if len(request.messages) == 0:
-                    raise HTTPException(status_code=400, detail="Invalid request")
+                    raise ValueError("Invalid parameters")
 
                 if request.messages[-1].role != Role.USER:
-                    raise HTTPException(status_code=400, detail="Invalid request")
+                    raise ValueError("Invalid parameters")
+
                 if request.n > 16:
-                    raise HTTPException(status_code=400, detail="request.n <= 16")
+                    raise ValueError("parameters n <= 16")
 
                 if request.model not in model_config_map:
-                    msg = "model not in " + ','.join([k for k, v in model_config_map.items() if v["enable"]])
-                    raise HTTPException(status_code=400, detail=msg)
+                    msg = "{} Invalid model: model not in ".format(request.model) + ','.join([k for k, v in model_config_map.items() if v["enable"]])
+                    raise ValueError(msg)
+
                 if request.stream:
                     _openai_chat_stream_generate = _openai_chat_stream(request)
                     return StreamingResponse(_openai_chat_stream_generate, media_type="text/event-stream")
@@ -127,14 +130,12 @@ class HTTP_Serving(Process):
                     return await _openai_chat(request)
             except Exception as e:
                 traceback.print_exc()
-                traceback.print_last()
                 print(e)
                 return HTTPException(status_code=501, detail=str(e))
 
         async def _openai_chat(request: ChatCompletionRequest):
             r = request.build_request_chat()
             choices = []
-
             prompt_length, response_length = 0, 0
             for i in range(max(1,request.n)):
                 instance = self.queue_mapper[request.model]
