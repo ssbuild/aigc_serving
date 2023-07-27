@@ -127,7 +127,7 @@ class ChatCompletionRequest(BaseModel):
     def build_request_streaming(self):
         query,history = self.build_query_history()
         r = {
-            "method": "chat",
+            "method": "chat_stream",
             "model": self.model,
             "history": history,
             "query": query,
@@ -138,7 +138,7 @@ class ChatCompletionRequest(BaseModel):
     def build_request_generate(self):
         query,history = self.build_query_history()
         r = {
-            "method": "chat",
+            "method": "generate",
             "model": self.model,
             "history": history,
             "texts": [query],

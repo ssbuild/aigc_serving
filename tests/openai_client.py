@@ -10,7 +10,7 @@ models = openai.Model.list()
 print("Models:", models)
 
 # Test completion API
-stream = False
+stream = True
 
 data = {
     "model": model,
@@ -18,6 +18,7 @@ data = {
     "top_p": 0.8,
     "temperature": 0.95,
     "frequency_penalty": 1.01,
+    "stream": stream,
 }
 
 
@@ -25,7 +26,8 @@ completion = openai.Completion.create(**data)
 
 # print the completion
 if stream:
+    print(completion)
     for c in completion:
-        print(c)
+        print(type(c),c)
 else:
     print("Completion result:", completion.choices[0].message.content)
