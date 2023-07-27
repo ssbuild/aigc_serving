@@ -134,7 +134,7 @@ class HTTP_Serving(Process):
             choices = []
 
             prompt_length, response_length = 0, 0
-            for i in range(max(1,r.n)):
+            for i in range(max(1,r['n'])):
                 instance = self.queue_mapper[request.model]
                 request_id = instance.put(r)
                 result = instance.get(request_id)

@@ -12,7 +12,7 @@ model = "bloom-560m"
 # print("Models:", models)
 
 # Test completion API
-stream = True
+stream = False
 
 data = {
     "model": model,
@@ -21,12 +21,12 @@ data = {
     "temperature": 0.95,
     "frequency_penalty": 1.01,
     "stream": stream,
+    "nchar": 1,
+    "n": 2
 }
 
 
 completion = openai.Completion.create(**data)
-
-# print the completion
 if stream:
     text = ''
     for choices in completion:
