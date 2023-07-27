@@ -157,6 +157,9 @@ http://127.0.0.1:8081/chat
 {'code': 0, 'runtime': 9029.971837997437, 'result': '', 'msg': 'ok', 'complete': True}
 ```
 
+## 推荐界面 ChatGPT-Next-Web
+
+![界面](asserts/1.png)
 
 ## 
     纯粹而干净的代码
