@@ -257,7 +257,7 @@ class EngineAPI_Base(ABC):
             query = r.get('query', "")
             history = r.get('history', [])
             history = [(_["q"], _["a"]) for _ in history]
-            n = r.get('n', 4)
+            n = params.pop('n', 4)
             gen_results = self.chat_stream(query, n=n, history=history, **params)
             if gen_results is None:
                 return None

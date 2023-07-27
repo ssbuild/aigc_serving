@@ -257,8 +257,9 @@ class HTTP_Serving(Process):
                 model_name = r.get('model', None)
                 history = r.get('history', [])
                 query = r.get('query', "")
-                n = r.get('n', 4)
-                gtype = r.get('gtype', 'total')
+                param = r.get('param',{})
+                n = param.get('n', 4)
+                gtype = param.get('gtype', 'total')
 
                 do_sample = r.get('do_sample', True)
                 assert do_sample, ValueError("stream not support do_sample=False")

@@ -144,6 +144,7 @@ class ChatCompletionRequest(BaseModel):
             "texts": [query],
         }
         r = self._update_params(r)
+        return r
 
 class ChatCompletionResponseChoice(BaseModel):
     index: int
