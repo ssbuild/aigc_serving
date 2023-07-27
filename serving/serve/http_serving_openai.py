@@ -93,7 +93,7 @@ class HTTP_Serving(Process):
 
         @app.get("/")
         def read_root():
-            return {"Hello": "World"}
+            return {"aigc_serving": "hello world"}
 
         #@app.get("/v1/models", dependencies=[Depends(check_api_key)])
         @app.get("/v1/models")
@@ -114,6 +114,8 @@ class HTTP_Serving(Process):
 
                 if request.messages[-1].role != Role.USER:
                     raise HTTPException(status_code=400, detail="Invalid request")
+                if request.n > 16:
+                    raise HTTPException(status_code=400, detail="request.n <= 16")
 
                 if request.model not in model_config_map:
                     msg = "model not in " + ','.join([k for k, v in model_config_map.items() if v["enable"]])
@@ -140,15 +142,12 @@ class HTTP_Serving(Process):
                 result = instance.get(request_id)
                 if result["code"] != 0:
                     raise HTTPException(status_code=400, detail=result["msg"])
-
-
                 for x in r["history"]:
                     prompt_length += len(x['q'])
                     prompt_length += len(x['a'])
                 prompt_length += len(r['query'])
 
                 response_length = len(result["result"])
-
                 choice_data = ChatCompletionResponseChoice(
                     index=0,
                     message=ChatMessage(role=Role.ASSISTANT, content=result["result"]),
@@ -166,7 +165,7 @@ class HTTP_Serving(Process):
         async def _openai_chat_stream(request: ChatCompletionRequest):
             choice_data = ChatCompletionResponseStreamChoice(
                 index=0,
-                delta=DeltaMessage(role=Role.ASSISTANT),
+                delta=DeltaMessage(role=Role.ASSISTANT,content=''),
                 finish_reason=None
             )
             chunk = ChatCompletionStreamResponse(model=request.model, choices=[choice_data])
@@ -183,7 +182,7 @@ class HTTP_Serving(Process):
                 elif len(result["result"]) > 0:
                     choice_data = ChatCompletionResponseStreamChoice(
                         index=0,
-                        delta=DeltaMessage(content=result["result"]),
+                        delta=DeltaMessage(role=Role.ASSISTANT,content=result["result"]),
                         finish_reason=None
                     )
                     chunk = ChatCompletionStreamResponse(model=request.model, choices=[choice_data])

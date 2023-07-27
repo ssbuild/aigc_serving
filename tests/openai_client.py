@@ -2,8 +2,8 @@ import openai
 
 # Modify OpenAI's API key and API base to use vLLM's API server.
 openai.api_key = "EMPTY"
-openai.api_base = "http://192.168.16.157:8081/v1"
-model = "bloom-560m"
+openai.api_base = "http://192.168.2.180:8081/v1"
+model = "chatglm2-6b-int4"
 
 
 
@@ -12,7 +12,7 @@ model = "bloom-560m"
 # print("Models:", models)
 
 # Test completion API
-stream = False
+stream = True
 
 data = {
     "model": model,
@@ -21,8 +21,8 @@ data = {
     "temperature": 0.95,
     "frequency_penalty": 1.01,
     "stream": stream,
-    "nchar": 1,
-    "n": 2
+    "nchar": 1,# stream 字符
+    "n": 1 # 返回 n 个choices
 }
 
 

@@ -4,6 +4,7 @@ from typing import Literal, Optional, List, Dict, Any, Union
 import time
 import uuid
 from pydantic import BaseModel, Field
+from transformers import GenerationConfig
 
 
 class Role(str, Enum):
@@ -78,8 +79,23 @@ class ChatCompletionRequest(BaseModel):
     gtype: Optional[str] = "increace",  # one of total,increace
     do_sample: Optional[bool] = True
     nchar: Optional[int] = None
-
-
+    min_length: Optional[int] =None
+    min_new_tokens: Optional[int] =None
+    early_stopping: Optional[Union[bool, str]] = None
+    max_time: Optional[float] = None
+    num_beams: Optional[int] = None
+    num_beam_groups: Optional[int] = None
+    penalty_alpha: Optional[float] = None
+    top_k: Optional[int] = None
+    epsilon_cutoff: Optional[float] = None
+    eta_cutoff: Optional[float] = None
+    diversity_penalty: Optional[float] = None
+    encoder_repetition_penalty: Optional[float] = None
+    repetition_penalty: Optional[float] = None
+    forced_bos_token_id: Optional[int] = None
+    forced_eos_token_id: Optional[int] = None
+    guidance_scale: Optional[float] = None
+    low_memory: Optional[bool] = None
 
     def build_query_history(self):
         prev_messages = self.messages[:-1]
@@ -104,7 +120,27 @@ class ChatCompletionRequest(BaseModel):
             "repetition_penalty": self.frequency_penalty,
             "top_p": self.top_p,
             "temperature": self.temperature,
+
+            "min_length": self.min_length,
+            "min_new_tokens": self.min_new_tokens,
+            "early_stopping": self.early_stopping,
+            "max_time": self.max_time,
+            "num_beams": self.num_beams,
+            "num_beam_groups": self.num_beam_groups,
+            "penalty_alpha": self.penalty_alpha,
+            "top_k": self.top_k,
+            "epsilon_cutoff": self.epsilon_cutoff,
+            "eta_cutoff": self.eta_cutoff,
+            "diversity_penalty": self.diversity_penalty,
+            "encoder_repetition_penalty": self.encoder_repetition_penalty,
+
+            "forced_bos_token_id": self.forced_bos_token_id,
+            "forced_eos_token_id": self.forced_eos_token_id,
+            "guidance_scale": self.guidance_scale,
+            "low_memory": self.low_memory,
         }
+        if self.repetition_penalty is not None:
+            params["repetition_penalty"] = self.repetition_penalty
         if self.stream:
             params["gtype"] = self.gtype
             params["nchar"] = self.nchar
