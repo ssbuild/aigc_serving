@@ -68,7 +68,7 @@ class ChatCompletionRequest(BaseModel):
     messages: List[ChatMessage]
     temperature: Optional[float] = 0.7
     top_p: Optional[float] = 1.0
-    n: Optional[int] = 2
+    n: Optional[int] = 1
     max_tokens: Optional[int] = 512
     stop: Optional[Union[str, List[str]]] = None
     stream: Optional[bool] = False
@@ -77,6 +77,7 @@ class ChatCompletionRequest(BaseModel):
     user: Optional[str] = None
     gtype: Optional[str] = "increace",  # one of total,increace
     do_sample: Optional[bool] = True
+    nchar: Optional[int] = None
 
 
 
@@ -106,7 +107,7 @@ class ChatCompletionRequest(BaseModel):
         }
         if self.stream:
             params["gtype"] = self.gtype
-            params["n"] = self.n
+            params["nchar"] = self.nchar
         else:
             params["do_sample"] = self.do_sample
 

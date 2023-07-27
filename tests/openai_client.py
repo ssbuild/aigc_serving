@@ -28,8 +28,13 @@ completion = openai.Completion.create(**data)
 
 # print the completion
 if stream:
-    print(completion)
-    for c in completion:
-        print(type(c),c)
+    text = ''
+    for choices in completion:
+        c = choices.choices[0]
+        delta = c.delta
+        if hasattr(delta,'content'):
+            text += delta.content
+            print(delta.content)
+    print(text)
 else:
     print("Completion result:", completion.choices[0].message.content)

@@ -64,7 +64,7 @@ class EngineAPI(EngineAPI_Base):
         response = self.tokenizer.decode(outputs)
         return response
 
-    def chat_stream(self,  query, n,gtype='total', history=None,**kwargs):
+    def chat_stream(self,  query, nchar=4,gtype='total', history=None,**kwargs):
         if history is None:
             history = []
         messages = []
@@ -104,7 +104,7 @@ class EngineAPI(EngineAPI_Base):
                                          generation_config=generation_config):
             n_id += 1
             chunk.text = response
-            if n_id % n == 0:
+            if n_id % nchar == 0:
                 if gtype == 'total':
                     yield (chunk.text, history)
                 else:

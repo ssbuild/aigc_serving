@@ -64,7 +64,7 @@ class EngineAPI(EngineAPI_Base):
         response = self.tokenizer.decode(outputs)
         return response
 
-    def chat_stream(self, query, n,gtype='total', history=None, **kwargs):
+    def chat_stream(self, query, nchar=4,gtype='total', history=None, **kwargs):
         if history is None:
             history = []
 
@@ -79,7 +79,7 @@ class EngineAPI(EngineAPI_Base):
         def process_token_fn(text, stream_end, chunk: ChunkData):
             chunk.text += text
             chunk.idx += 1
-            if chunk.idx % n == 0 or stream_end or chunk.idx == 1:
+            if chunk.idx % nchar == 0 or stream_end or chunk.idx == 1:
                 if gtype == 'total':
                     self.push_response(((chunk.text, history), 0, "ok", False))
                     chunk.idx = 0

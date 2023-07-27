@@ -131,32 +131,36 @@ class HTTP_Serving(Process):
 
         async def _openai_chat(request: ChatCompletionRequest):
             r = request.build_request_chat()
-            instance = self.queue_mapper[request.model]
-            request_id = instance.put(r)
-            result = instance.get(request_id)
-            if result["code"] != 0:
-                raise HTTPException(status_code=400, detail=result["msg"])
+            choices = []
 
             prompt_length, response_length = 0, 0
-            for x in r["history"]:
-                prompt_length += len(x['q'])
-                prompt_length += len(x['a'])
-            prompt_length += len(r['query'])
+            for i in range(max(1,r.n)):
+                instance = self.queue_mapper[request.model]
+                request_id = instance.put(r)
+                result = instance.get(request_id)
+                if result["code"] != 0:
+                    raise HTTPException(status_code=400, detail=result["msg"])
 
-            response_length = len(result["result"])
+
+                for x in r["history"]:
+                    prompt_length += len(x['q'])
+                    prompt_length += len(x['a'])
+                prompt_length += len(r['query'])
+
+                response_length = len(result["result"])
+
+                choice_data = ChatCompletionResponseChoice(
+                    index=0,
+                    message=ChatMessage(role=Role.ASSISTANT, content=result["result"]),
+                    finish_reason=Finish.STOP
+                )
+                choices.append(choice_data)
             usage = UsageInfo(
                 prompt_tokens=prompt_length,
                 completion_tokens=response_length,
                 total_tokens=prompt_length + response_length
             )
-
-            choice_data = ChatCompletionResponseChoice(
-                index=0,
-                message=ChatMessage(role=Role.ASSISTANT, content=result["result"]),
-                finish_reason=Finish.STOP
-            )
-            return ChatCompletionResponse(model=request.model, choices=[choice_data], usage=usage)
-
+            return ChatCompletionResponse(model=request.model, choices=choices, usage=usage)
 
 
         async def _openai_chat_stream(request: ChatCompletionRequest):
@@ -260,12 +264,12 @@ class HTTP_Serving(Process):
                 history = r.get('history', [])
                 query = r.get('query', "")
                 param = r.get('param',{})
-                n = param.get('n', 4)
+                nchar = param.get('nchar', 4)
                 gtype = param.get('gtype', 'total')
                 do_sample = param.get('do_sample', True)
                 assert do_sample, ValueError("stream not support do_sample=False")
                 param['do_sample'] = True
-                assert isinstance(n, int) and n > 0, ValueError("require n > 0")
+                assert isinstance(nchar, int) and nchar > 0, ValueError("require nchar > 0")
                 assert gtype in ['total', 'increace'], ValueError("gtype one of increace , total")
 
                 if len(query) == 0 or query is None:

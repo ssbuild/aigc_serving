@@ -85,7 +85,7 @@ class EngineAPI_Base(ABC):
     def init_model(self,device_id=None):
         raise NotImplemented
 
-    def chat_stream(self,query,n,gtype='total',**kwargs):
+    def chat_stream(self,query,nchar=4,gtype='total',**kwargs):
         raise NotImplemented
 
     def chat(self,input,**kwargs):
@@ -257,8 +257,7 @@ class EngineAPI_Base(ABC):
             query = r.get('query', "")
             history = r.get('history', [])
             history = [(_["q"], _["a"]) for _ in history]
-            n = params.pop('n', 4)
-            gen_results = self.chat_stream(query, n=n, history=history, **params)
+            gen_results = self.chat_stream(query, history=history, **params)
             if gen_results is None:
                 return None
             for results in gen_results:

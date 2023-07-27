@@ -49,7 +49,7 @@ class EngineAPI(EngineAPI_Base):
         self.model = model
         self.tokenizer = tokenizer
 
-    def chat_stream(self,query, n,gtype='total', history=None,**kwargs):
+    def chat_stream(self,query, nchar=4,gtype='total', history=None,**kwargs):
         if history is None:
             history = []
         default_kwargs = dict(history=history,
@@ -62,7 +62,7 @@ class EngineAPI(EngineAPI_Base):
         chunk.idx = 0
         n_id = 0
         for response, history in self.model.stream_chat(self.tokenizer, query=query, **kwargs):
-            if n_id % n == 0:
+            if n_id % nchar == 0:
                 if gtype == 'total':
                     yield (chunk.text, history)
                 else:
