@@ -5,9 +5,11 @@ openai.api_key = "EMPTY"
 openai.api_base = "http://192.168.16.157:8081/v1"
 model = "bloom-560m"
 
-# Test list models API
-models = openai.Model.list()
-print("Models:", models)
+
+
+# # Test list models API
+# models = openai.Model.list()
+# print("Models:", models)
 
 # Test completion API
 stream = True

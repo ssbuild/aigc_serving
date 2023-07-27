@@ -260,10 +260,9 @@ class HTTP_Serving(Process):
                 param = r.get('param',{})
                 n = param.get('n', 4)
                 gtype = param.get('gtype', 'total')
-
-                do_sample = r.get('do_sample', True)
+                do_sample = param.get('do_sample', True)
                 assert do_sample, ValueError("stream not support do_sample=False")
-                r['do_sample'] = True
+                param['do_sample'] = True
                 assert isinstance(n, int) and n > 0, ValueError("require n > 0")
                 assert gtype in ['total', 'increace'], ValueError("gtype one of increace , total")
 
