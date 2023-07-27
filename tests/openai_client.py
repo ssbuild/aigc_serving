@@ -37,4 +37,5 @@ if stream:
             print(delta.content)
     print(text)
 else:
-    print("Completion result:", completion.choices[0].message.content)
+    for choice in completion.choices:
+        print("Completion result:", choice.message.content)
