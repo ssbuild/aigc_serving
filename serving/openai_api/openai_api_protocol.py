@@ -109,7 +109,7 @@ class ChatCompletionRequest(BaseModel):
                 if prev_messages[i].role == Role.USER and prev_messages[i + 1].role == Role.ASSISTANT:
                     history.append({
                         "q": prefix + prev_messages[i].content,
-                        "a": prefix + prev_messages[i + 1].content
+                        "a": prev_messages[i + 1].content
                     })
         query = self.messages[-1].content
         return (query,history)
