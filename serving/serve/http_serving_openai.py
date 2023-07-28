@@ -67,6 +67,8 @@ async def check_api_key(
 
 
 
+
+
 class HTTP_Serving(Process):
     def __init__(self,
                  queue_mapper: dict,
@@ -80,6 +82,7 @@ class HTTP_Serving(Process):
         self.http_port = http_port
         self.queue_mapper = queue_mapper
         self.app = None
+        self.valid_model_map = set([k for k, v in model_config_map.items() if v["enable"]])
 
     def create_app(self):
         app = FastAPI()
@@ -120,8 +123,9 @@ class HTTP_Serving(Process):
                 if request.n > 16:
                     raise ValueError("parameters n <= 16")
 
-                if request.model not in model_config_map:
-                    msg = "{} Invalid model: model not in ".format(request.model) + ','.join([k for k, v in model_config_map.items() if v["enable"]])
+
+                if request.model not in self.valid_model_map:
+                    msg = "{} Invalid model: model not in ".format(request.model) + ','.join(self.valid_model_map)
                     raise ValueError(msg)
 
                 if request.stream:
@@ -212,8 +216,8 @@ class HTTP_Serving(Process):
                 texts = r.get('texts', [])
                 if len(texts) == 0 or texts is None:
                     return {'code': -1, "msg": "invalid data"}
-                if model_name not in model_config_map:
-                    msg = "model not in " + ','.join([k for k, v in model_config_map.items() if v["enable"]])
+                if model_name not in self.valid_model_map:
+                    msg = "model not in " + ','.join(self.valid_model_map)
                     print(msg)
                     return {'code': -1, "msg": msg}
 
@@ -241,8 +245,8 @@ class HTTP_Serving(Process):
                     assert isinstance(history[0], dict), ValueError('history require dict data')
                     if 'q' not in history[0] or 'a' not in history[0]:
                         raise ValueError('q,a is required in list item')
-                if model_name not in model_config_map:
-                    msg = "model not in " + ','.join([k for k, v in model_config_map.items() if v["enable"]])
+                if model_name not in self.valid_model_map:
+                    msg = "model not in " + ','.join(self.valid_model_map)
                     print(msg)
                     return {'code': -1, "msg": msg}
 
@@ -279,8 +283,8 @@ class HTTP_Serving(Process):
                     assert isinstance(history[0], dict), ValueError('history require dict data')
                     if 'q' not in history[0] or 'a' not in history[0]:
                         raise ValueError('q,a is required in list item')
-                if model_name not in model_config_map:
-                    msg = "model not in " + ','.join([k for k, v in model_config_map.items() if v["enable"]])
+                if model_name not in self.valid_model_map:
+                    msg = "model not in " + ','.join(self.valid_model_map)
                     print(msg)
                     return {'code': -1, "msg": msg}
 
