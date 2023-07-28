@@ -118,9 +118,7 @@ class ChatCompletionRequest(BaseModel):
 
         params = {
             "max_new_tokens": self.max_tokens,
-
             "top_p": self.top_p,
-            "temperature": self.temperature,
             "min_length": self.min_length,
             "min_new_tokens": self.min_new_tokens,
             "early_stopping": self.early_stopping,
@@ -147,6 +145,9 @@ class ChatCompletionRequest(BaseModel):
 
         if self.repetition_penalty is not None:
             params["repetition_penalty"] = self.repetition_penalty
+
+        if self.temperature is not None and self.temperature > 0:
+            params["temperature"] = self.temperature
 
         if self.stream:
             params["gtype"] = self.gtype
