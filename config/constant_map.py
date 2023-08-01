@@ -20,6 +20,11 @@ models_info_args = {
             "tokenizer_name": "/data/nlp/pre_models/torch/baichuan/baichuan-7B",
             "use_fast_tokenizer": False,
             "do_lower_case": None,
+            "lora": [
+                # {
+                #     "default": "/data/nlp/pre_models/torch/baichuan",
+                # }
+            ],
         }
     },
 
@@ -41,6 +46,11 @@ models_info_args = {
             "tokenizer_name": "/data/nlp/pre_models/torch/baichuan/Baichuan-13B-Chat",
             "use_fast_tokenizer": False,
             "do_lower_case": None,
+            "lora": [
+                # {
+                #     "default": "/data/nlp/pre_models/torch/baichuan",
+                # }
+            ],
         }
 
     },
@@ -63,6 +73,11 @@ models_info_args = {
             "tokenizer_name": "/data/nlp/pre_models/torch/chatglm/chatglm-6b",
             "use_fast_tokenizer": False,
             "do_lower_case": None,
+            "lora": [
+                # {
+                #     "default": "/data/nlp/pre_models/torch/baichuan",
+                # }
+            ],
         }
     },
     "chatglm-6b-int4":{
@@ -83,6 +98,11 @@ models_info_args = {
             "tokenizer_name": "/data/nlp/pre_models/torch/chatglm/chatglm-6b-int4",
             "use_fast_tokenizer": False,
             "do_lower_case": None,
+            "lora": [
+                # {
+                #     "default": "/data/nlp/pre_models/torch/baichuan",
+                # }
+            ],
         }
 
     },
@@ -104,6 +124,11 @@ models_info_args = {
             "tokenizer_name": "/data/nlp/pre_models/torch/chatglm/chatglm-6b-int8",
             "use_fast_tokenizer": False,
             "do_lower_case": None,
+            "lora": [
+                # {
+                #     "default": "/data/nlp/pre_models/torch/baichuan",
+                # }
+            ],
         }
 
     },
@@ -125,6 +150,11 @@ models_info_args = {
             "tokenizer_name": "/data/nlp/pre_models/torch/chatglm2/chatglm2-6b-int4",
             "use_fast_tokenizer": False,
             "do_lower_case": None,
+            "lora": [
+                # {
+                #     "default": "/data/nlp/pre_models/torch/baichuan",
+                # }
+            ],
         }
     },
     "chatglm2-6b": {
@@ -145,6 +175,11 @@ models_info_args = {
             "tokenizer_name": "/data/nlp/pre_models/torch/chatglm2/chatglm2-6b",
             "use_fast_tokenizer": False,
             "do_lower_case": None,
+            "lora": [
+                # {
+                #     "default": "/data/nlp/pre_models/torch/baichuan",
+                # }
+            ],
         }
 
     },
@@ -166,6 +201,11 @@ models_info_args = {
             "tokenizer_name": "/data/nlp/pre_models/torch/bloom/bloom-560m",
             "use_fast_tokenizer": False,
             "do_lower_case": None,
+            "lora": [
+                # {
+                #     "default": "/data/nlp/pre_models/torch/baichuan",
+                # }
+            ],
         }
 
     },
@@ -187,6 +227,11 @@ models_info_args = {
             "tokenizer_name": "/data/nlp/pre_models/torch/bloom/bloom-1b7",
             "use_fast_tokenizer": False,
             "do_lower_case": None,
+            "lora": [
+                # {
+                #     "default": "/data/nlp/pre_models/torch/baichuan",
+                # }
+            ],
         }
 
     },
@@ -208,6 +253,11 @@ models_info_args = {
             "tokenizer_name": "/data/nlp/pre_models/torch/opt/opt-350m",
             "use_fast_tokenizer": False,
             "do_lower_case": None,
+            "lora": [
+                # {
+                #     "default": "/data/nlp/pre_models/torch/baichuan",
+                # }
+            ],
         }
 
     },
@@ -230,6 +280,11 @@ models_info_args = {
             "tokenizer_name": "/data/nlp/pre_models/torch/llama/llama-7b-hf",
             "use_fast_tokenizer": False,
             "do_lower_case": None,
+            "lora": [
+                # {
+                #     "default": "/data/nlp/pre_models/torch/baichuan",
+                # }
+            ],
         }
 
     },
@@ -252,6 +307,11 @@ models_info_args = {
             "tokenizer_name": "/data/nlp/pre_models/torch/moss/moss-moon-003-sft-int4",
             "use_fast_tokenizer": False,
             "do_lower_case": None,
+            "lora": [
+                # {
+                #     "default": "/data/nlp/pre_models/torch/baichuan",
+                # }
+            ],
         }
 
     },
@@ -275,6 +335,11 @@ models_info_args = {
             "tokenizer_name": "/data/nlp/pre_models/torch/rwkv_gf/rwkv-4-raven-3b-v12",
             "use_fast_tokenizer": True,
             "do_lower_case": None,
+            "lora": [
+                # {
+                #     "default": "/data/nlp/pre_models/torch/baichuan",
+                # }
+            ],
         }
 
     },
@@ -297,6 +362,11 @@ models_info_args = {
             "tokenizer_name": "/data/nlp/pre_models/torch/internlm/internlm-chat-7b",
             "use_fast_tokenizer": False,
             "do_lower_case": None,
+            "lora": [
+                # {
+                #     "default": "/data/nlp/pre_models/torch/baichuan",
+                # }
+            ],
         }
 
     },
