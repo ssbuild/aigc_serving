@@ -21,6 +21,8 @@ pip install -r requirements.txt
 
 
 ## 启动
+修改 config/constant_map.py 配置文件
+
 ```commandline
 cd script
 bash start.sh
