@@ -49,7 +49,7 @@ class EngineAPI(EngineAPI_Base):
         if config.pad_token_id is None or config.pad_token_id >= config.vocab_size:
             config.pad_token_id = tokenizer.eos_token_id
 
-        ckpt_dir = self.lora_conf.values[0]
+        ckpt_dir = self.lora_conf.values()[0]
         if os.path.exists(os.path.join(ckpt_dir, 'config.json')):
             config = AutoConfig.from_pretrained(ckpt_dir)
         config.initializer_weight = False

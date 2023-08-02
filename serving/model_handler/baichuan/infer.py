@@ -50,7 +50,7 @@ class EngineAPI(EngineAPI_Base):
         tokenizer, config, _, _ = dataHelper.load_tokenizer_and_config(config_class_name=BaiChuanConfig,
                                                                        tokenizer_class_name=BaiChuanTokenizer)
 
-        ckpt_dir = self.lora_conf.values[0]
+        ckpt_dir = self.lora_conf.values()[0]
         if os.path.exists(os.path.join(ckpt_dir, 'config.json')):
             config = BaiChuanConfig.from_pretrained(ckpt_dir)
         config.initializer_weight = False
