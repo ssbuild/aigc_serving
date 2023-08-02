@@ -54,7 +54,7 @@ class EngineAPI(EngineAPI_Base):
                                                                        tokenizer_class_name=InternLMTokenizer)
         config.pad_token_id = config.eos_token_id
 
-        ckpt_dir = self.lora_conf.values()[0]
+        ckpt_dir = list(self.lora_conf.values())[0]
         if os.path.exists(os.path.join(ckpt_dir, 'config.json')):
             config = InternLMConfig.from_pretrained(ckpt_dir)
         config.initializer_weight = False

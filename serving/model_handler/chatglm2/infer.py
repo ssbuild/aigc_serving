@@ -56,7 +56,7 @@ class EngineAPI(EngineAPI_Base):
         tokenizer, config, _, _ = dataHelper.load_tokenizer_and_config(tokenizer_class_name=ChatGLMTokenizer,
                                                                        config_class_name=ChatGLMConfig)
 
-        ckpt_dir = self.lora_conf.values()[0]
+        ckpt_dir = list(self.lora_conf.values())[0]
         if os.path.exists(os.path.join(ckpt_dir,'config.json')):
             config = ChatGLMConfig.from_pretrained(ckpt_dir)
         config.initializer_weight = False
