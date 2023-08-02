@@ -3,6 +3,7 @@ pyzmq
 fastapi
 uvicorn
 numpy
+cpm_kernels
 numpy-io >=0.0.8
 deepspeed
 deep_training
