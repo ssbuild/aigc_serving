@@ -85,7 +85,7 @@ class EngineAPI(EngineAPI_Base):
             pl_model.load_sft_weight(ckpt_dir, adapter_name=adapter_name)
         self.lora_model = self.backbone
         if len(self.lora_conf) == 1:
-            self.lora_model = self.lora_model.merge_and_unload()
+            self.lora_model.merge_and_unload()
             self.lora_model.half().eval()
             model = pl_model.get_llm_model()
             if not model.quantized:
