@@ -17,6 +17,27 @@ from serving.model_handler.base.data_define import ChunkData
 class NN_DataHelper(DataHelper):pass
 
 
+
+def _build_message(query,history= None):
+    if history is None:
+        history = []
+    messages = []
+    for q, a in history:
+        messages.append({
+            "role": "user",
+            "content": q
+        })
+        messages.append({
+            "role": "assistant",
+            "content": a
+        })
+
+    messages.append({
+        "role": "user",
+        "content": query
+    })
+    return messages
+
 class EngineAPI(EngineAPI_Base):
     def _load_model(self,device_id=None):
         parser = HfArgumentParser((ModelArguments,))
@@ -118,24 +139,7 @@ class EngineAPI(EngineAPI_Base):
         return response
 
     def chat_stream(self,  query, nchar=1,gtype='total', history=None,**kwargs):
-        if history is None:
-            history = []
-        messages = []
-        for q, a in history:
-            messages.append({
-                "role": "user",
-                "content": q
-            })
-            messages.append({
-                "role": "assistant",
-                "content": a
-            })
-
-        messages.append({
-            "role": "user",
-            "content": query
-        })
-
+        messages = _build_message(query,history=history)
         default_kwargs = dict(eos_token_id=self.model.config.eos_token_id,
                               pad_token_id=self.model.config.eos_token_id,
                               do_sample=True, top_k=5, top_p=0.85, temperature=0.3,
@@ -150,7 +154,6 @@ class EngineAPI(EngineAPI_Base):
         n_id = 0
 
         response = None
-        self.model.chat()
         for response in self.get_model().chat(tokenizer=self.tokenizer,
                                          messages=messages,
                                          stream=True,
@@ -173,23 +176,7 @@ class EngineAPI(EngineAPI_Base):
 
 
     def chat(self, query, history=None, **kwargs):
-        if history is None:
-            history = []
-        messages = []
-        for q, a in history:
-            messages.append({
-                "role": "user",
-                "content": q
-            })
-            messages.append({
-                "role": "assistant",
-                "content": a
-            })
-
-        messages.append({
-            "role": "user",
-            "content": query
-        })
+        messages = _build_message(query, history=history)
 
         default_kwargs = dict(eos_token_id=self.model.config.eos_token_id,
                               pad_token_id=self.model.config.eos_token_id,
