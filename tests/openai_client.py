@@ -16,6 +16,7 @@ stream = False
 
 data = {
     "model": model,
+    "adapter_name": "default",
     "messages": [{"role": "user", "content": "你是谁"}],
     "top_p": 0.8,
     "temperature": 0.95,

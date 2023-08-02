@@ -6,6 +6,7 @@
 
 ## update information
 ```text
+    08-02 support muti lora infer , 手动升级 aigc_zoo , pip install -U git+https://github.com/ssbuild/aigc_zoo.git --force-reinstall --no-deps
     07-27 support openai client
     07-26 support streaming
     07-24 support chat
@@ -74,7 +75,7 @@ http://127.0.0.1:8081/generate
 {
     "texts": ["你会干什么？"],
     "model": "bloom-560m",
-    "params": {"max_new_tokens": 512,"do_sample": true,"temperature": 0.9,"top_p": 0.7}
+    "params": {"adapter_name": "default","max_new_tokens": 512,"do_sample": true,"temperature": 0.9,"top_p": 0.7}
 }
 
 例子 
@@ -105,7 +106,7 @@ http://127.0.0.1:8081/chat
     }],
     "query": "你会干什么？",
     "model": "bloom-560m",
-    "params": {"max_new_tokens": 512,"do_sample": true,"temperature": 0.9,"top_p": 0.7}
+    "params": {"adapter_name": "default","max_new_tokens": 512,"do_sample": true,"temperature": 0.9,"top_p": 0.7}
 }
 
 
@@ -138,6 +139,7 @@ http://127.0.0.1:8081/chat
     "query": "你是谁",
     "model": model,
     "params": {
+        "adapter_name": "default",
         "gtype": "total", # one of total,increace
         "max_new_tokens": 512,"do_sample": True,"temperature": 0.95,"top_p": 0.8,"repetition_penalty": 1.01}
 }

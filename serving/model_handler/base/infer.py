@@ -12,6 +12,7 @@ import torch.multiprocessing as mp
 import multiprocessing
 import threading
 from multiprocessing import Queue
+from deep_training.nlp.models.lora.v2 import LoraModel
 from serving.model_handler.base.data_define import WorkMode
 
 
@@ -25,6 +26,10 @@ class EngineAPI_Base(ABC):
         self.model_ds = None
         self.model = None
 
+        self.lora_model: typing.Optional[LoraModel] = None
+        self.enable_lora = model_config_dict
+        self.lora_conf = model_config_dict['model_config']['lora']
+        self.muti_lora_num = len(self.lora_conf.keys())
         self.work_mode_str = model_config_dict['work_mode'].lower()
         device_id = model_config_dict['workers'][worker_idx]['device_id']
         if device_id is None:
@@ -62,7 +67,7 @@ class EngineAPI_Base(ABC):
     def init(self):
         skip_init = False
         self._init_data()
-        if self.world_size > 1:
+        if self.world_size > 1 and self.muti_lora_num <= 1:
             if self.work_mode_str == 'deepspeed':
                 self.work_mode = WorkMode.DS
                 skip_init = True
@@ -79,11 +84,18 @@ class EngineAPI_Base(ABC):
         self._init_thead_generator()
         print('serving ready')
 
+    def init_model(self, device_id=None):
+        self.model_config_dict['seed'] = None
+        if self.muti_lora_num > 0:
+            call_method = self._load_lora_model
+        else:
+            call_method = self._load_model
+
+        self.model, self.config, self.tokenizer = call_method(device_id)
+
     def get_model(self):
         return self.model_ds or self.model_accelerate or self.model
 
-    def init_model(self,device_id=None):
-        raise NotImplemented
 
     def chat_stream(self,query,nchar=1,gtype='total',**kwargs):
         raise NotImplemented
@@ -223,6 +235,14 @@ class EngineAPI_Base(ABC):
                                            no_split_module_classes=self.model._no_split_modules)
         return device_map
 
+    def switch_lora(self,adapter_name):
+        if len(self.lora_conf) == 0:
+            return 0,'ok'
+        if adapter_name not in self.lora_conf:
+            return -1,'{} not in {}'.format(adapter_name,','.join(list(self.lora_conf.keys())))
+
+        self.lora_model.set_adapter(adapter_name)
+        return 0,'ok'
 
     def trigger_generator(self ,r: typing.Dict,is_first=True):
         if self.work_mode == WorkMode.DS:
@@ -257,6 +277,12 @@ class EngineAPI_Base(ABC):
             query = r.get('query', "")
             history = r.get('history', [])
             history = [(_["q"], _["a"]) for _ in history]
+
+            adapter_name = params.pop('adapter_name', 'default')
+            code, msg = self.switch_lora(adapter_name)
+            if code != 0:
+                yield result,code,msg,True
+
             gen_results = self.chat_stream(query, history=history, **params)
             if gen_results is None:
                 return None
@@ -299,6 +325,11 @@ class EngineAPI_Base(ABC):
                 code = -1
                 msg = "params error"
                 return result, code, msg,True
+
+            adapter_name = params.pop('adapter_name','default')
+            code,msg = self.switch_lora(adapter_name)
+            if code != 0:
+                return result, code, msg, True
 
             if method == 'generate':
                 texts = r.get('texts', [])

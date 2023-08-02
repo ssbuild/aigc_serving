@@ -5,7 +5,6 @@ import os
 import sys
 import time
 import traceback
-import typing
 from ipc_worker.ipc_zmq_loader import IPC_zmq,ZMQ_process_worker  # noqa
 import copy
 

@@ -67,6 +67,7 @@ class ChatMessage(BaseModel):
 class ChatCompletionRequest(BaseModel):
     model: str
     messages: List[ChatMessage]
+    adapter_name: Optional[str] = "default"
     temperature: Optional[float] = 0.7
     top_p: Optional[float] = 1.0
     n: Optional[int] = 1
@@ -117,6 +118,7 @@ class ChatCompletionRequest(BaseModel):
     def _update_params(self,r):
 
         params = {
+            "adapter_name": self.adapter_name,
             "max_new_tokens": self.max_tokens,
             "top_p": self.top_p,
             "min_length": self.min_length,

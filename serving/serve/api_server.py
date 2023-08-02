@@ -9,7 +9,7 @@ import multiprocessing
 from serving.serve.http_serving_openai import HTTP_Serving
 from serving.workers import llm_worker
 from ipc_worker.ipc_zmq_loader import IPC_zmq, ZMQ_process_worker # noqa
-from config.constant_map import models_info_args as model_config_map
+from config.main import global_models_info_args
 
 def main():
     tmp_dir = './tmp'
@@ -22,7 +22,7 @@ def main():
     queue_mapper = {}
     process_list = []
 
-    for model_name, config in model_config_map.items():
+    for model_name, config in global_models_info_args.items():
         if not config["enable"]:
             continue
         group_name = 'serving_group_{}_1'.format(model_name)

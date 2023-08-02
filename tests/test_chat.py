@@ -12,7 +12,7 @@ model = "chatglm2-6b-int4"
 data = {
     "query": "2023年是什么年",
     "model": model,
-    "params": {"max_new_tokens": 512,"do_sample": True,"temperature": 0.95,"top_p": 0.8,"repetition_penalty": 1.01}
+    "params": {"adapter_name": "default","max_new_tokens": 512,"do_sample": True,"temperature": 0.95,"top_p": 0.8,"repetition_penalty": 1.01}
 }
 
 r = requests.post(url,json=data).json()

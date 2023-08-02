@@ -17,7 +17,7 @@ from pydantic import BaseSettings
 from fastapi import FastAPI, Depends, HTTPException
 from starlette.middleware.cors import CORSMiddleware
 
-from config.constant_map import models_info_args as model_config_map
+from config.main import global_models_info_args
 from serving.openai_api.openai_api_protocol import ModelCard, ModelPermission, ModelList, ChatCompletionResponse, \
     ChatCompletionRequest, Role, ChatCompletionResponseChoice, UsageInfo, ChatMessage, Finish, \
     ChatCompletionResponseStreamChoice, DeltaMessage, ChatCompletionStreamResponse
@@ -62,13 +62,6 @@ async def check_api_key(
 
 
 
-
-
-
-
-
-
-
 class HTTP_Serving(Process):
     def __init__(self,
                  queue_mapper: dict,
@@ -82,7 +75,7 @@ class HTTP_Serving(Process):
         self.http_port = http_port
         self.queue_mapper = queue_mapper
         self.app = None
-        self.valid_model_map = set([k for k, v in model_config_map.items() if v["enable"]])
+        self.valid_model_map = set([k for k, v in global_models_info_args.items() if v["enable"]])
 
     def create_app(self):
         app = FastAPI()
@@ -101,7 +94,7 @@ class HTTP_Serving(Process):
         #@app.get("/v1/models", dependencies=[Depends(check_api_key)])
         @app.get("/v1/models")
         async def show_available_models():
-            models = [k for k, v in model_config_map.items() if v["enable"]]
+            models = [k for k, v in global_models_info_args.items() if v["enable"]]
             models.sort()
             # TODO: return real model permission details
             model_cards = []

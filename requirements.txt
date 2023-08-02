@@ -3,6 +3,7 @@ pyzmq
 fastapi
 uvicorn
 numpy
+numpy-io >=0.0.8
 deepspeed
 deep_training
 bitsandbytes>=0.39
