@@ -33,8 +33,6 @@ class EngineAPI(EngineAPI_Base):
         model: BaichuanForCausalLM = pl_model.get_llm_model()
         model = model.eval()
         model.requires_grad_(False)
-
-        model.requires_grad_(False)
         if not model.quantized:
             # 按需修改，目前只支持 4/8 bit 量化 ， 可以保存量化模型
             model.half().quantize(4).cuda()
