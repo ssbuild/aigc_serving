@@ -27,7 +27,7 @@ class EngineAPI_Base(ABC):
         self.model = None
 
         self.lora_model: typing.Optional[LoraModel] = None
-        self.enable_lora = model_config_dict
+        self.current_adapter_name = ''
         self.lora_conf = model_config_dict['model_config']['lora']
         self.muti_lora_num = len(self.lora_conf.keys())
         self.work_mode_str = model_config_dict['work_mode'].lower()
@@ -37,6 +37,7 @@ class EngineAPI_Base(ABC):
         self.device_id = device_id
         self.world_size = len(self.device_id)
         self.work_mode = WorkMode.STANDORD_HF
+
         self._q_in = None
         self._q_out = None
         self.rank = 0
@@ -238,9 +239,14 @@ class EngineAPI_Base(ABC):
     def switch_lora(self,adapter_name):
         if len(self.lora_conf) == 0:
             return 0,'ok'
+
         if adapter_name not in self.lora_conf:
             return -1,'{} not in {}'.format(adapter_name,','.join(list(self.lora_conf.keys())))
 
+        if adapter_name == self.current_adapter_name:
+            return 0, 'ok'
+        
+        self.current_adapter_name = adapter_name
         self.lora_model.set_adapter(adapter_name)
         return 0,'ok'
 
