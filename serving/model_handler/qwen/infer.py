@@ -38,15 +38,17 @@ class EngineAPI(EngineAPI_Base):
         # quantization_config = BitsAndBytesConfig(load_in_8bit=True)
 
         pl_model = MyTransformer(config=config, model_args=model_args,
-                                 # torch_dtype=torch.float16,
-                                 device_map="cuda:{}".format(device_id if device_id is None else 0),
-                                 quantization_config=quantization_config,
+                                 torch_dtype=torch.float16,
+                                 # device_map="cuda:{}".format(device_id if device_id is None else 0),
+                                 # quantization_config=quantization_config,
                                  )
         model = pl_model.get_llm_model()
 
-        # 已经量化
-        model.half()
-        model = model.eval()
+        if hasattr(model, 'is_loaded_in_4bit') or hasattr(model, 'is_loaded_in_8bit'):
+            model.eval().cuda()
+        else:
+            model.half().eval().cuda()
+            
         if device_id is None:
             model.cuda()
         else:
