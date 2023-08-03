@@ -4,10 +4,11 @@
 import os
 
 import torch
+from aigc_zoo.utils.streamgenerator import GenTextStreamer
 from deep_training.data_helper import ModelArguments,DataHelper
-from transformers import HfArgumentParser
-from aigc_zoo.model_zoo.chatglm2.llm_model import MyTransformer, ChatGLMTokenizer, LoraArguments, \
-    setup_model_profile, ChatGLMConfig
+from transformers import HfArgumentParser, BitsAndBytesConfig
+from aigc_zoo.model_zoo.qwen.llm_model import MyTransformer, QWenTokenizer, LoraArguments, \
+    setup_model_profile, QWenConfig
 from serving.model_handler.base import EngineAPI_Base
 from config.main import global_models_info_args
 from serving.model_handler.base.data_define import ChunkData
@@ -24,18 +25,27 @@ class EngineAPI(EngineAPI_Base):
         (model_args,) = parser.parse_dict(self.model_config_dict["model_config"], allow_extra_keys=True)
         setup_model_profile()
         dataHelper = NN_DataHelper(model_args)
-        tokenizer: ChatGLMTokenizer
+        tokenizer: QWenTokenizer
         tokenizer, config, _, _ = dataHelper.load_tokenizer_and_config(
-            tokenizer_class_name=ChatGLMTokenizer, config_class_name=ChatGLMConfig)
+            tokenizer_class_name=QWenTokenizer, config_class_name=QWenConfig)
 
-        pl_model = MyTransformer(config=config, model_args=model_args, torch_dtype=torch.float16, )
+        quantization_config = BitsAndBytesConfig(
+            load_in_4bit=True,
+            bnb_4bit_quant_type='nf4',
+            bnb_4bit_compute_dtype=torch.bfloat16
+        )
+        # # quantization configuration for Int8 (8 bits)
+        # quantization_config = BitsAndBytesConfig(load_in_8bit=True)
+
+        pl_model = MyTransformer(config=config, model_args=model_args,
+                                 # torch_dtype=torch.float16,
+                                 device_map="cuda:{}".format(device_id if device_id is None else 0),
+                                 quantization_config=quantization_config,
+                                 )
         model = pl_model.get_llm_model()
-        if not model.quantized:
-            # 按需修改，目前只支持 4/8 bit 量化 ， 可以保存量化模型
-            model.half().quantize(4)
-        else:
-            # 已经量化
-            model.half()
+
+        # 已经量化
+        model.half()
         model = model.eval()
         if device_id is None:
             model.cuda()
@@ -52,17 +62,17 @@ class EngineAPI(EngineAPI_Base):
         setup_model_profile()
 
         dataHelper = NN_DataHelper(model_args)
-        tokenizer: ChatGLMTokenizer
-        tokenizer, config, _, _ = dataHelper.load_tokenizer_and_config(tokenizer_class_name=ChatGLMTokenizer,
-                                                                       config_class_name=ChatGLMConfig)
+        tokenizer: QWenTokenizer
+        tokenizer, config, _, _ = dataHelper.load_tokenizer_and_config(
+            tokenizer_class_name=QWenTokenizer, config_class_name=QWenConfig)
 
         ckpt_dir = list(self.lora_conf.values())[0]
         if os.path.exists(os.path.join(ckpt_dir,'config.json')):
-            config = ChatGLMConfig.from_pretrained(ckpt_dir)
+            config = QWenConfig.from_pretrained(ckpt_dir)
         config.initializer_weight = False
         lora_args = LoraArguments.from_pretrained(ckpt_dir)
 
-        assert lora_args.inference_mode == True and config.pre_seq_len is None
+        assert lora_args.inference_mode == True
 
         new_num_tokens = config.vocab_size
         if config.task_specific_params is not None and config.task_specific_params.get('vocab_size', None) is not None:
@@ -82,10 +92,6 @@ class EngineAPI(EngineAPI_Base):
         if len(self.lora_conf) == 1:
             self.lora_model.merge_and_unload()
             self.lora_model.half().eval()
-            model = pl_model.get_llm_model()
-            if not model.quantized:
-                # 按需修改，目前只支持 4/8 bit 量化 ， 可以保存量化模型
-                model.quantize(4)
         else:
             self.lora_model = self.lora_model.half().eval()
 
@@ -99,32 +105,37 @@ class EngineAPI(EngineAPI_Base):
     def chat_stream(self, query, nchar=1,gtype='total', history=None, **kwargs):
         if history is None:
             history = []
+
         default_kwargs = dict(history=history,
-                              eos_token_id=self.model.config.eos_token_id,
                               do_sample=True, top_p=0.7, temperature=0.95,
+                              repetition_penalty=1.01,
                               )
+
         default_kwargs.update(kwargs)
 
-
         chunk = ChunkData()
-        chunk.idx = 0
-        n_id = 0
-        for response, history in self.model.stream_chat(self.tokenizer, query=query, **default_kwargs):
-            n_id += 1
-            chunk.text = response
-            if n_id % nchar == 0:
+        def process_token_fn(text, stream_end, chunk: ChunkData):
+            chunk.text += text
+            chunk.idx += 1
+            if chunk.idx % nchar == 0 or stream_end or chunk.idx == 1:
                 if gtype == 'total':
-                    yield (chunk.text, history)
+                    self.push_response(((chunk.text, history), 0, "ok", False))
+                    chunk.idx = 0
                 else:
-                    yield (chunk.text[chunk.idx:], history)
-                    chunk.idx = len(response)
+                    self.push_response(((chunk.text, history), 0, "ok", False))
+                    chunk.clear()
 
-        if gtype != 'total' and chunk.idx != len(chunk.text):
-            yield (chunk.text[chunk.idx:], history)
+        streamer = GenTextStreamer(process_token_fn, chunk, tokenizer=self.tokenizer)
+        _ = self.get_model().chat( tokenizer=self.tokenizer, streamer=streamer, query=query, **default_kwargs)
+        if gtype == 'total':
+            self.push_response(((chunk.text, history), 0, "ok", False))
+        self.push_response((('', history), 0, "ok", True))
+        return None
+
+
 
     def chat(self, query, **kwargs):
-        default_kwargs = dict(history=[], 
-            eos_token_id=self.model.config.eos_token_id,
+        default_kwargs = dict(history=[],
             do_sample=True, top_p=0.7, temperature=0.95,
         )
         default_kwargs.update(kwargs)
