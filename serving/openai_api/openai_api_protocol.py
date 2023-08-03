@@ -104,15 +104,18 @@ class ChatCompletionRequest(BaseModel):
             prefix = prev_messages.pop(0).content
         else:
             prefix = ""
+
+        flag = False
         history = []
         if len(prev_messages) % 2 == 0:
             for i in range(0, len(prev_messages), 2):
                 if prev_messages[i].role == Role.USER and prev_messages[i + 1].role == Role.ASSISTANT:
                     history.append({
-                        "q": prefix + prev_messages[i].content,
+                        "q": prefix + prev_messages[i].content if not flag else prev_messages[i].content ,
                         "a": prev_messages[i + 1].content
                     })
-        query = self.messages[-1].content
+                    flag = True
+        query = prefix + self.messages[-1].content if not flag else self.messages[-1].content
         return (query,history)
 
     def _update_params(self,r):
