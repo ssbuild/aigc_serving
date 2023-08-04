@@ -78,7 +78,7 @@ class EngineAPI(EngineAPI_Base):
 
         for adapter_name,ckpt_dir in self.lora_conf.items():
             pl_model.load_sft_weight(ckpt_dir, adapter_name=adapter_name)
-        self.lora_model = self.backbone
+        self.lora_model = pl_model.backbone
         if len(self.lora_conf) == 1:
             self.lora_model.merge_and_unload()
             self.lora_model.half().eval()
