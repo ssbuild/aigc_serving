@@ -12,6 +12,7 @@ chatglm_conf = {
             }
         ],
         
+        "auto_quantize": True, # 是否自动量化模型
         "model_config": {
             "model_type": "chatglm",
             "model_name_or_path": "/data/nlp/pre_models/torch/chatglm/chatglm-6b",
@@ -33,6 +34,7 @@ chatglm_conf = {
             }
         ],
         
+        "auto_quantize": True, # 是否自动量化模型
         "model_config": {
             "model_type": "chatglm",
             "model_name_or_path": "/data/nlp/pre_models/torch/chatglm/chatglm-6b-int4",
@@ -56,6 +58,7 @@ chatglm_conf = {
             }
         ],
         
+        "auto_quantize": True, # 是否自动量化模型
         "model_config": {
             "model_type": "chatglm2",
             "model_name_or_path": "/data/nlp/pre_models/torch/chatglm2/chatglm2-6b",
@@ -79,6 +82,7 @@ chatglm_conf = {
             }
         ],
         
+        "auto_quantize": True, # 是否自动量化模型
         "model_config": {
             "model_type": "chatglm2",
             "model_name_or_path": "/data/nlp/pre_models/torch/chatglm2/chatglm2-6b-int4",

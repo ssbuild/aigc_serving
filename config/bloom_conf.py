@@ -14,6 +14,7 @@ bloom_conf = {
             }
         ],
         
+        "auto_quantize": True, # 是否自动量化模型
         "model_config": {
             "model_type": "bloom",
             "model_name_or_path": "/data/nlp/pre_models/torch/bloom/bloom-560m",
@@ -36,6 +37,7 @@ bloom_conf = {
             }
         ],
         
+        "auto_quantize": True, # 是否自动量化模型
         "model_config": {
             "model_type": "bloom",
             "model_name_or_path": "/data/nlp/pre_models/torch/bloom/bloom-1b7",

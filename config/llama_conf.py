@@ -13,6 +13,7 @@ llama_conf  = {
             }
         ],
         
+        "auto_quantize": True, # 是否自动量化模型
         "model_config": {
             "model_type": "llama",
             "model_name_or_path": "/data/nlp/pre_models/torch/llama/llama-7b-hf",

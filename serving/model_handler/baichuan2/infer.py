@@ -54,16 +54,16 @@ class EngineAPI(EngineAPI_Base):
         model: BaichuanForCausalLM = pl_model.get_llm_model()
         model = model.eval()
         model.requires_grad_(False)
+
         if not model.quantized:
             # 按需修改，目前只支持 4/8 bit 量化 ， 可以保存量化模型
-            model.half().quantize(4).cuda()
-            model.config.quantization_bit = 4
-            # 保存量化权重
-            # model.save_pretrained('baichuan-13b-int4',max_shard_size="4GB")
-            # exit(0)
+            if self.auto_quantize:
+                model.half().quantize(4)
+            else:
+                model.half()
         else:
             # 已经量化
-            model.half().cuda()
+            model.half()
 
         if device_id is None:
             model.cuda()
@@ -108,7 +108,13 @@ class EngineAPI(EngineAPI_Base):
         self.lora_model = pl_model.backbone
         if len(self.lora_conf) == 1:
             self.lora_model.merge_and_unload()
-            self.lora_model.half().eval()
+            self.lora_model.eval()
+
+            model = self.lora_model
+            if self.auto_quantize:
+                model.half().quantize(4)
+            else:
+                model.half()
         else:
             self.lora_model = self.lora_model.half().eval()
 

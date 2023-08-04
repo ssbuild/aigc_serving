@@ -43,12 +43,22 @@ class EngineAPI(EngineAPI_Base):
                                  # quantization_config=quantization_config,
                                  )
         model = pl_model.get_llm_model()
+        model = model.eval()
+        # if hasattr(model, 'is_loaded_in_4bit') or hasattr(model, 'is_loaded_in_8bit'):
+        #     model.eval().cuda()
+        # else:
+        #     model.half().eval().cuda()
 
-        if hasattr(model, 'is_loaded_in_4bit') or hasattr(model, 'is_loaded_in_8bit'):
-            model.eval().cuda()
+        if not model.quantized:
+            # 按需修改，目前只支持 4/8 bit 量化 ， 可以保存量化模型
+            if self.auto_quantize:
+                model.half().quantize(4)
+            else:
+                model.half()
         else:
-            model.half().eval().cuda()
-            
+            # 已经量化
+            model.half()
+
         if device_id is None:
             model.cuda()
         else:
@@ -93,7 +103,13 @@ class EngineAPI(EngineAPI_Base):
         self.lora_model = pl_model.backbone
         if len(self.lora_conf) == 1:
             self.lora_model.merge_and_unload()
-            self.lora_model.half().eval()
+            self.lora_model.eval()
+
+            model = self.lora_model
+            if self.auto_quantize:
+                model.half().quantize(4)
+            else:
+                model.half()
         else:
             self.lora_model = self.lora_model.half().eval()
 

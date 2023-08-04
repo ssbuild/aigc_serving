@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # @Author  : ssbuild
 # @Time    : 2023/7/21 10:53
+import logging
 import os
 import time
 import traceback
@@ -15,6 +16,9 @@ from multiprocessing import Queue
 from deep_training.nlp.models.lora.v2 import LoraModel
 from serving.model_handler.base.data_define import WorkMode
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 class EngineAPI_Base(ABC):
     def __init__(self,model_config_dict,group_name="",worker_idx=0):
@@ -26,6 +30,7 @@ class EngineAPI_Base(ABC):
         self.model_ds = None
         self.model = None
 
+        self.auto_quantize = model_config_dict.get('auto_quantize',True)
         self.lora_model: typing.Optional[LoraModel] = None
         self.current_adapter_name = ''
         self.lora_conf = model_config_dict['model_config']['lora']
@@ -83,7 +88,7 @@ class EngineAPI_Base(ABC):
         if not skip_init:
             self.init_model()
         self._init_thead_generator()
-        print('serving ready')
+        logger.info('serving ready')
 
     def init_model(self, device_id=None):
         self.model_config_dict['seed'] = None
@@ -155,6 +160,7 @@ class EngineAPI_Base(ABC):
             self._q_out.put(data)
 
     def loop_forever(self,rank):
+        logging.info('serving is loaded , wait for serve...')
         while True:
             r = self.pull_request()
             try:
@@ -199,6 +205,7 @@ class EngineAPI_Base(ABC):
             self._thread_generator.start()
 
     def _loop_thread(self):
+        logging.info('serving is loaded , wait for serve...')
         while True:
             r = self.pull_request()
             try:

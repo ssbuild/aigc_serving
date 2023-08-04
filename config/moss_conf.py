@@ -14,6 +14,7 @@ moss_conf = {
             }
         ],
         
+        "auto_quantize": True, # 是否自动量化模型
         "model_config": {
             "model_type": "moss",
             "model_name_or_path": "/data/nlp/pre_models/torch/moss/moss-moon-003-sft-int4",
