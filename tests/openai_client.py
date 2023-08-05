@@ -12,14 +12,14 @@ model = "chatglm2-6b-int4"
 # print("Models:", models)
 
 # Test completion API
-stream = False
+stream = True
 
 data = {
     "model": model,
     "adapter_name": "default",
     "messages": [{"role": "user", "content": "你是谁"}],
     "top_p": 0.8,
-    "temperature": 0.95,
+    "temperature": 1.0,
     "frequency_penalty": 1.01,
     "stream": stream,
     "nchar": 1,# stream 字符

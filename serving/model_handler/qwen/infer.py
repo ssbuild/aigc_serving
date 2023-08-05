@@ -124,11 +124,23 @@ class EngineAPI(EngineAPI_Base):
         if history is None:
             history = []
 
-        default_kwargs = dict(history=history,
-                              do_sample=True, top_p=0.7, temperature=0.95,
-                              repetition_penalty=1.01,
-                              )
-
+        default_kwargs = {
+              "history": [],
+              "chat_format": "chatml",
+              "decay_bound": 0.0,
+              "decay_factor": 1.0,
+              "eos_token_id": 151643,
+              "factual_nucleus_sampling": False,
+              "max_context_size": 1024,
+              "max_generate_size": 512,
+              "max_new_tokens": 512,
+              "pad_token_id": 151643,
+              # "stop_words_ids": [[151643]],
+              "do_sample": True,
+              "top_k": 0,
+              "top_p": 0.8,
+              "transformers_version": "4.31.0"
+            }
         default_kwargs.update(kwargs)
 
         chunk = ChunkData()
@@ -143,8 +155,9 @@ class EngineAPI(EngineAPI_Base):
                     self.push_response(((chunk.text, history), 0, "ok", False))
                     chunk.clear()
 
-        streamer = GenTextStreamer(process_token_fn, chunk, tokenizer=self.tokenizer)
-        _ = self.get_model().chat( tokenizer=self.tokenizer, streamer=streamer, query=query, **default_kwargs)
+        skip_word_list = [self.tokenizer.im_end_id, self.tokenizer.im_start_id,self.tokenizer.eos_token_id]
+        streamer = GenTextStreamer(process_token_fn, chunk, tokenizer=self.tokenizer,skip_word_list=skip_word_list,skip_prompt=True)
+        _ = self.get_model().chat(tokenizer=self.tokenizer, streamer=streamer, query=query, **default_kwargs)
         if gtype == 'total':
             self.push_response(((chunk.text, history), 0, "ok", False))
         self.push_response((('', history), 0, "ok", True))
@@ -153,9 +166,23 @@ class EngineAPI(EngineAPI_Base):
 
 
     def chat(self, query, **kwargs):
-        default_kwargs = dict(history=[],
-            do_sample=True, top_p=0.7, temperature=0.95,
-        )
+        default_kwargs = {
+            "history": [],
+            "chat_format": "chatml",
+            "decay_bound": 0.0,
+            "decay_factor": 1.0,
+            "eos_token_id": 151643,
+            "factual_nucleus_sampling": False,
+            "max_context_size": 1024,
+            "max_generate_size": 512,
+            "max_new_tokens": 512,
+            "pad_token_id": 151643,
+            # "stop_words_ids": [[151643]],
+            "do_sample": True,
+            "top_k": 0,
+            "top_p": 0.8,
+            "transformers_version": "4.31.0"
+        }
         default_kwargs.update(kwargs)
         response, history = self.model.chat(self.tokenizer, query=query,  **default_kwargs)
         return response, history

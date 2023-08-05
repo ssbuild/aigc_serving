@@ -120,7 +120,8 @@ class EngineAPI(EngineAPI_Base):
                     self.push_response(((chunk.text, history), 0, "ok", False))
                     chunk.clear()
 
-        streamer = GenTextStreamer(process_token_fn,chunk,tokenizer=self.tokenizer)
+        skip_word_list = [self.tokenizer.eos_token_id]
+        streamer = GenTextStreamer(process_token_fn,chunk,tokenizer=self.tokenizer,skip_word_list=skip_word_list,skip_prompt=True)
         _ = Generate.generate(self.get_model(),tokenizer=self.tokenizer,streamer=streamer, query=prompt, **default_kwargs)
         if gtype == 'total':
             self.push_response(((chunk.text, history), 0, "ok", False))

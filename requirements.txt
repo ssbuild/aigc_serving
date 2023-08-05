@@ -1,4 +1,3 @@
-ipc-worker>=0.0.11
 pyzmq
 fastapi
 uvicorn
@@ -7,8 +6,8 @@ cpm_kernels
 tiktoken
 einops
 numpy-io >=0.0.8
+ipc-worker>=0.0.11
 deepspeed
-deep_training
 transformers_stream_generator
 bitsandbytes>=0.39
 git+https://github.com/ssbuild/aigc_zoo#egg=aigc_zoo
