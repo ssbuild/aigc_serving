@@ -160,10 +160,10 @@ class EngineAPI_Base(ABC):
 
     def loop_forever(self,rank):
         if self.rank == 0:
-            logging.info('=!=' * 30)
+            logging.info('=' * 30)
             logging.info(self.group_name)
             logging.info('\nserving is loaded , wait for serve...\n')
-            logging.info('=!=' * 30)
+            logging.info('=' * 30)
         while True:
             r = self.pull_request()
             try:
@@ -208,10 +208,10 @@ class EngineAPI_Base(ABC):
             self._thread_generator.start()
 
     def _loop_thread(self):
-        logging.info('=!=' * 30)
+        logging.info('=' * 30)
         logging.info(self.group_name)
         logging.info('\nserving is loaded , wait for serve...\n')
-        logging.info('=!=' * 30)
+        logging.info('=' * 30)
         while True:
             r = self.pull_request()
             try:
@@ -287,10 +287,7 @@ class EngineAPI_Base(ABC):
                         break
                 return None
 
-        result = []
-        msg = "ok"
-        code = 0
-
+        result, msg, code = [], "ok", 0
         try:
             params = r.get('params', {})
             query = r.get('query', "")
@@ -332,10 +329,7 @@ class EngineAPI_Base(ABC):
             if self.model_ds is None:
                 return [], -1, "ds_engine init failed",True
 
-        result = []
-        msg = "ok"
-        code = 0
-
+        result,msg,code = [],"ok",0
         method = r.get('method', "generate")
         method_fn = getattr(self, method)
         if method_fn is not None:

@@ -1,12 +1,11 @@
 # -*- coding: utf-8 -*-
-# @Time:  23:28
+# @Time:  16:57
 # @Author: tk
-# @File：serving
-
-import os
+# @File：api_serving
 import multiprocessing
+import os
 
-from serving.serve.http_serving_openai import HTTP_Serving
+from serving.serve.legal.http_serving_openai import HTTP_Serving
 from serving.workers import llm_worker
 from ipc_worker.ipc_zmq_loader import IPC_zmq, ZMQ_process_worker # noqa
 from config.main import global_models_info_args
@@ -44,7 +43,8 @@ def main():
 
     http_ = HTTP_Serving(queue_mapper,
                          http_ip='0.0.0.0',
-                         http_port=8081, )
+                         http_port=8081,
+                         http_num_workers=4,)
     http_.start()
     process_list.append(http_)
     try:
@@ -55,3 +55,4 @@ def main():
         for p in process_list:
             p.terminate()
     del evt_quit
+

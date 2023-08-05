@@ -21,10 +21,7 @@ from config.main import global_models_info_args
 from serving.openai_api.openai_api_protocol import ModelCard, ModelPermission, ModelList, ChatCompletionResponse, \
     ChatCompletionRequest, Role, ChatCompletionResponseChoice, UsageInfo, ChatMessage, Finish, \
     ChatCompletionResponseStreamChoice, DeltaMessage, ChatCompletionStreamResponse
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
+from serving.utils import logger
 
 
 

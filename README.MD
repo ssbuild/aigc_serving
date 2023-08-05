@@ -6,7 +6,7 @@
 
 ## update information
 ```text
-    08-05 aigc_zoo 最低版本0.1.13.post0
+    08-05 aigc_zoo 最低版本0.1.14 
     08-03 support qwen (千问）
     08-02 support muti lora infer , 手动升级 aigc_zoo , pip install -U git+https://github.com/ssbuild/aigc_zoo.git --force-reinstall --no-deps
     07-27 support openai client

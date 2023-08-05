@@ -6,7 +6,7 @@ cpm_kernels
 tiktoken
 einops
 numpy-io >=0.0.8
-ipc-worker>=0.0.11
+ipc-worker>=0.1.1
 deepspeed
 transformers_stream_generator
 bitsandbytes>=0.39

@@ -7,6 +7,7 @@ import time
 import traceback
 from ipc_worker.ipc_zmq_loader import IPC_zmq,ZMQ_process_worker  # noqa
 import copy
+from serving.utils import logger
 
 
 def get_worker_instance(model_name,config,group_name,worker_idx):
@@ -52,8 +53,7 @@ def get_worker_instance(model_name,config,group_name,worker_idx):
 class My_worker(ZMQ_process_worker):
     def __init__(self,model_name,config,*args,**kwargs):
         super(My_worker,self).__init__(*args,**kwargs)
-        self._logger.info('group name {} ,worker id {}'.format(self._group_name,self._idx))
-        self._logger.info(config)
+        logger.info('group name {} ,worker id {}'.format(self._group_name,self._idx))
         self.config = copy.deepcopy(config)
         self.model_name = model_name
         self.api_client = None
@@ -66,18 +66,23 @@ class My_worker(ZMQ_process_worker):
             if device_id is not None:
                 os.environ['CUDA_DEVICE_ORDER'] = "PCI_BUS_ID"
                 os.environ['CUDA_VISIBLE_DEVICES'] = ','.join([str(_) for _ in device_id])
-            self._logger.info('{} worker pid {}...'.format(self.model_name, os.getpid()))
+            logger.info('{} worker pid {}...'.format(self.model_name, os.getpid()))
             self.api_client = get_worker_instance(self.model_name, self.config,self._group_name, self._idx)
             self.api_client.init()
         except Exception as e:
             traceback.print_exc()
-            self._logger.error(e)
+            logger.error(e)
             self.api_client = None
             self.initial_error = str(e)
 
     # Process end trigger this func
     def run_end(self):
         print(self.model_name,' process ended....')
+        if getattr(self,'api_client',None) is not None:
+            try:
+                del self.api_client
+            except:
+                pass
 
     #any data put will trigger this func
     def run_once(self,request_data):
@@ -117,7 +122,7 @@ class My_worker(ZMQ_process_worker):
             traceback.print_exc()
             code = -1
             msg = str(e)
-            self._logger.info(e)
+            logger.info(e)
         end_time = time.time()
 
         ret = {
