@@ -25,7 +25,7 @@ def main():
     for model_name, config in global_models_info_args.items():
         if not config["enable"]:
             continue
-        group_name = 'serving_group_{}_1'.format(model_name)
+        group_name = 'ai_group_{}'.format(model_name)
         # group_name
         # manager is an agent  and act as a load balancing
         # worker is real doing your work

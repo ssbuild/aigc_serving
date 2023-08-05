@@ -14,7 +14,7 @@ qwen_conf = {
             }
         ],
 
-        "auto_quantize": True, # 是否自动量化模型
+        "auto_quantize": False, # 是否自动量化模型
         "model_config": {
             "model_type": "qwen",
             "model_name_or_path": "/data/nlp/pre_models/torch/qwen/Qwen-7B",
@@ -37,7 +37,7 @@ qwen_conf = {
             }
         ],
 
-        "auto_quantize": True, # 是否自动量化模型
+        "auto_quantize": False, # 是否自动量化模型
         "model_config": {
             "model_type": "qwen",
             "model_name_or_path": "/data/nlp/pre_models/torch/qwen/Qwen-7B-Chat",
@@ -61,7 +61,7 @@ qwen_conf = {
             }
         ],
 
-        "auto_quantize": True, # 是否自动量化模型
+        "auto_quantize": False, # 是否自动量化模型
         "model_config": {
             "model_type": "qwen",
             "model_name_or_path": "/data/nlp/pre_models/torch/qwen/qwen-7b-chat-int4",

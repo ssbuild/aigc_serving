@@ -13,7 +13,7 @@ internlm_conf = {
             }
         ],
         
-        "auto_quantize": True, # 是否自动量化模型
+        "auto_quantize": False, # 是否自动量化模型
         "model_config": {
             "model_type": "internlm",
             "model_name_or_path": "/data/nlp/pre_models/torch/internlm/internlm-chat-7b",
@@ -35,7 +35,7 @@ internlm_conf = {
             }
         ],
 
-        "auto_quantize": True,  # 是否自动量化模型
+        "auto_quantize": False,  # 是否自动量化模型
         "model_config": {
             "model_type": "internlm",
             "model_name_or_path": "/data/nlp/pre_models/torch/internlm/internlm-chat-7b-int4",

@@ -2,7 +2,7 @@
 # @Time:  18:46
 # @Author: tk
 # @File：constant_map
-import socket
+from config.utils.env_check import check_config
 from config.baichuan_conf import baichuan_config
 from config.bloom_conf import bloom_conf
 from config.chatglm_conf import chatglm_conf
@@ -20,7 +20,7 @@ __all__ = [
 
 # 资源充足可以全部启用 , 并导入 global_models_info_args
 global_models_info_args = {
-    **baichuan_config,
+    # **baichuan_config,
     # **bloom_conf,
     # **chatglm_conf,
     # **internlm_conf,
@@ -28,40 +28,13 @@ global_models_info_args = {
     # **moss_conf,
     # **opt_conf,
     # **rwkv_conf,
-    # **qwen_conf,
+     **qwen_conf,
 
 }
 
 
-def get_free_tcp_port():
-    """获取可用的端口"""
-    tcp = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    tcp.bind(("", 0))
-    _, port = tcp.getsockname()
-    tcp.close()
-    return port
+check_config(global_models_info_args)
 
 
 
-_is_check_deepseed = False
-for model_name,model_config in global_models_info_args.items():
-    if not model_config['enable']:
-        continue
-
-    if model_config['work_mode'] != 'deepspeed':
-        continue
-    workers = model_config['workers']
-    flag = False
-    for worker in workers:
-        if len(worker['device_id']) > 1:
-            flag = True
-            break
-    model_config['deepspeed'] = {}
-    conf = model_config['deepspeed']
-    if flag:
-        _is_check_deepseed = True
-        port = get_free_tcp_port()
-        conf["MASTER_ADDR"] = "127.0.0.1"
-        conf["MASTER_PORT"] = str(port)
-        conf["TORCH_CPP_LOG_LEVEL"] = "INFO"
 

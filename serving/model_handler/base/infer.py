@@ -118,9 +118,8 @@ class EngineAPI_Base(ABC):
             import deepspeed
             from deepspeed.inference.config import DeepSpeedInferenceConfig
             from deepspeed.inference.engine import InferenceEngine
-
             torch.cuda.set_device(rank)
-            dist.init_process_group("nccl", rank=rank, world_size=self.world_size,group_name=self.group_name)
+            dist.init_process_group("nccl", rank=rank, world_size=self.world_size,group_name=self.group_name + str(self.worker_idx))
             self.init_model()
             old_current_device_function = deepspeed.get_accelerator().current_device_name
             def tmp_current_device_fn():
@@ -160,7 +159,10 @@ class EngineAPI_Base(ABC):
             self._q_out.put(data)
 
     def loop_forever(self,rank):
-        logging.info('serving is loaded , wait for serve...')
+        if self.rank == 0:
+            logging.info('=!=' * 30)
+            logging.info('\nserving is loaded , wait for serve...\n')
+            logging.info('=!=' * 30)
         while True:
             r = self.pull_request()
             try:
@@ -183,7 +185,7 @@ class EngineAPI_Base(ABC):
 
 
     def _init_worker_ds(self):
-        os_conf = self.model_config_dict['deepspeed']
+        os_conf = self.model_config_dict['workers'][self.worker_idx]['deepspeed']
         for k,v in os_conf.items():
             os.environ[k] = v
         self._spawn_context = mp.spawn(self.worker_ds, nprocs=self.world_size, join=False)
@@ -205,7 +207,9 @@ class EngineAPI_Base(ABC):
             self._thread_generator.start()
 
     def _loop_thread(self):
-        logging.info('serving is loaded , wait for serve...')
+        logging.info('=!=' * 30)
+        logging.info('\nserving is loaded , wait for serve...\n')
+        logging.info('=!=' * 30)
         while True:
             r = self.pull_request()
             try:

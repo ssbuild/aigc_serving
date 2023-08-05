@@ -12,7 +12,7 @@ baichuan_config = {
                 "device_id": [0]  # 默认启动一个worker , 使用第一块显卡
             }
         ],
-        "auto_quantize": True, # 是否自动量化模型
+        "auto_quantize": False, # 是否自动量化模型
         "model_config": {
             "model_type": "baichuan",
             "model_name_or_path": "/data/nlp/pre_models/torch/baichuan/baichuan-7B",
@@ -34,7 +34,7 @@ baichuan_config = {
                 "device_id": [0]  # 默认启动一个worker , 使用第一块显卡
             }
         ],
-        "auto_quantize": True, # 是否自动量化模型
+        "auto_quantize": False, # 是否自动量化模型
         "model_config": {
             "model_type": "baichuan",
             "model_name_or_path": "/data/nlp/pre_models/torch/baichuan/Baichuan-13B-Chat",
@@ -56,7 +56,7 @@ baichuan_config = {
             }
         ],
 
-        "auto_quantize": True, # 是否自动量化模型
+        "auto_quantize": False, # 是否自动量化模型
         "model_config": {
             "model_type": "baichuan",
             "model_name_or_path": "/data/nlp/pre_models/torch/baichuan2/baichuan-13b-chat-int4",
