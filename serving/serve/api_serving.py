@@ -13,15 +13,6 @@ from serving.utils import logger
 class WokerLoader:
     def __init__(self,queue_mapper):
         self.queue_mapper = queue_mapper
-        tmp_dir = './tmp'
-        try:
-            shutil.rmtree(tmp_dir)
-            os.mkdir(tmp_dir)
-        except OSError as e:
-            logger.warning("warning: {0}; path: {1}".format(tmp_dir, e.strerror))
-            os.mkdir(tmp_dir)
-
-        os.environ['ZEROMQ_SOCK_TMP_DIR'] = tmp_dir
         self.evt_quit = multiprocessing.Manager().Event()
         self.process_list = []
 
