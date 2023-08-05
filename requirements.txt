@@ -4,6 +4,8 @@ fastapi
 uvicorn
 numpy
 cpm_kernels
+tiktoken
+einops
 numpy-io >=0.0.8
 deepspeed
 deep_training
