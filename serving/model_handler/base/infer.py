@@ -161,6 +161,7 @@ class EngineAPI_Base(ABC):
     def loop_forever(self,rank):
         if self.rank == 0:
             logging.info('=!=' * 30)
+            logging.info(self.group_name)
             logging.info('\nserving is loaded , wait for serve...\n')
             logging.info('=!=' * 30)
         while True:
@@ -208,6 +209,7 @@ class EngineAPI_Base(ABC):
 
     def _loop_thread(self):
         logging.info('=!=' * 30)
+        logging.info(self.group_name)
         logging.info('\nserving is loaded , wait for serve...\n')
         logging.info('=!=' * 30)
         while True:
