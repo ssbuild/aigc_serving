@@ -6,12 +6,13 @@ import os
 import shutil
 import signal
 import sys
-import time
-import uvicorn
 root_dir = os.path.join(os.path.dirname(__file__),"..")
 root_dir = os.path.abspath(root_dir)
 sys.path.append(root_dir)
 
+import time
+import uvicorn
+from config.main import global_serve_args
 from serving.utils import logger
 from serving.serve.api import global_instance,app
 
@@ -32,7 +33,7 @@ if __name__ == '__main__':
     os.environ['ZEROMQ_SOCK_TMP_DIR'] = tmp_dir
 
     global_instance().work_node.create()
-    config = uvicorn.Config(app, host='0.0.0.0', port=8081, workers=4, lifespan='off')
+    config = uvicorn.Config(app, lifespan='off',**global_serve_args)
     try:
         uvicorn.Server(config).run()
     except Exception as e:

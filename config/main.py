@@ -15,7 +15,8 @@ from config.qwen_conf import qwen_conf
 
 
 __all__ = [
-    'global_models_info_args'
+    'global_models_info_args',
+    'global_serve_args'
 ]
 
 # 资源充足可以全部启用 , 并导入 global_models_info_args
@@ -30,6 +31,12 @@ global_models_info_args = {
     # **rwkv_conf,
      **qwen_conf,
 
+}
+
+global_serve_args = {
+    "host": '0.0.0.0',
+    "port":8081,
+    "workers":4
 }
 
 
