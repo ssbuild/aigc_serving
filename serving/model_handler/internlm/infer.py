@@ -130,9 +130,11 @@ class EngineAPI(EngineAPI_Base):
             history = []
 
         default_kwargs = dict(history=history, eos_token_id=[2, 103028],
-                              do_sample=True, top_p=0.7, temperature=0.95,
-                              repetition_penalty=1.01,
-                              )
+                            max_new_tokens = 1024,
+                            do_sample = True,
+                            temperature = 0.8,
+                            top_p = 0.8,
+                            repetition_penalty=1.01,)
 
         default_kwargs.update(kwargs)
 
@@ -148,7 +150,7 @@ class EngineAPI(EngineAPI_Base):
                     self.push_response(((chunk.text, history), 0, "ok", False))
                     chunk.clear()
 
-        skip_word_list = [self.tokenizer.eos_token_id]
+        skip_word_list = [self.tokenizer.eos_token_id,2, 103028]
         streamer = GenTextStreamer(process_token_fn, chunk, tokenizer=self.tokenizer,skip_word_list=skip_word_list,skip_prompt=True)
         _ = self.get_model().chat( tokenizer=self.tokenizer, streamer=streamer, query=query, **default_kwargs)
         if gtype == 'total':
@@ -162,18 +164,23 @@ class EngineAPI(EngineAPI_Base):
             history = []
 
         default_kwargs = dict(history=history,eos_token_id=[2, 103028],
-                              do_sample=True, top_p=0.7, temperature=0.95,
-                              repetition_penalty=1.01,
-                              )
+                              max_new_tokens=1024,
+                              do_sample=True,
+                              temperature=0.8,
+                              top_p=0.8,
+                              repetition_penalty=1.01, )
         default_kwargs.update(kwargs)
         response, history = self.model.chat(self.tokenizer, query=query, **default_kwargs)
         return response, history
 
     def generate(self,input,**kwargs):
         default_kwargs = dict(eos_token_id = [2, 103028],
-            do_sample=True, top_p=0.7, temperature=0.95,
-            repetition_penalty=1.01,
-        )
+                              max_new_tokens=1024,
+                              do_sample=True,
+                              temperature=0.8,
+                              top_p=0.8,
+                              repetition_penalty=1.01, )
+
         default_kwargs.update(kwargs)
         output = self.model.chat(self.tokenizer, query=input, **default_kwargs)
         output_scores = default_kwargs.get('output_scores', False)
