@@ -8,12 +8,11 @@ import signal
 import sys
 import time
 import uvicorn
-from serving.utils import logger
-
 root_dir = os.path.join(os.path.dirname(__file__),"..")
 root_dir = os.path.abspath(root_dir)
 sys.path.append(root_dir)
 
+from serving.utils import logger
 from serving.serve.api import global_instance,app
 
 def remove_dir(path_dir):
