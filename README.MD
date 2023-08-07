@@ -6,6 +6,7 @@
 
 ## update information
 ```text
+    08-07 support llama llama2 量化推理 , 版本要求 deep_training 0.1.15.rc0
     08-05 aigc_zoo 最低版本0.1.14 
     08-03 support qwen (千问）
     08-02 support muti lora infer , 手动升级 aigc_zoo , pip install -U git+https://github.com/ssbuild/aigc_zoo.git --force-reinstall --no-deps
