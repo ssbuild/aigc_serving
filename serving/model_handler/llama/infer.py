@@ -13,12 +13,12 @@ from serving.model_handler.base import EngineAPI_Base
 from config.main import global_models_info_args
 from aigc_zoo.utils.streamgenerator import GenTextStreamer
 from serving.model_handler.base.data_define import ChunkData
-from transformers import AutoModelForCausalLM
 
 old_version = False
 try:
-    from deep_training.utils.hf import register_transformer_model
-    from deep_training.nlp.models.rellama.modeling_llama import ReLlamaForCausalLM
+    from transformers import AutoModelForCausalLM
+    from deep_training.utils.hf import register_transformer_model,register_transformer_config #noqa
+    from deep_training.nlp.models.rellama.modeling_llama import LlamaForCausalLM
 except:
     old_version = True
     pass
@@ -30,7 +30,7 @@ class NN_DataHelper(DataHelper):pass
 class EngineAPI(EngineAPI_Base):
     def _load_model(self,device_id=None):
         if not old_version:
-            register_transformer_model(ReLlamaForCausalLM, AutoModelForCausalLM)
+            register_transformer_model(LlamaForCausalLM, AutoModelForCausalLM)
         parser = HfArgumentParser((ModelArguments,))
         (model_args,) = parser.parse_dict(self.model_config_dict["model_config"], allow_extra_keys=True)
 
@@ -63,7 +63,7 @@ class EngineAPI(EngineAPI_Base):
 
     def _load_lora_model(self, device_id=None):
         if not old_version:
-            register_transformer_model(ReLlamaForCausalLM, AutoModelForCausalLM)
+            register_transformer_model(LlamaForCausalLM, AutoModelForCausalLM)
         parser = HfArgumentParser((ModelArguments,))
         (model_args,) = parser.parse_dict(self.model_config_dict["model_config"], allow_extra_keys=True)
 

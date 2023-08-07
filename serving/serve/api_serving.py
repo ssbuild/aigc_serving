@@ -4,7 +4,6 @@
 # @File：serving
 import os
 import multiprocessing
-import shutil
 from serving.workers import llm_worker
 from ipc_worker.ipc_zmq_loader import IPC_zmq, ZMQ_process_worker # noqa
 from config.main import global_models_info_args
