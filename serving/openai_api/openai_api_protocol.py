@@ -97,6 +97,7 @@ class ChatCompletionRequest(BaseModel):
     forced_eos_token_id: Optional[int] = None
     guidance_scale: Optional[float] = None
     low_memory: Optional[bool] = None
+    stop_words_ids: Optional[list] = None
 
     def build_query_history(self):
         prev_messages = self.messages[:-1]
@@ -153,6 +154,9 @@ class ChatCompletionRequest(BaseModel):
 
         if self.temperature is not None and self.temperature > 0:
             params["temperature"] = self.temperature
+
+        if self.stop_words_ids:
+            params["stop_words_ids"] = self.stop_words_ids
 
         if self.stream:
             params["gtype"] = self.gtype

@@ -78,7 +78,8 @@ def predict(input, chatbot, model, max_length, top_k, top_p, temperature, repeti
     data = {
         "model": model,
         "adapter_name": "default",
-        "messages": [{"role": "user", "content": prefix + input}],
+        "messages": [{"role": "system", "content": prefix } ,{"role": "user", "content": input} ],
+        # "messages": [{"role": "user", "content": prefix + input}],
         "top_p": top_p,
         "temperature": temperature,
         "frequency_penalty": repetition_penalty,

@@ -5,7 +5,7 @@
 import multiprocessing
 import os
 
-from serving.serve.legal.http_serving_openai import HTTP_Serving
+from serving.serve.legend.http_serving_openai import HTTP_Serving
 from serving.workers import llm_worker
 from ipc_worker.ipc_zmq_loader import IPC_zmq, ZMQ_process_worker # noqa
 from config.main import global_models_info_args

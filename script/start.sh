@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
-
-python ../serving/main.py
+base_path=$(cd `dirname $0`; pwd)
+python ${base_path}/../serving/main.py
