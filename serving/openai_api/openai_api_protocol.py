@@ -154,6 +154,9 @@ class ChatCompletionRequest(BaseModel):
         if self.temperature is not None and self.temperature > 0:
             params["temperature"] = self.temperature
 
+        if self.stop is not None:
+            params["stop"] = self.stop
+
         if self.stream:
             params["gtype"] = self.gtype
             params["nchar"] = self.nchar

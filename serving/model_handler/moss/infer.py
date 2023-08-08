@@ -9,7 +9,7 @@ from deep_training.data_helper import ModelArguments, DataArguments, DataHelper
 from transformers import HfArgumentParser
 from aigc_zoo.model_zoo.moss.llm_model import MyTransformer,MossConfig,MossTokenizer,LoraArguments,LoraModel
 from aigc_zoo.utils.moss_generate import Generate
-from serving.model_handler.base import EngineAPI_Base
+from serving.model_handler.base import EngineAPI_Base, preprocess_input_args,flat_input
 from config.main import global_models_info_args
 class NN_DataHelper(DataHelper):pass
 
@@ -87,6 +87,7 @@ class EngineAPI(EngineAPI_Base):
         return self.lora_model, config, tokenizer
 
     def chat(self, query, history=None, **kwargs):
+        preprocess_input_args(self.tokenizer, kwargs)
         if history is None:
             history = []
         prompt = ""

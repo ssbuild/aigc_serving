@@ -9,7 +9,7 @@ from deep_training.data_helper import ModelArguments,DataHelper
 from transformers import HfArgumentParser, BitsAndBytesConfig
 from aigc_zoo.model_zoo.qwen.llm_model import MyTransformer, QWenTokenizer, LoraArguments, \
     setup_model_profile, QWenConfig
-from serving.model_handler.base import EngineAPI_Base
+from serving.model_handler.base import EngineAPI_Base, preprocess_input_args,flat_input
 from config.main import global_models_info_args
 from serving.model_handler.base.data_define import ChunkData
 
@@ -121,6 +121,8 @@ class EngineAPI(EngineAPI_Base):
 
 
     def chat_stream(self, query, nchar=1,gtype='total', history=None, **kwargs):
+        preprocess_input_args(self.tokenizer, kwargs)
+
         if history is None:
             history = []
 
@@ -156,7 +158,7 @@ class EngineAPI(EngineAPI_Base):
                     chunk.clear()
 
         skip_word_list = [self.tokenizer.im_end_id, self.tokenizer.im_start_id,self.tokenizer.eos_token_id]
-        streamer = GenTextStreamer(process_token_fn, chunk, tokenizer=self.tokenizer,skip_word_list=skip_word_list,skip_prompt=True)
+        streamer = GenTextStreamer(process_token_fn, chunk, tokenizer=self.tokenizer,skip_word_list=flat_input(skip_word_list),skip_prompt=True)
         _ = self.get_model().chat(tokenizer=self.tokenizer, streamer=streamer, query=query, **default_kwargs)
         if gtype == 'total':
             self.push_response(((chunk.text, history), 0, "ok", False))
@@ -166,6 +168,7 @@ class EngineAPI(EngineAPI_Base):
 
 
     def chat(self, query, **kwargs):
+        preprocess_input_args(self.tokenizer, kwargs)
         default_kwargs = {
             "history": [],
             "chat_format": "chatml",

@@ -9,7 +9,7 @@ from deep_training.data_helper import ModelArguments, DataArguments, DataHelper
 from transformers import HfArgumentParser, TextStreamer
 from aigc_zoo.model_zoo.llm.llm_model import MyTransformer,LoraArguments,LoraModel,AutoConfig
 from aigc_zoo.utils.llm_generate import Generate
-from serving.model_handler.base import EngineAPI_Base
+from serving.model_handler.base import EngineAPI_Base, preprocess_input_args,flat_input
 from config.main import global_models_info_args
 from aigc_zoo.utils.streamgenerator import GenTextStreamer
 
@@ -85,6 +85,8 @@ class EngineAPI(EngineAPI_Base):
         return self.lora_model, config, tokenizer
 
     def chat_stream(self, query, nchar=1,gtype='total', history=None, **kwargs):
+        preprocess_input_args(self.tokenizer, kwargs)
+
         if history is None:
             history = []
         prompt = ""
@@ -111,8 +113,8 @@ class EngineAPI(EngineAPI_Base):
                     self.push_response(((chunk.text, history), 0, "ok", False))
                     chunk.clear()
 
-        skip_word_list = [self.tokenizer.eos_token_id]
-        streamer = GenTextStreamer(process_token_fn,chunk,tokenizer=self.tokenizer,skip_word_list=skip_word_list,skip_prompt=True)
+        skip_word_list = default_kwargs.get('eos_token_id',None) or [self.tokenizer.eos_token_id]
+        streamer = GenTextStreamer(process_token_fn,chunk,tokenizer=self.tokenizer,skip_word_list=flat_input(skip_word_list),skip_prompt=True)
         _ = Generate.generate(self.get_model(),tokenizer=self.tokenizer,streamer=streamer, query=prompt, **default_kwargs)
 
         if gtype == 'total':
@@ -122,6 +124,8 @@ class EngineAPI(EngineAPI_Base):
 
 
     def chat(self, query, history=None, **kwargs):
+        preprocess_input_args(self.tokenizer, kwargs)
+
         if history is None:
             history = []
         prompt = ""

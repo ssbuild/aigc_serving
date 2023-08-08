@@ -11,7 +11,7 @@ from transformers import HfArgumentParser, BitsAndBytesConfig
 from aigc_zoo.model_zoo.internlm.llm_model import MyTransformer,InternLMConfig,InternLMTokenizer,\
     InternLMForCausalLM,LoraArguments,LoraModel
 from aigc_zoo.utils.llm_generate import Generate
-from serving.model_handler.base import EngineAPI_Base
+from serving.model_handler.base import EngineAPI_Base, preprocess_input_args,flat_input
 from config.main import global_models_info_args
 from serving.model_handler.base.data_define import ChunkData
 
@@ -126,6 +126,7 @@ class EngineAPI(EngineAPI_Base):
         return response
 
     def chat_stream(self, query, nchar=1,gtype='total', history=None, **kwargs):
+        preprocess_input_args(self.tokenizer, kwargs)
         if history is None:
             history = []
 
@@ -151,7 +152,7 @@ class EngineAPI(EngineAPI_Base):
                     chunk.clear()
 
         skip_word_list = [self.tokenizer.eos_token_id,2, 103028]
-        streamer = GenTextStreamer(process_token_fn, chunk, tokenizer=self.tokenizer,skip_word_list=skip_word_list,skip_prompt=True)
+        streamer = GenTextStreamer(process_token_fn, chunk, tokenizer=self.tokenizer,skip_word_list=flat_input(skip_word_list),skip_prompt=True)
         _ = self.get_model().chat( tokenizer=self.tokenizer, streamer=streamer, query=query, **default_kwargs)
         if gtype == 'total':
             self.push_response(((chunk.text, history), 0, "ok", False))
@@ -160,6 +161,7 @@ class EngineAPI(EngineAPI_Base):
 
 
     def chat(self, query,history=None, **kwargs):
+        preprocess_input_args(self.tokenizer, kwargs)
         if history is None:
             history = []
 

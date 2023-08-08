@@ -10,7 +10,7 @@ from transformers import HfArgumentParser, BitsAndBytesConfig, GenerationConfig
 from aigc_zoo.model_zoo.baichuan.llm_model import MyTransformer,BaiChuanConfig,BaiChuanTokenizer,LoraArguments,LoraModel
 from aigc_zoo.utils.llm_generate import Generate
 from config.main import global_models_info_args
-from serving.model_handler.base import EngineAPI_Base
+from serving.model_handler.base import EngineAPI_Base,preprocess_input_args
 from serving.model_handler.base.data_define import ChunkData
 
 
@@ -105,6 +105,8 @@ class EngineAPI(EngineAPI_Base):
 
 
     def chat_stream(self,  query, nchar=1,gtype='total', history=None,**kwargs):
+        preprocess_input_args(self.tokenizer,kwargs)
+
         if history is None:
             history = []
         prompt = ""
@@ -159,6 +161,8 @@ class EngineAPI(EngineAPI_Base):
 
 
     def chat(self, query, history=None, **kwargs):
+        preprocess_input_args(self.tokenizer, kwargs)
+
         if history is None:
             history = []
         prompt = ""

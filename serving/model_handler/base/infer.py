@@ -15,6 +15,7 @@ import threading
 from multiprocessing import Queue
 from deep_training.nlp.models.lora.v2 import LoraModel
 from serving.model_handler.base.data_define import WorkMode
+from serving.model_handler.base.data_process import preprocess_input_args,flat_input # noqa
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()

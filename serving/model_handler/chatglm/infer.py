@@ -8,7 +8,7 @@ from deep_training.data_helper import ModelArguments,DataHelper
 from transformers import HfArgumentParser
 from aigc_zoo.model_zoo.chatglm.llm_model import MyTransformer, ChatGLMTokenizer, LoraArguments, setup_model_profile, \
     ChatGLMConfig,LoraModel
-from serving.model_handler.base import EngineAPI_Base
+from serving.model_handler.base import EngineAPI_Base, preprocess_input_args,flat_input
 from config.main import global_models_info_args
 from serving.model_handler.base.data_define import ChunkData
 
@@ -110,6 +110,8 @@ class EngineAPI(EngineAPI_Base):
 
 
     def chat_stream(self,query, nchar=1,gtype='total', history=None,**kwargs):
+        preprocess_input_args(self.tokenizer, kwargs)
+
         if history is None:
             history = []
         default_kwargs = dict(history=history,
@@ -133,7 +135,8 @@ class EngineAPI(EngineAPI_Base):
             yield (chunk.text[chunk.idx:], history)
 
     def chat(self,input,**kwargs):
-        default_kwargs = dict(history=[], 
+        preprocess_input_args(self.tokenizer, kwargs)
+        default_kwargs = dict(history=[],
             eos_token_id=self.model.config.eos_token_id,
             do_sample=True, top_p=0.7, temperature=0.95,
         )
