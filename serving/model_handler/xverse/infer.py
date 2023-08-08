@@ -8,20 +8,14 @@ import torch
 from deep_training.data_helper import ModelArguments, DataArguments, DataHelper
 from transformers import HfArgumentParser, TextStreamer
 from aigc_zoo.model_zoo.llm.llm_model import MyTransformer,LoraArguments,LoraModel,AutoConfig
-from aigc_zoo.utils.llm_generate import Generate
+from aigc_zoo.utils.xverse_generate import Generate
 from serving.model_handler.base import EngineAPI_Base
 from config.main import global_models_info_args
 from aigc_zoo.utils.streamgenerator import GenTextStreamer
 from serving.model_handler.base.data_define import ChunkData
-
-old_version = False
-try:
-    from transformers import AutoModelForCausalLM
-    from deep_training.utils.hf import register_transformer_model,register_transformer_config #noqa
-    from deep_training.nlp.models.rellama.modeling_llama import LlamaForCausalLM
-except:
-    old_version = True
-    pass
+from transformers import AutoModelForCausalLM
+from deep_training.utils.hf import register_transformer_model, register_transformer_config  # noqa
+from deep_training.nlp.models.xverse.modeling_xverse import XverseForCausalLM, XverseConfig
 
 class NN_DataHelper(DataHelper):pass
 
@@ -29,8 +23,8 @@ class NN_DataHelper(DataHelper):pass
 
 class EngineAPI(EngineAPI_Base):
     def _load_model(self,device_id=None):
-        if not old_version:
-            register_transformer_model(LlamaForCausalLM, AutoModelForCausalLM)
+        register_transformer_config(register_transformer_config)
+        register_transformer_model(XverseForCausalLM, AutoModelForCausalLM)
         parser = HfArgumentParser((ModelArguments,))
         (model_args,) = parser.parse_dict(self.model_config_dict["model_config"], allow_extra_keys=True)
 
@@ -62,8 +56,8 @@ class EngineAPI(EngineAPI_Base):
         return model, config, tokenizer
 
     def _load_lora_model(self, device_id=None):
-        if not old_version:
-            register_transformer_model(LlamaForCausalLM, AutoModelForCausalLM)
+        register_transformer_config(register_transformer_config)
+        register_transformer_model(XverseForCausalLM, AutoModelForCausalLM)
         parser = HfArgumentParser((ModelArguments,))
         (model_args,) = parser.parse_dict(self.model_config_dict["model_config"], allow_extra_keys=True)
 

@@ -3,7 +3,7 @@
 # @Time    : 2023/8/2 10:44
 
 
-llama_conf  = {
+llama_conf = {
     "llama-7b-hf": {
         "enable": False,
         "work_mode": "deepspeed",  # one of deepspeed,accelerate,hf

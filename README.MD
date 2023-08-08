@@ -6,6 +6,7 @@
 
 ## update information
 ```text
+    08-07 support xverse-13b , 版本要求 deep_training 0.1.15.rc2
     08-07 support llama llama2 量化推理 , 版本要求 deep_training 0.1.15.rc1
     08-05 aigc_zoo 最低版本0.1.14 
     08-03 support qwen (千问）
@@ -21,6 +22,18 @@
 
 ## install
 pip install -r requirements.txt
+
+
+## 最新的安装包
+ - [aigc-zoo](https://pypi.org/project/aigc-zoo/#history)
+ - [deep-training](https://pypi.org/project/deep-training/#history)
+
+```text
+ 安装顺序 
+ 先安装 aigc-zoo
+ 再安装 deep-training
+```
+
 
 
 

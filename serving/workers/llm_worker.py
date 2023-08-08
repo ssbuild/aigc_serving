@@ -28,6 +28,10 @@ def get_worker_instance(model_name,config,group_name,worker_idx):
         from serving.model_handler.chatglm.infer import EngineAPI
         api_client = EngineAPI(config,group_name=group_name,worker_idx=worker_idx)
 
+    elif model_name.startswith("xverse"):
+        from serving.model_handler.xverse.infer import EngineAPI
+        api_client = EngineAPI(config, group_name=group_name, worker_idx=worker_idx)
+
     elif model_name.startswith("llama"):
         from serving.model_handler.llama.infer import EngineAPI
         api_client = EngineAPI(config, group_name=group_name, worker_idx=worker_idx)
@@ -47,6 +51,7 @@ def get_worker_instance(model_name,config,group_name,worker_idx):
     elif model_name.startswith("rwkv"):
         from serving.model_handler.rwkv.infer import EngineAPI
         api_client = EngineAPI(config,group_name=group_name,worker_idx=worker_idx)
+
     elif model_name.startswith("qwen"):
         from serving.model_handler.qwen.infer import EngineAPI
         api_client = EngineAPI(config, group_name=group_name, worker_idx=worker_idx)
