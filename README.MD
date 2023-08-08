@@ -6,7 +6,7 @@
 
 ## update information
 ```text
-    08-07 support xverse-13b , 版本要求 deep_training 0.1.15.rc2
+    08-08 support xverse-13b , 版本要求 deep_training 0.1.15.rc2
     08-07 support llama llama2 量化推理 , 版本要求 deep_training 0.1.15.rc1
     08-05 aigc_zoo 最低版本0.1.14 
     08-03 support qwen (千问）
