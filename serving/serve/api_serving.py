@@ -125,7 +125,7 @@ def create_chat_completion(request: ChatCompletionRequest):
             return _openai_chat(request)
     except Exception as e:
         traceback.print_exc()
-        print(e)
+        logger.info(e)
         return HTTPException(status_code=501, detail=str(e))
 
 

@@ -312,11 +312,12 @@ class EngineAPI_Base(ABC):
             gen_results = self.chat_stream(query, history=history, **params)
             if gen_results is None:
                 return None
+            iter_: CompletionResult
             for iter_ in gen_results:
                 if self.work_mode == WorkMode.DS:
-                    self.push_response(ret._replace(code=code,result=iter_,msg=msg,complete=False))
+                    self.push_response(ret._replace(code=code,result=iter_.result,msg=msg,complete=False))
                 else:
-                    yield ret._replace(code=code,result=iter_,msg=msg,complete=False)
+                    yield ret._replace(code=code,result=iter_.result,msg=msg,complete=False)
             result = {}
             code = 0
         except Exception as e:
