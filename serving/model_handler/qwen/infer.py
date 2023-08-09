@@ -122,7 +122,6 @@ class EngineAPI(EngineAPI_Base):
 
     def chat_stream(self, query, nchar=1,gtype='total', history=None, **kwargs):
         preprocess_input_args(self.tokenizer, kwargs)
-
         if history is None:
             history = []
 
@@ -217,14 +216,14 @@ class EngineAPI(EngineAPI_Base):
         response, history = output
         return response
 
-if __name__ == '__main__':
-    api_client = EngineAPI(global_models_info_args['chatglm2-6b-int4'])
-    api_client.init()
-    text_list = [
-        "写一个诗歌，关于冬天",
-        "晚上睡不着应该怎么办",
-    ]
-    for input in text_list:
-        response = api_client.generate(input)
-        print("input", input)
-        print("response", response)
+# if __name__ == '__main__':
+#     api_client = EngineAPI(global_models_info_args['chatglm2-6b-int4'])
+#     api_client.init()
+#     text_list = [
+#         "写一个诗歌，关于冬天",
+#         "晚上睡不着应该怎么办",
+#     ]
+#     for input in text_list:
+#         response = api_client.generate(input)
+#         print("input", input)
+#         print("response", response)

@@ -14,7 +14,12 @@ def preprocess_input_args(tokenizer: PreTrainedTokenizer,args_dict: dict):
         eos_token_id = []
         for s in stop:
             if s is not None:
-                eos_token_id.append(tokenizer.encode(s,add_special_tokens=False))
+                token_ids = tokenizer.encode(s,add_special_tokens=False)
+                if isinstance(token_ids,list):
+                    eos_token_id.extend(token_ids)
+                else:
+                    eos_token_id.append(token_ids)
+
     elif isinstance(stop,str):
         eos_token_id = tokenizer.encode(stop,add_special_tokens=False)
 

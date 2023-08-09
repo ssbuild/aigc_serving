@@ -12,7 +12,7 @@ model = "qwen-7b-chat-int4"
 # print("Models:", models)
 
 # Test completion API
-stream = False
+stream = True
 
 data = {
     "model": model,
