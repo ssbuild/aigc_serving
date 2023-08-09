@@ -12,7 +12,7 @@ from aigc_zoo.utils.llm_generate import Generate
 from serving.model_handler.base import EngineAPI_Base, preprocess_input_args,flat_input
 from config.main import global_models_info_args
 from aigc_zoo.utils.streamgenerator import GenTextStreamer
-from serving.model_handler.base import CompletionResult,ChunkData
+from serving.model_handler.base import CompletionResult,ChunkData,preprocess_input_args,postprocess_input_args
 
 old_version = False
 try:
@@ -132,6 +132,7 @@ class EngineAPI(EngineAPI_Base):
             do_sample=True, top_p=0.7, temperature=0.95,
         )
         default_kwargs.update(kwargs)
+        postprocess_input_args(self.tokenizer,default_kwargs)
         chunk = ChunkData()
         chunk.n_id = 0
         def process_token_fn(text,stream_end,chunk: ChunkData):
@@ -187,6 +188,7 @@ class EngineAPI(EngineAPI_Base):
             do_sample=True, top_p=0.7, temperature=0.95,
         )
         default_kwargs.update(kwargs)
+        postprocess_input_args(self.tokenizer,default_kwargs)
         response = Generate.generate(self.get_model(),
                                      tokenizer=self.tokenizer,
                                      query=prompt, **kwargs)
@@ -204,6 +206,7 @@ class EngineAPI(EngineAPI_Base):
             do_sample=True, top_p=0.7, temperature=0.95,
         )
         default_kwargs.update(kwargs)
+        postprocess_input_args(self.tokenizer,default_kwargs)
         response = Generate.generate(self.get_model(),
                                      tokenizer=self.tokenizer,
                                      query=input,**kwargs)

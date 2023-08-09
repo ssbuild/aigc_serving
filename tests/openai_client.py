@@ -24,7 +24,7 @@ data = {
     "stream": stream,
     "nchar": 1,# stream 字符
     "n": 1, # 返回 n 个choices
-    # "stop": ["Observation:","Observation:\n"]
+    "stop": ["Observation:","Observation:\n"]
 }
 
 

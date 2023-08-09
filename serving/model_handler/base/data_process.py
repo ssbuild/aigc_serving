@@ -90,6 +90,10 @@ class StopWordsLogitsProcessor(LogitsProcessor):
         return stopped_samples
 
 def preprocess_input_args(tokenizer: PreTrainedTokenizer,args_dict: dict):
+    return args_dict
+
+
+def postprocess_input_args(tokenizer: PreTrainedTokenizer,args_dict: dict):
     stop = args_dict.pop('stop',None)
     if stop is None:
         return args_dict
@@ -119,7 +123,6 @@ def preprocess_input_args(tokenizer: PreTrainedTokenizer,args_dict: dict):
     if len(logits_processor):
         args_dict["logits_processor"] = logits_processor
     return args_dict
-
 
 def flat_input(ids: typing.Union[typing.List,int]):
     if isinstance(ids,int):

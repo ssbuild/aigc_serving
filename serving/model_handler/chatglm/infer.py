@@ -10,7 +10,7 @@ from aigc_zoo.model_zoo.chatglm.llm_model import MyTransformer, ChatGLMTokenizer
     ChatGLMConfig,LoraModel
 from serving.model_handler.base import EngineAPI_Base, preprocess_input_args,flat_input
 from config.main import global_models_info_args
-from serving.model_handler.base import CompletionResult,ChunkData
+from serving.model_handler.base import CompletionResult,ChunkData,preprocess_input_args,postprocess_input_args
 
 
 class NN_DataHelper(DataHelper):pass
@@ -118,6 +118,7 @@ class EngineAPI(EngineAPI_Base):
                               do_sample=True, top_p=0.7, temperature=0.95,
                               )
         default_kwargs.update(kwargs)
+        postprocess_input_args(self.tokenizer,default_kwargs)
         chunk = ChunkData()
         chunk.idx = 0
         n_id = 0
@@ -152,6 +153,7 @@ class EngineAPI(EngineAPI_Base):
             do_sample=True, top_p=0.7, temperature=0.95,
         )
         default_kwargs.update(kwargs)
+        postprocess_input_args(self.tokenizer,default_kwargs)
         response, history = self.model.chat(self.tokenizer, query=input,  **kwargs)
         return CompletionResult(result={
             "response": response,
@@ -164,6 +166,7 @@ class EngineAPI(EngineAPI_Base):
             do_sample=True, top_p=0.7, temperature=0.95,
         )
         default_kwargs.update(kwargs)
+        postprocess_input_args(self.tokenizer,default_kwargs)
         # response, history = self.model.chat(self.tokenizer, query=input,  **kwargs)
         output = self.model.chat(self.tokenizer, query=input, **default_kwargs)
         output_scores = default_kwargs.get('output_scores', False)

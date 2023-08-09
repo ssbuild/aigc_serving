@@ -10,8 +10,8 @@ from transformers import HfArgumentParser, BitsAndBytesConfig, GenerationConfig
 from aigc_zoo.model_zoo.baichuan.llm_model import MyTransformer,BaiChuanConfig,BaiChuanTokenizer,LoraArguments,LoraModel
 from aigc_zoo.utils.llm_generate import Generate
 from config.main import global_models_info_args
-from serving.model_handler.base import EngineAPI_Base,preprocess_input_args
-from serving.model_handler.base import CompletionResult,ChunkData
+from serving.model_handler.base import EngineAPI_Base
+from serving.model_handler.base import CompletionResult,ChunkData,preprocess_input_args,postprocess_input_args
 
 class NN_DataHelper(DataHelper):pass
 
@@ -119,6 +119,7 @@ class EngineAPI(EngineAPI_Base):
                               repetition_penalty=1.1,
                               )
         default_kwargs.update(kwargs)
+        postprocess_input_args(self.tokenizer,default_kwargs)
         generation_config = GenerationConfig(**default_kwargs)
 
         prompt = query
@@ -186,6 +187,7 @@ class EngineAPI(EngineAPI_Base):
             do_sample=True, top_p=0.7, temperature=0.95,
         )
         default_kwargs.update(kwargs)
+        postprocess_input_args(self.tokenizer,default_kwargs)
         response = Generate.generate(self.get_model(),
                                      tokenizer=self.tokenizer,
                                      query=prompt, **kwargs)
@@ -202,6 +204,7 @@ class EngineAPI(EngineAPI_Base):
             do_sample=True, top_p=0.7, temperature=0.95,
         )
         default_kwargs.update(kwargs)
+        postprocess_input_args(self.tokenizer,default_kwargs)
         response = Generate.generate(self.get_model(),
                                      tokenizer=self.tokenizer,
                                      query=input,**default_kwargs)

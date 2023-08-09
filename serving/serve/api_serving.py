@@ -104,7 +104,7 @@ async def list_models():
 def create_chat_completion(request: ChatCompletionRequest):
     self = global_instance()
     try:
-        logger.info(request)
+        logger.info(request.json(indent=2,ensure_ascii=False))
         if len(request.messages) == 0:
             raise ValueError("Invalid parameters")
 

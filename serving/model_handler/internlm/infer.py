@@ -13,7 +13,7 @@ from aigc_zoo.model_zoo.internlm.llm_model import MyTransformer,InternLMConfig,I
 from aigc_zoo.utils.llm_generate import Generate
 from serving.model_handler.base import EngineAPI_Base, preprocess_input_args,flat_input
 from config.main import global_models_info_args
-from serving.model_handler.base import CompletionResult,ChunkData
+from serving.model_handler.base import CompletionResult,ChunkData,preprocess_input_args,postprocess_input_args
 
 
 class NN_DataHelper(DataHelper):pass
@@ -138,6 +138,7 @@ class EngineAPI(EngineAPI_Base):
                             repetition_penalty=1.01,)
 
         default_kwargs.update(kwargs)
+        postprocess_input_args(self.tokenizer,default_kwargs)
 
         chunk = ChunkData()
         chunk.n_id = 0
@@ -190,6 +191,7 @@ class EngineAPI(EngineAPI_Base):
                               top_p=0.8,
                               repetition_penalty=1.01, )
         default_kwargs.update(kwargs)
+        postprocess_input_args(self.tokenizer,default_kwargs)
         response, history = self.model.chat(self.tokenizer, query=query, **default_kwargs)
         return CompletionResult(result={
             "response": response,
@@ -205,6 +207,7 @@ class EngineAPI(EngineAPI_Base):
                               repetition_penalty=1.01, )
 
         default_kwargs.update(kwargs)
+        postprocess_input_args(self.tokenizer,default_kwargs)
         output = self.model.chat(self.tokenizer, query=input, **default_kwargs)
         output_scores = default_kwargs.get('output_scores', False)
         if output_scores:

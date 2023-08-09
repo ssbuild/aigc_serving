@@ -11,7 +11,7 @@ from aigc_zoo.model_zoo.baichuan2.llm_model import MyTransformer,BaichuanConfig,
 from aigc_zoo.utils.llm_generate import Generate
 from serving.model_handler.base import EngineAPI_Base, preprocess_input_args,flat_input
 from config.main import global_models_info_args
-from serving.model_handler.base import CompletionResult,ChunkData
+from serving.model_handler.base import CompletionResult,ChunkData,preprocess_input_args,postprocess_input_args
 
 
 class NN_DataHelper(DataHelper):pass
@@ -154,6 +154,7 @@ class EngineAPI(EngineAPI_Base):
                               repetition_penalty=1.1,
                               )
         default_kwargs.update(kwargs)
+        postprocess_input_args(self.tokenizer,default_kwargs)
         generation_config = GenerationConfig(**default_kwargs)
 
 
@@ -204,6 +205,7 @@ class EngineAPI(EngineAPI_Base):
                               repetition_penalty=1.1,
                               )
         default_kwargs.update(kwargs)
+        postprocess_input_args(self.tokenizer,default_kwargs)
         generation_config = GenerationConfig(**default_kwargs)
         response = self.get_model().chat(tokenizer=self.tokenizer,
                                          messages=messages,
@@ -223,6 +225,7 @@ class EngineAPI(EngineAPI_Base):
             repetition_penalty=1.1,
         )
         default_kwargs.update(kwargs)
+        postprocess_input_args(self.tokenizer,default_kwargs)
         response = Generate.generate(self.get_model(),
                                      tokenizer=self.tokenizer,
                                      query=input,**default_kwargs)

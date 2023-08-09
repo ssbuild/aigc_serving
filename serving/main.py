@@ -11,6 +11,7 @@ root_dir = os.path.abspath(root_dir)
 sys.path.append(root_dir)
 
 import time
+
 import uvicorn
 from config.main import global_serve_args
 from serving.utils import logger
@@ -31,6 +32,9 @@ if __name__ == '__main__':
     tmp_dir = './tmp'
     remove_dir(tmp_dir)
     os.environ['ZEROMQ_SOCK_TMP_DIR'] = tmp_dir
+
+    # import multiprocessing
+    # multiprocessing.set_start_method('spawn')
 
     global_instance().work_node.create()
     config = uvicorn.Config(app, **global_serve_args,lifespan='off')
