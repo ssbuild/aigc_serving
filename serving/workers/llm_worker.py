@@ -5,10 +5,12 @@ import os
 import sys
 import time
 import traceback
+import typing
+
 from ipc_worker.ipc_zmq_loader import IPC_zmq,ZMQ_process_worker  # noqa
 import copy
 from serving.utils import logger
-
+from serving.model_handler.base import CompletionResult
 
 def get_worker_instance(model_name,config,group_name,worker_idx):
     model_name: str = model_name.lower()
@@ -96,51 +98,47 @@ class My_worker(ZMQ_process_worker):
     #any data put will trigger this func
     def run_once(self,request_data):
         r = request_data
-        result = None
         start_time = time.time()
         try:
             if self.initial_error is None:
                 method = r.get('method', "generate")
                 if method == 'chat_stream':
                     gen = self.api_client.trigger_generator(r)
-                    for node_result in gen:
-                        result, code, msg, complte_flag = node_result
+                    node: typing.Optional[CompletionResult]
+                    for node in gen:
                         end_time = time.time()
                         ret = {
-                            "code": code,
+                            "code": node.code,
                             "runtime": (end_time - start_time) * 1000,
-                            "msg": msg,
-                            "complete": complte_flag
+                            "msg": node.msg,
+                            "complete": node.complete
                         }
-                        if code == 0:
-                            if isinstance(result,dict):
-                                ret.update(result)
+                        if node.code == 0:
+                            if isinstance(node.result,dict):
+                                ret.update(node.result)
                             else:
-                                ret["response"] = result
+                                ret["response"] = node.result
                         yield ret
                     return None
                 else:
-                    result,code,msg,complte_flag = self.api_client.trigger(r)
+                    node = self.api_client.trigger(r)
             else:
-                code = -1
-                msg = self.initial_error
+                node = CompletionResult(code=-1,msg=self.initial_error)
         except Exception as e:
             traceback.print_exc()
-            code = -1
-            msg = str(e)
             logger.info(e)
+            node = CompletionResult(code=-1, msg=str(e))
         end_time = time.time()
-
         ret = {
-            "code": code,
+            "code": node.code,
             "runtime": (end_time - start_time) * 1000,
-            "msg": msg,
+            "msg": node.msg,
             "complete": True
         }
-        if code == 0:
-            if isinstance(result, dict):
-                ret.update(result)
+        if node.code == 0:
+            if isinstance(node.result, dict):
+                ret.update(node.result)
             else:
-                ret["response"] = result
+                ret["response"] = node.result
         yield ret
 

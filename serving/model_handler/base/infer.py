@@ -16,6 +16,7 @@ from multiprocessing import Queue
 from deep_training.nlp.models.lora.v2 import LoraModel
 from serving.model_handler.base.data_define import WorkMode
 from serving.model_handler.base.data_process import preprocess_input_args,flat_input # noqa
+from serving.model_handler.base.data_define import CompletionResult # noqa
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
@@ -165,6 +166,7 @@ class EngineAPI_Base(ABC):
             logging.info(self.group_name)
             logging.info('\nserving is loaded , wait for serve...\n')
             logging.info('=' * 30)
+
         while True:
             r = self.pull_request()
             try:
@@ -173,16 +175,15 @@ class EngineAPI_Base(ABC):
                         self.push_response(item)
                     continue
                 else:
-                    result, code, msg,complete_flag = self.trigger(r=r, is_first=False)
+                    ret = self.trigger(r=r, is_first=False)
             except KeyboardInterrupt:
                 break
             except Exception as e:
-                result = None
-                code = -1
-                msg = str(e)
-                complete_flag = True
+                traceback.print_exc()
+                logger.error(e)
+                ret = CompletionResult(code=-1,result=None,msg=str(e),complete=True)
             if rank == 0:
-                self.push_response((result, code, msg, complete_flag))
+                self.push_response(ret)
 
 
 
@@ -222,11 +223,11 @@ class EngineAPI_Base(ABC):
             except KeyboardInterrupt:
                 break
             except Exception as e:
-                result = None
-                code = -1
-                msg = str(e)
-                complete_flag = True
-                self.push_response((result, code, msg, complete_flag))
+                traceback.print_exc()
+                logger.error(e)
+
+                ret = CompletionResult(code=-1,result=None,msg=str(e),complete=True)
+                self.push_response(ret)
 
     def infer_auto_device_map(self):
         from accelerate.utils import get_balanced_memory, infer_auto_device_map
@@ -265,6 +266,7 @@ class EngineAPI_Base(ABC):
         return 0,'ok'
 
     def trigger_generator(self ,r: typing.Dict,is_first=True):
+        ret = CompletionResult()
         if self.work_mode == WorkMode.DS:
             if is_first:
                 for i in range(self.world_size):
@@ -272,23 +274,23 @@ class EngineAPI_Base(ABC):
                 while True:
                     result_tuple = self.pull_response()
                     yield result_tuple
-                    if result_tuple[-1]:
+                    if result_tuple.complete:
                         break
                 return None
 
             if self.model_ds is None:
-                yield {}, -1, "ds_engine init failed",True
+                yield ret._replace(code=-1,result=None,msg="ds_engine init failed",complete=True)
         else:
             if is_first:
                 self.push_request(r)
                 while True:
                     result_tuple = self.pull_response()
                     yield result_tuple
-                    if result_tuple[-1]:
+                    if result_tuple.complete:
                         break
                 return None
 
-        result, msg, code = {}, "ok", 0
+
         try:
             params = r.get('params', {})
             query = r.get('query', "")
@@ -298,17 +300,16 @@ class EngineAPI_Base(ABC):
             adapter_name = params.pop('adapter_name', 'default')
             code, msg = self.switch_lora(adapter_name)
             if code != 0:
-                yield result,code,msg,True
+                yield ret._replace(code=code,result=None,msg=msg,complete=True)
 
             gen_results = self.chat_stream(query, history=history, **params)
             if gen_results is None:
                 return None
-            for results in gen_results:
-                result = results[0]
+            for iter_ in gen_results:
                 if self.work_mode == WorkMode.DS:
-                    self.push_response((result, code, msg, False))
+                    self.push_response(ret._replace(code=code,result=iter_,msg=msg,complete=False))
                 else:
-                    yield result, code, msg, False
+                    yield ret._replace(code=code,result=iter_,msg=msg,complete=False)
             result = {}
             code = 0
         except Exception as e:
@@ -316,10 +317,12 @@ class EngineAPI_Base(ABC):
             logger.error(e)
             code = -1
             msg = str(e)
-        yield result,code,msg,True
+            result = None
+        yield ret._replace(code=code,result=result,msg=msg,complete=True)
 
 
     def trigger(self ,r: typing.Dict,is_first=True):
+        ret = CompletionResult(complete=True)
         if self.work_mode == WorkMode.DS:
             if is_first:
                 for i in range(self.world_size):
@@ -328,33 +331,31 @@ class EngineAPI_Base(ABC):
                 return result_tuple
 
             if self.model_ds is None:
-                return {}, -1, "ds_engine init failed",True
+                return ret._replace(code=-1, msg="ds_engine init failed")
 
-        result,msg,code = [],"ok",0
         method_fn = getattr(self, "chat")
         if method_fn is not None:
             params = r.get('params', {})
             if not isinstance(params, dict):
-                code = -1
-                msg = "params error"
-                return result, code, msg,True
+                return ret._replace(code=-1,msg="params error")
 
             adapter_name = params.pop('adapter_name','default')
             code,msg = self.switch_lora(adapter_name)
             if code != 0:
-                return result, code, msg, True
+                return ret._replace(code=-1,msg=msg)
 
             query = r.get('query', "")
             history = r.get('history', [])
             history = [(_["q"], _["a"]) for _ in history]
-            result = method_fn(query, history=history, **params)
+            node:CompletionResult = method_fn(query, history=history, **params)
             # history = [{"q": _[0], "a": _[1]} for _ in results["history"]]
             result = {
-                "response": result["response"],
+                "response": node.result["response"],
                 # "history": history,
-                "num_token": result.get('num_token',result["response"])
+                "num_token": node.result.get('num_token',node.result["response"])
             }
         else:
             code = -1
             msg = "{} not exist method {}".format(self.model_config_dict['model_config']['model_type'], "chat")
-        return result,code,msg,True
+            result = None
+        return ret._replace(code=code,result=result, msg=msg)

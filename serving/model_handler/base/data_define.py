@@ -5,6 +5,7 @@ import multiprocessing
 from enum import Enum
 from multiprocessing import queues
 from threading import RLock
+from collections import namedtuple
 
 class WorkMode(Enum):
     STANDORD_HF = 0
@@ -17,6 +18,10 @@ class ChunkData:
 
     def clear(self):
         self.text = ''
+
+CompletionResult = namedtuple('CompletionResult', ['code', 'result','msg','complete'],defaults=(0,{},"ok",True))
+
+
 
 class QueueData:
     def __init__(self,maxsize=0):

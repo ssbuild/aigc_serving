@@ -11,8 +11,7 @@ from aigc_zoo.model_zoo.baichuan.llm_model import MyTransformer,BaiChuanConfig,B
 from aigc_zoo.utils.llm_generate import Generate
 from config.main import global_models_info_args
 from serving.model_handler.base import EngineAPI_Base,preprocess_input_args
-from serving.model_handler.base.data_define import ChunkData
-
+from serving.model_handler.base import CompletionResult,ChunkData
 
 class NN_DataHelper(DataHelper):pass
 
@@ -137,36 +136,36 @@ class EngineAPI(EngineAPI_Base):
                 outputs.append(token.item())
                 yield self.tokenizer.decode(outputs, skip_special_tokens=True)
 
+
         chunk = ChunkData()
         chunk.idx = 0
         n_id = 0
-
         response = None
         for response in stream_generator():
             n_id += 1
             chunk.text = response
             if n_id % nchar == 0:
                 if gtype == 'total':
-                    yield {
+                    yield CompletionResult(result={
                         "response": chunk.text,
                         "history": history,
                         "num_token": n_id
-                    }
+                    },complete=False)
                 else:
-                    yield {
+                    yield CompletionResult(result={
                         "response": chunk.text[chunk.idx:],
                         "history": history,
                         "num_token": n_id
-                    }
+                    },complete=False)
                     chunk.idx = len(response)
 
         history = history + [(query, response)]
         if gtype != 'total' and chunk.idx != len(chunk.text):
-            yield {
+            yield CompletionResult(result={
                 "response": chunk.text[chunk.idx:],
                 "history": history,
                 "num_token": n_id
-            }
+            },complete=False)
 
 
 
@@ -191,10 +190,10 @@ class EngineAPI(EngineAPI_Base):
                                      tokenizer=self.tokenizer,
                                      query=prompt, **kwargs)
         history = history + [(query, response)]
-        return {
+        return CompletionResult(result={
             "response": response,
             "history": history
-        }
+        })
 
     def generate(self,input,**kwargs):
         default_kwargs = dict(

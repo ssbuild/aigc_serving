@@ -11,7 +11,7 @@ from aigc_zoo.model_zoo.baichuan2.llm_model import MyTransformer,BaichuanConfig,
 from aigc_zoo.utils.llm_generate import Generate
 from serving.model_handler.base import EngineAPI_Base, preprocess_input_args,flat_input
 from config.main import global_models_info_args
-from serving.model_handler.base.data_define import ChunkData
+from serving.model_handler.base import CompletionResult,ChunkData
 
 
 class NN_DataHelper(DataHelper):pass
@@ -170,27 +170,27 @@ class EngineAPI(EngineAPI_Base):
             chunk.text = response
             if n_id % nchar == 0:
                 if gtype == 'total':
-                    yield {
+                    yield CompletionResult(result={
                         "response": chunk.text,
                         "history": history,
                         "num_token": n_id
-                    }
+                    },complete=False)
                 else:
-                    yield {
+                    yield CompletionResult(result={
                         "response": chunk.text[chunk.idx:],
                         "history": history,
                         "num_token": n_id
-                    }
+                    },complete=False)
                     chunk.idx = len(response)
 
         history = history + [(query, response)]
 
         if gtype != 'total' and chunk.idx != len(chunk.text):
-            yield {
+            yield CompletionResult(result={
                 "response": chunk.text[chunk.idx:],
                 "history": history,
                 "num_token": n_id
-            }
+            },complete=False)
 
 
     def chat(self, query, history=None, **kwargs):
@@ -209,10 +209,10 @@ class EngineAPI(EngineAPI_Base):
                                          messages=messages,
                                          generation_config=generation_config)
         history = history + [(query, response)]
-        return {
+        return CompletionResult(result={
             "response": response,
             "history": history
-        }
+        })
 
 
 

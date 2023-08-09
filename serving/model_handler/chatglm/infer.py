@@ -10,7 +10,7 @@ from aigc_zoo.model_zoo.chatglm.llm_model import MyTransformer, ChatGLMTokenizer
     ChatGLMConfig,LoraModel
 from serving.model_handler.base import EngineAPI_Base, preprocess_input_args,flat_input
 from config.main import global_models_info_args
-from serving.model_handler.base.data_define import ChunkData
+from serving.model_handler.base import CompletionResult,ChunkData
 
 
 class NN_DataHelper(DataHelper):pass
@@ -125,25 +125,25 @@ class EngineAPI(EngineAPI_Base):
             n_id += 1
             if n_id % nchar == 0:
                 if gtype == 'total':
-                    yield {
+                    yield CompletionResult(result={
                         "response": chunk.text,
                         "history": history,
                         "num_token": n_id
-                    }
+                    },complete=False)
                 else:
-                    yield {
+                    yield CompletionResult(result={
                         "response": chunk.text[chunk.idx:],
                         "history": history,
                         "num_token": n_id
-                    }
+                    },complete=False)
                     chunk.idx = len(response)
 
         if gtype != 'total' and chunk.idx != len(chunk.text):
-            yield {
+            yield CompletionResult(result={
                 "response": chunk.text[chunk.idx:],
                 "history": history,
                 "num_token": n_id
-            }
+            },complete=False)
 
     def chat(self,input,**kwargs):
         preprocess_input_args(self.tokenizer, kwargs)
@@ -153,10 +153,10 @@ class EngineAPI(EngineAPI_Base):
         )
         default_kwargs.update(kwargs)
         response, history = self.model.chat(self.tokenizer, query=input,  **kwargs)
-        return {
+        return CompletionResult(result={
             "response": response,
             "history": history
-        }
+        })
 
     def generate(self,input,**kwargs):
         default_kwargs = dict(history=[], 

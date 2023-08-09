@@ -139,6 +139,7 @@ def _openai_chat(request: ChatCompletionRequest):
         request_id = instance.put(r)
         result = instance.get(request_id)
         if result["code"] != 0:
+            logger.error(result["msg"])
             raise HTTPException(status_code=400, detail=result["msg"])
         for x in r["history"]:
             prompt_length += len(x['q'])

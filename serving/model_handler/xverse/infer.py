@@ -12,7 +12,7 @@ from aigc_zoo.utils.xverse_generate import Generate
 from serving.model_handler.base import EngineAPI_Base, preprocess_input_args,flat_input
 from config.main import global_models_info_args
 from aigc_zoo.utils.streamgenerator import GenTextStreamer
-from serving.model_handler.base.data_define import ChunkData
+from serving.model_handler.base import CompletionResult,ChunkData
 from transformers import AutoModelForCausalLM
 from deep_training.utils.hf import register_transformer_model, register_transformer_config  # noqa
 from deep_training.nlp.models.xverse.modeling_xverse import XverseForCausalLM, XverseConfig
@@ -134,36 +134,34 @@ class EngineAPI(EngineAPI_Base):
             chunk.text += text
             chunk.idx += 1
             if chunk.idx % nchar == 0 or stream_end or chunk.idx == 1:
+                ret = CompletionResult(result={
+                    "response": chunk.text,
+                    "history": history,
+                    "num_token": chunk.n_id
+                }, complete=False)
                 if gtype == 'total':
-                    self.push_response(({
-                                            "response": chunk.text,
-                                            "history": history,
-                                            "num_token": chunk.n_id
-                    }, 0, "ok", False))
+                    self.push_response(ret)
                 else:
-                    self.push_response(({
-                                            "response": chunk.text,
-                                            "history": history,
-                                            "num_token": chunk.n_id
-                    }, 0, "ok", False))
+                    self.push_response(ret)
                     chunk.clear()
 
         skip_word_list = default_kwargs.get('eos_token_id',None) or [self.tokenizer.eos_token_id]
         streamer = GenTextStreamer(process_token_fn,chunk,tokenizer=self.tokenizer,skip_word_list=flat_input(skip_word_list),skip_prompt=True)
         _ = Generate.generate(self.get_model(),tokenizer=self.tokenizer,streamer=streamer, query=prompt, **default_kwargs)
-
         if gtype == 'total':
-            self.push_response(({
-                                    "response": chunk.text,
-                                    "history": history,
-                                    "num_token": chunk.n_id
-                    }, 0, "ok", False))
+            ret = CompletionResult(result={
+                "response": chunk.text,
+                "history": history,
+                "num_token": chunk.n_id
+            }, complete=False)
+            self.push_response(ret)
 
-        self.push_response(({
-                                "response": '',
-                                "history": history,
-                                "num_token": chunk.n_id
-                    }, 0, "ok", True))
+        ret = CompletionResult(result={
+            "response": "",
+            "history": history,
+            "num_token": chunk.n_id
+        }, complete=True)
+        self.push_response(ret)
         return None
 
 
@@ -187,10 +185,10 @@ class EngineAPI(EngineAPI_Base):
                                      tokenizer=self.tokenizer,
                                      query=prompt, **kwargs)
         history = history + [(query, response)]
-        return {
+        return CompletionResult(result={
             "response": response,
             "history": history
-        }
+        })
 
 
     def generate(self,input,**kwargs):
