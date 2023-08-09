@@ -144,7 +144,7 @@ class EngineAPI_Base(ABC):
             self.loop_forever(rank)
         except Exception as e:
             traceback.print_exc()
-            print(e)
+            logger.info(e)
             self.model_ds = None
 
     def push_request(self,data):
@@ -170,7 +170,7 @@ class EngineAPI_Base(ABC):
         while True:
             r = self.pull_request()
             try:
-                if r.get('method', "generate") == 'chat_stream':
+                if r.get('method', "chat") == 'chat_stream':
                     for item in self.trigger_generator(r=r, is_first=False):
                         self.push_response(item)
                     continue
@@ -289,8 +289,6 @@ class EngineAPI_Base(ABC):
                     if result_tuple.complete:
                         break
                 return None
-
-
         try:
             params = r.get('params', {})
             query = r.get('query', "")
