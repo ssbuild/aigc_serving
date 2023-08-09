@@ -133,15 +133,24 @@ class EngineAPI(EngineAPI_Base):
         )
         default_kwargs.update(kwargs)
         chunk = ChunkData()
-
+        chunk.n_id = 0
         def process_token_fn(text,stream_end,chunk: ChunkData):
+            chunk.n_id += 1
             chunk.text += text
             chunk.idx += 1
             if chunk.idx % nchar == 0 or stream_end or chunk.idx == 1:
                 if gtype == 'total':
-                    self.push_response(((chunk.text, history), 0, "ok", False))
+                    self.push_response(({
+                                            "response": chunk.text,
+                                            "history": history,
+                                            "num_token": chunk.n_id
+                    }, 0, "ok", False))
                 else:
-                    self.push_response(((chunk.text, history), 0, "ok", False))
+                    self.push_response(({
+                                            "response": chunk.text,
+                                            "history": history,
+                                            "num_token": chunk.n_id
+                    }, 0, "ok", False))
                     chunk.clear()
 
         skip_word_list = default_kwargs.get('eos_token_id',None) or [self.tokenizer.eos_token_id]
@@ -149,8 +158,14 @@ class EngineAPI(EngineAPI_Base):
         _ = Generate.generate(self.get_model(),tokenizer=self.tokenizer,streamer=streamer, query=prompt, **default_kwargs)
 
         if gtype == 'total':
-            self.push_response(((chunk.text, history), 0, "ok", False))
-        self.push_response((('', history), 0, "ok", True))
+            self.push_response(({
+                        "response": chunk.text,
+                        "history": history,
+                    }, 0, "ok", False))
+        self.push_response(({
+                        "response": '',
+                        "history": history,
+                    }, 0, "ok", True))
         return None
 
 
@@ -173,7 +188,10 @@ class EngineAPI(EngineAPI_Base):
                                      tokenizer=self.tokenizer,
                                      query=prompt, **kwargs)
         history = history + [(query, response)]
-        return response, history
+        return {
+            "response": response,
+            "history": history
+        }
 
 
     def generate(self,input,**kwargs):

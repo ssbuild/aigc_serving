@@ -14,7 +14,7 @@ import time
 import uvicorn
 from config.main import global_serve_args
 from serving.utils import logger
-from serving.serve.api import global_instance,app
+from serving.serve.api_serving import global_instance,app
 
 def remove_dir(path_dir):
     try:
@@ -33,7 +33,7 @@ if __name__ == '__main__':
     os.environ['ZEROMQ_SOCK_TMP_DIR'] = tmp_dir
 
     global_instance().work_node.create()
-    config = uvicorn.Config(app, lifespan='off',**global_serve_args)
+    config = uvicorn.Config(app, **global_serve_args,lifespan='off')
     try:
         uvicorn.Server(config).run()
     except Exception as e:

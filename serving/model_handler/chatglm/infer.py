@@ -111,7 +111,6 @@ class EngineAPI(EngineAPI_Base):
 
     def chat_stream(self,query, nchar=1,gtype='total', history=None,**kwargs):
         preprocess_input_args(self.tokenizer, kwargs)
-
         if history is None:
             history = []
         default_kwargs = dict(history=history,
@@ -119,20 +118,32 @@ class EngineAPI(EngineAPI_Base):
                               do_sample=True, top_p=0.7, temperature=0.95,
                               )
         default_kwargs.update(kwargs)
-
         chunk = ChunkData()
         chunk.idx = 0
         n_id = 0
         for response, history in self.model.stream_chat(self.tokenizer, query=query, **kwargs):
+            n_id += 1
             if n_id % nchar == 0:
                 if gtype == 'total':
-                    yield (chunk.text, history)
+                    yield {
+                        "response": chunk.text,
+                        "history": history,
+                        "num_token": n_id
+                    }
                 else:
-                    yield (chunk.text[chunk.idx:], history)
+                    yield {
+                        "response": chunk.text[chunk.idx:],
+                        "history": history,
+                        "num_token": n_id
+                    }
                     chunk.idx = len(response)
 
         if gtype != 'total' and chunk.idx != len(chunk.text):
-            yield (chunk.text[chunk.idx:], history)
+            yield {
+                "response": chunk.text[chunk.idx:],
+                "history": history,
+                "num_token": n_id
+            }
 
     def chat(self,input,**kwargs):
         preprocess_input_args(self.tokenizer, kwargs)
@@ -142,7 +153,10 @@ class EngineAPI(EngineAPI_Base):
         )
         default_kwargs.update(kwargs)
         response, history = self.model.chat(self.tokenizer, query=input,  **kwargs)
-        return response, history
+        return {
+            "response": response,
+            "history": history
+        }
 
     def generate(self,input,**kwargs):
         default_kwargs = dict(history=[], 

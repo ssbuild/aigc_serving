@@ -16,6 +16,7 @@ class Role(str, Enum):
 class Finish(str, Enum):
     STOP = "stop"
     LENGTH = "length"
+    FUNCTION_CALL = "function_call"
 
 
 class ErrorResponse(BaseModel):
@@ -97,7 +98,8 @@ class ChatCompletionRequest(BaseModel):
     forced_eos_token_id: Optional[int] = None
     guidance_scale: Optional[float] = None
     low_memory: Optional[bool] = None
-
+    functions: Optional[List[Dict[str, Any]]] = None
+    function_call: Union[str, Dict[str, str]] = "auto"
 
     def build_query_history(self):
         prev_messages = self.messages[:-1]
@@ -151,8 +153,10 @@ class ChatCompletionRequest(BaseModel):
         if self.repetition_penalty is not None:
             params["repetition_penalty"] = self.repetition_penalty
 
-        if self.temperature is not None and self.temperature > 0:
-            params["temperature"] = self.temperature
+        if self.temperature <= 0:
+            self.temperature = 1
+
+        params["temperature"] = self.temperature
 
         if self.stop is not None:
             params["stop"] = self.stop
@@ -199,10 +203,16 @@ class ChatCompletionRequest(BaseModel):
         r = self._update_params(r)
         return r
 
+
+class ChatFunctionCallResponse(BaseModel):
+    name: str
+    arguments: str
+    thought: str = None
+
 class ChatCompletionResponseChoice(BaseModel):
     index: int
     message: ChatMessage
-    finish_reason: Optional[Literal["stop", "length"]]
+    finish_reason: Optional[Literal["stop", "length", "function_call"]]
 
 
 class ChatCompletionResponse(BaseModel):
@@ -225,7 +235,7 @@ class DeltaMessage(BaseModel):
 class ChatCompletionResponseStreamChoice(BaseModel):
     index: int
     delta: DeltaMessage
-    finish_reason: Optional[Literal["stop", "length","error"]]
+    finish_reason: Optional[Literal["stop", "length", "function_call","error"]]
 
 
 class ChatCompletionStreamResponse(BaseModel):
@@ -270,49 +280,49 @@ class EmbeddingsResponse(BaseModel):
     usage: UsageInfo
 
 
-class CompletionRequest(BaseModel):
-    model: str
-    prompt: Union[str, List[Any]]
-    suffix: Optional[str] = None
-    temperature: Optional[float] = 0.7
-    n: Optional[int] = 1
-    max_tokens: Optional[int] = 16
-    stop: Optional[Union[str, List[str]]] = None
-    stream: Optional[bool] = False
-    top_p: Optional[float] = None
-    logprobs: Optional[int] = None
-    echo: Optional[bool] = None
-    presence_penalty: Optional[float] = None
-    frequency_penalty: Optional[float] = None
-    user: Optional[str] = None
-
-
-class CompletionResponseChoice(BaseModel):
-    index: int
-    text: str
-    logprobs: Optional[int] = None
-    finish_reason: Optional[Literal["stop", "length"]]
-
-
-class CompletionResponse(BaseModel):
-    id: str = Field(default_factory=lambda: f"cmpl-{str(uuid.uuid4())}")
-    object: str = "text_completion"
-    created: int = Field(default_factory=lambda: int(time.time()))
-    model: str
-    choices: List[CompletionResponseChoice]
-    usage: UsageInfo
-
-
-class CompletionResponseStreamChoice(BaseModel):
-    index: int
-    text: str
-    logprobs: Optional[float] = None
-    finish_reason: Optional[Literal["stop", "length"]] = None
-
-
-class CompletionStreamResponse(BaseModel):
-    id: str = Field(default_factory=lambda: f"cmpl-{str(uuid.uuid4())}")
-    object: str = "text_completion"
-    created: int = Field(default_factory=lambda: int(time.time()))
-    model: str
-    choices: List[CompletionResponseStreamChoice]
+# class CompletionRequest(BaseModel):
+#     model: str
+#     prompt: Union[str, List[Any]]
+#     suffix: Optional[str] = None
+#     temperature: Optional[float] = 0.7
+#     n: Optional[int] = 1
+#     max_tokens: Optional[int] = 16
+#     stop: Optional[Union[str, List[str]]] = None
+#     stream: Optional[bool] = False
+#     top_p: Optional[float] = None
+#     logprobs: Optional[int] = None
+#     echo: Optional[bool] = None
+#     presence_penalty: Optional[float] = None
+#     frequency_penalty: Optional[float] = None
+#     user: Optional[str] = None
+#
+#
+# class CompletionResponseChoice(BaseModel):
+#     index: int
+#     text: str
+#     logprobs: Optional[int] = None
+#     finish_reason: Optional[Literal["stop", "length"]]
+#
+#
+# class CompletionResponse(BaseModel):
+#     id: str = Field(default_factory=lambda: f"cmpl-{str(uuid.uuid4())}")
+#     object: str = "text_completion"
+#     created: int = Field(default_factory=lambda: int(time.time()))
+#     model: str
+#     choices: List[CompletionResponseChoice]
+#     usage: UsageInfo
+#
+#
+# class CompletionResponseStreamChoice(BaseModel):
+#     index: int
+#     text: str
+#     logprobs: Optional[float] = None
+#     finish_reason: Optional[Literal["stop", "length"]] = None
+#
+#
+# class CompletionStreamResponse(BaseModel):
+#     id: str = Field(default_factory=lambda: f"cmpl-{str(uuid.uuid4())}")
+#     object: str = "text_completion"
+#     created: int = Field(default_factory=lambda: int(time.time()))
+#     model: str
+#     choices: List[CompletionResponseStreamChoice]

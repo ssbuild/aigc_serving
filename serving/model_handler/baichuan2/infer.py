@@ -170,17 +170,27 @@ class EngineAPI(EngineAPI_Base):
             chunk.text = response
             if n_id % nchar == 0:
                 if gtype == 'total':
-                    yield (chunk.text, history)
+                    yield {
+                        "response": chunk.text,
+                        "history": history,
+                        "num_token": n_id
+                    }
                 else:
-                    yield (chunk.text[chunk.idx:], history)
+                    yield {
+                        "response": chunk.text[chunk.idx:],
+                        "history": history,
+                        "num_token": n_id
+                    }
                     chunk.idx = len(response)
 
         history = history + [(query, response)]
 
         if gtype != 'total' and chunk.idx != len(chunk.text):
-            yield (chunk.text[chunk.idx:], history)
-
-        return response, history
+            yield {
+                "response": chunk.text[chunk.idx:],
+                "history": history,
+                "num_token": n_id
+            }
 
 
     def chat(self, query, history=None, **kwargs):
@@ -199,7 +209,10 @@ class EngineAPI(EngineAPI_Base):
                                          messages=messages,
                                          generation_config=generation_config)
         history = history + [(query, response)]
-        return response, history
+        return {
+            "response": response,
+            "history": history
+        }
 
 
 

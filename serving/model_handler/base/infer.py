@@ -277,7 +277,7 @@ class EngineAPI_Base(ABC):
                 return None
 
             if self.model_ds is None:
-                yield [], -1, "ds_engine init failed",True
+                yield {}, -1, "ds_engine init failed",True
         else:
             if is_first:
                 self.push_request(r)
@@ -288,7 +288,7 @@ class EngineAPI_Base(ABC):
                         break
                 return None
 
-        result, msg, code = [], "ok", 0
+        result, msg, code = {}, "ok", 0
         try:
             params = r.get('params', {})
             query = r.get('query', "")
@@ -309,11 +309,11 @@ class EngineAPI_Base(ABC):
                     self.push_response((result, code, msg, False))
                 else:
                     yield result, code, msg, False
-            result = ""
+            result = {}
             code = 0
         except Exception as e:
             traceback.print_exc()
-            print(e)
+            logger.error(e)
             code = -1
             msg = str(e)
         yield result,code,msg,True
@@ -328,11 +328,10 @@ class EngineAPI_Base(ABC):
                 return result_tuple
 
             if self.model_ds is None:
-                return [], -1, "ds_engine init failed",True
+                return {}, -1, "ds_engine init failed",True
 
         result,msg,code = [],"ok",0
-        method = r.get('method', "generate")
-        method_fn = getattr(self, method)
+        method_fn = getattr(self, "chat")
         if method_fn is not None:
             params = r.get('params', {})
             if not isinstance(params, dict):
@@ -345,21 +344,17 @@ class EngineAPI_Base(ABC):
             if code != 0:
                 return result, code, msg, True
 
-            if method == 'generate':
-                texts = r.get('texts', [])
-                for text in texts:
-                    result.append(method_fn(text, **params))
-            elif method == 'chat':
-                query = r.get('query', "")
-                history = r.get('history', [])
-                history = [(_["q"], _["a"]) for _ in history]
-                results = method_fn(query, history=history, **params)
-                history = [{"q": _[0], "a": _[1]} for _ in results[1]]
-                result = (results[0], history)
-            else:
-                code = -1
-                msg = "{} not exist method {}".format(self.model_config_dict['model_config']['model_type'], method)
+            query = r.get('query', "")
+            history = r.get('history', [])
+            history = [(_["q"], _["a"]) for _ in history]
+            result = method_fn(query, history=history, **params)
+            # history = [{"q": _[0], "a": _[1]} for _ in results["history"]]
+            result = {
+                "response": result["response"],
+                # "history": history,
+                "num_token": result.get('num_token',result["response"])
+            }
         else:
             code = -1
-            msg = "{} not exist method {}".format(self.model_config_dict['model_config']['model_type'], method)
+            msg = "{} not exist method {}".format(self.model_config_dict['model_config']['model_type'], "chat")
         return result,code,msg,True

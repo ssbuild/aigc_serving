@@ -113,15 +113,12 @@ class My_worker(ZMQ_process_worker):
                             "complete": complte_flag
                         }
                         if code == 0:
-                            if not isinstance(result, tuple):
-                                ret["result"] = result
+                            if isinstance(result,dict):
+                                ret.update(result)
                             else:
-                                ret["result"] = result[0]
-                                ret["history"] = result[1]
+                                ret["response"] = result
                         yield ret
-
                     return None
-
                 else:
                     result,code,msg,complte_flag = self.api_client.trigger(r)
             else:
@@ -141,10 +138,9 @@ class My_worker(ZMQ_process_worker):
             "complete": True
         }
         if code == 0:
-            if not isinstance(result, tuple):
-                ret["result"] = result
+            if isinstance(result, dict):
+                ret.update(result)
             else:
-                ret["result"] = result[0]
-                ret["history"] = result[1]
+                ret["response"] = result
         yield ret
 

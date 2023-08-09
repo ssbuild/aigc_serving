@@ -146,23 +146,41 @@ class EngineAPI(EngineAPI_Base):
         default_kwargs.update(kwargs)
 
         chunk = ChunkData()
+        chunk.n_id = 0
         def process_token_fn(text, stream_end, chunk: ChunkData):
+            chunk.n_id += 1
             chunk.text += text
             chunk.idx += 1
             if chunk.idx % nchar == 0 or stream_end or chunk.idx == 1:
                 if gtype == 'total':
-                    self.push_response(((chunk.text, history), 0, "ok", False))
+                    self.push_response(({
+                                            "response": chunk.text,
+                                            "history": history,
+                                            "num_token": chunk.n_id
+                    }, 0, "ok", False))
                     chunk.idx = 0
                 else:
-                    self.push_response(((chunk.text, history), 0, "ok", False))
+                    self.push_response(({
+                                            "response": chunk.text,
+                                            "history": history,
+                                            "num_token": chunk.n_id
+                    }, 0, "ok", False))
                     chunk.clear()
 
         skip_word_list = [self.tokenizer.im_end_id, self.tokenizer.im_start_id,self.tokenizer.eos_token_id]
         streamer = GenTextStreamer(process_token_fn, chunk, tokenizer=self.tokenizer,skip_word_list=flat_input(skip_word_list),skip_prompt=True)
         _ = self.get_model().chat(tokenizer=self.tokenizer, streamer=streamer, query=query, **default_kwargs)
         if gtype == 'total':
-            self.push_response(((chunk.text, history), 0, "ok", False))
-        self.push_response((('', history), 0, "ok", True))
+            self.push_response(({
+                                    "response": chunk.text,
+                                    "history": history,
+                                    "num_token": chunk.n_id
+                    }, 0, "ok", False))
+        self.push_response(({
+                                "response": '',
+                                "history": history,
+                                "num_token": chunk.n_id
+                    }, 0, "ok", True))
         return None
 
 
@@ -188,7 +206,10 @@ class EngineAPI(EngineAPI_Base):
         }
         default_kwargs.update(kwargs)
         response, history = self.model.chat(self.tokenizer, query=query,  **default_kwargs)
-        return response, history
+        return {
+            "response": response,
+            "history": history
+        }
 
     def generate(self,input,**kwargs):
         default_kwargs = dict(history=[], 

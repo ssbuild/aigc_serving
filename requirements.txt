@@ -5,6 +5,7 @@ numpy
 cpm_kernels
 tiktoken
 einops
+accelerate>=0.20.3
 numpy-io >=0.0.8
 ipc-worker>=0.1.2
 deepspeed

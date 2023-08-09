@@ -104,7 +104,10 @@ class EngineAPI(EngineAPI_Base):
         default_kwargs.update(kwargs)
         response = self.gen_core.chat(prompt, **default_kwargs)
         history = history + [(query, response)]
-        return response, history
+        return {
+            "response": response,
+            "history": history
+        }
 
 
 

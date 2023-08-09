@@ -104,9 +104,8 @@ class EngineAPI(EngineAPI_Base):
 
 
 
-    def chat_stream(self,  query, nchar=1,gtype='total', history=None,**kwargs):
+    def chat_stream(self,  query, nchar=1, gtype='total', history=None,**kwargs):
         preprocess_input_args(self.tokenizer,kwargs)
-
         if history is None:
             history = []
         prompt = ""
@@ -148,16 +147,27 @@ class EngineAPI(EngineAPI_Base):
             chunk.text = response
             if n_id % nchar == 0:
                 if gtype == 'total':
-                    yield (chunk.text, history)
+                    yield {
+                        "response": chunk.text,
+                        "history": history,
+                        "num_token": n_id
+                    }
                 else:
-                    yield (chunk.text[chunk.idx:], history)
+                    yield {
+                        "response": chunk.text[chunk.idx:],
+                        "history": history,
+                        "num_token": n_id
+                    }
                     chunk.idx = len(response)
 
         history = history + [(query, response)]
         if gtype != 'total' and chunk.idx != len(chunk.text):
-            yield (chunk.text[chunk.idx:], history)
+            yield {
+                "response": chunk.text[chunk.idx:],
+                "history": history,
+                "num_token": n_id
+            }
 
-        return response, history
 
 
     def chat(self, query, history=None, **kwargs):
@@ -181,7 +191,10 @@ class EngineAPI(EngineAPI_Base):
                                      tokenizer=self.tokenizer,
                                      query=prompt, **kwargs)
         history = history + [(query, response)]
-        return response, history
+        return {
+            "response": response,
+            "history": history
+        }
 
     def generate(self,input,**kwargs):
         default_kwargs = dict(
