@@ -209,6 +209,13 @@ class EngineAPI_Base(ABC):
             self._thread_generator = threading.Thread(target=self._loop_thread)
             self._thread_generator.start()
 
+
+    def clear_data(self):
+        while self._q_in.qsize():
+            self._q_in.get()
+        while self._q_out.qsize():
+            self._q_out.get()
+
     def _loop_thread(self):
         logging.info('=' * 30)
         logging.info(self.group_name)
@@ -267,6 +274,8 @@ class EngineAPI_Base(ABC):
 
     def trigger_generator(self ,r: typing.Dict,is_first=True):
         ret = CompletionResult()
+        if is_first:
+            self.clear_data()
         if self.work_mode == WorkMode.DS:
             if is_first:
                 for i in range(self.world_size):
@@ -321,6 +330,8 @@ class EngineAPI_Base(ABC):
 
     def trigger(self ,r: typing.Dict,is_first=True):
         ret = CompletionResult(complete=True)
+        if is_first:
+            self.clear_data()
         if self.work_mode == WorkMode.DS:
             if is_first:
                 for i in range(self.world_size):
