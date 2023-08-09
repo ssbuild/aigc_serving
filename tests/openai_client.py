@@ -12,7 +12,7 @@ model = "qwen-7b-chat-int4"
 # print("Models:", models)
 
 # Test completion API
-stream = True
+stream = False
 
 data = {
     "model": model,
@@ -24,7 +24,7 @@ data = {
     "stream": stream,
     "nchar": 1,# stream 字符
     "n": 1, # 返回 n 个choices
-    "stop": ["Observation:","Observation:\n"]
+    # "stop": ["Observation:","Observation:\n"]
 }
 
 

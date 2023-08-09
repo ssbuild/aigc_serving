@@ -125,20 +125,17 @@ class EngineAPI(EngineAPI_Base):
         if history is None:
             history = []
 
+
         default_kwargs = {
-              "history": [],
-              "chat_format": "chatml",
-              "decay_bound": 0.0,
-              "decay_factor": 1.0,
-              "eos_token_id": 151643,
-              "max_new_tokens": 512,
-              "pad_token_id": 151643,
-              # "stop_words_ids": [[151643]],
-              "do_sample": True,
-              "top_k": 0,
-              "top_p": 0.8,
-              "transformers_version": "4.31.0"
-            }
+            "history": [],
+            "chat_format": "chatml",
+            "eos_token_id": 151643,
+            "max_new_tokens": 512,
+            "pad_token_id": 151643,
+            "do_sample": True,
+            "top_k": 0,
+            "top_p": 0.5,
+        }
         default_kwargs.update(kwargs)
 
         chunk = ChunkData()
@@ -186,14 +183,12 @@ class EngineAPI(EngineAPI_Base):
         default_kwargs = {
             "history": [],
             "chat_format": "chatml",
-            "decay_bound": 0.0,
-            "decay_factor": 1.0,
             "eos_token_id": 151643,
             "max_new_tokens": 512,
             "pad_token_id": 151643,
             "do_sample": True,
             "top_k": 0,
-            "top_p": 0.8,
+            "top_p": 0.5,
         }
         default_kwargs.update(kwargs)
         response, history = self.model.chat(self.tokenizer, query=query,  **default_kwargs)
