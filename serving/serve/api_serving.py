@@ -178,7 +178,7 @@ def _openai_chat_stream(request: ChatCompletionRequest):
         result = instance.get(request_id)
         if result["code"] != 0:
             yield f"data: {json.dumps(result, ensure_ascii=False)}\n\n"
-        elif len(result["response"]) > 0:
+        elif not result["complete"] and len(result["response"]) > 0:
             choice_data = ChatCompletionResponseStreamChoice(
                 index=0,
                 delta=DeltaMessage(role=Role.ASSISTANT,content=result["response"]),

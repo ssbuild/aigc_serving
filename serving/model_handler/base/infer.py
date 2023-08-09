@@ -318,7 +318,7 @@ class EngineAPI_Base(ABC):
                     self.push_response(ret._replace(code=code,result=iter_.result,msg=msg,complete=False))
                 else:
                     yield ret._replace(code=code,result=iter_.result,msg=msg,complete=False)
-            result = {}
+            result = None
             code = 0
         except Exception as e:
             traceback.print_exc()
