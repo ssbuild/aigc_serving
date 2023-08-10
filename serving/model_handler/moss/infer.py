@@ -87,7 +87,7 @@ class EngineAPI(EngineAPI_Base):
         return self.lora_model, config, tokenizer
 
     def chat(self, query, history=None, **kwargs):
-        preprocess_input_args(self.tokenizer, kwargs)
+        preprocess_input_args(self.tokenizer,self.config,kwargs)
         if history is None:
             history = []
         prompt = ""
@@ -102,7 +102,7 @@ class EngineAPI(EngineAPI_Base):
             do_sample=True, top_p=0.7, temperature=0.95,
         )
         default_kwargs.update(kwargs)
-        postprocess_input_args(self.tokenizer,default_kwargs)
+        postprocess_input_args(self.tokenizer,self.config,default_kwargs)
         response = self.gen_core.chat(prompt, **default_kwargs)
         history = history + [(query, response)]
         return CompletionResult(result={
@@ -121,7 +121,7 @@ class EngineAPI(EngineAPI_Base):
             do_sample=True, top_p=0.7, temperature=0.95,
         )
         default_kwargs.update(kwargs)
-        postprocess_input_args(self.tokenizer,default_kwargs)
+        postprocess_input_args(self.tokenizer,self.config,default_kwargs)
         response = self.model.generate(input, **kwargs)
         return response
 

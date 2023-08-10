@@ -110,7 +110,7 @@ class EngineAPI(EngineAPI_Base):
 
 
     def chat_stream(self,query, nchar=1,gtype='total', history=None,**kwargs):
-        preprocess_input_args(self.tokenizer, kwargs)
+        preprocess_input_args(self.tokenizer,self.config,kwargs)
         if history is None:
             history = []
         default_kwargs = dict(history=history,
@@ -118,7 +118,7 @@ class EngineAPI(EngineAPI_Base):
                               do_sample=True, top_p=0.7, temperature=0.95,
                               )
         default_kwargs.update(kwargs)
-        postprocess_input_args(self.tokenizer,default_kwargs)
+        postprocess_input_args(self.tokenizer,self.config,default_kwargs)
         chunk = ChunkData()
         chunk.idx = 0
         n_id = 0
@@ -147,13 +147,13 @@ class EngineAPI(EngineAPI_Base):
             },complete=False)
 
     def chat(self,input,**kwargs):
-        preprocess_input_args(self.tokenizer, kwargs)
+        preprocess_input_args(self.tokenizer,self.config,kwargs)
         default_kwargs = dict(history=[],
             eos_token_id=self.model.config.eos_token_id,
             do_sample=True, top_p=0.7, temperature=0.95,
         )
         default_kwargs.update(kwargs)
-        postprocess_input_args(self.tokenizer,default_kwargs)
+        postprocess_input_args(self.tokenizer,self.config,default_kwargs)
         response, history = self.model.chat(self.tokenizer, query=input,  **kwargs)
         return CompletionResult(result={
             "response": response,
@@ -166,7 +166,7 @@ class EngineAPI(EngineAPI_Base):
             do_sample=True, top_p=0.7, temperature=0.95,
         )
         default_kwargs.update(kwargs)
-        postprocess_input_args(self.tokenizer,default_kwargs)
+        postprocess_input_args(self.tokenizer,self.config,default_kwargs)
         # response, history = self.model.chat(self.tokenizer, query=input,  **kwargs)
         output = self.model.chat(self.tokenizer, query=input, **default_kwargs)
         output_scores = default_kwargs.get('output_scores', False)

@@ -117,7 +117,7 @@ class EngineAPI(EngineAPI_Base):
         return self.lora_model, config, tokenizer
 
     def chat_stream(self, query, nchar=1,gtype='total', history=None, **kwargs):
-        preprocess_input_args(self.tokenizer, kwargs)
+        preprocess_input_args(self.tokenizer,self.config,kwargs)
         if history is None:
             history = []
         prompt = ""
@@ -132,7 +132,7 @@ class EngineAPI(EngineAPI_Base):
             do_sample=True, top_p=0.7, temperature=0.95,
         )
         default_kwargs.update(kwargs)
-        postprocess_input_args(self.tokenizer,default_kwargs)
+        postprocess_input_args(self.tokenizer,self.config,default_kwargs)
         chunk = ChunkData()
         chunk.n_id = 0
         def process_token_fn(text,stream_end,chunk: ChunkData):
@@ -188,7 +188,7 @@ class EngineAPI(EngineAPI_Base):
             do_sample=True, top_p=0.7, temperature=0.95,
         )
         default_kwargs.update(kwargs)
-        postprocess_input_args(self.tokenizer,default_kwargs)
+        postprocess_input_args(self.tokenizer,self.config,default_kwargs)
         response = Generate.generate(self.get_model(),
                                      tokenizer=self.tokenizer,
                                      query=prompt, **kwargs)
@@ -206,7 +206,7 @@ class EngineAPI(EngineAPI_Base):
             do_sample=True, top_p=0.7, temperature=0.95,
         )
         default_kwargs.update(kwargs)
-        postprocess_input_args(self.tokenizer,default_kwargs)
+        postprocess_input_args(self.tokenizer,self.config,default_kwargs)
         response = Generate.generate(self.get_model(),
                                      tokenizer=self.tokenizer,
                                      query=input,**kwargs)

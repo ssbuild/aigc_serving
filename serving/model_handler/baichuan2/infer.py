@@ -145,7 +145,7 @@ class EngineAPI(EngineAPI_Base):
         return response
 
     def chat_stream(self,  query, nchar=1,gtype='total', history=None,**kwargs):
-        preprocess_input_args(self.tokenizer, kwargs)
+        preprocess_input_args(self.tokenizer,self.config,kwargs)
 
         messages = _build_message(query,history=history)
         default_kwargs = dict(eos_token_id=self.model.config.eos_token_id,
@@ -154,7 +154,7 @@ class EngineAPI(EngineAPI_Base):
                               repetition_penalty=1.1,
                               )
         default_kwargs.update(kwargs)
-        postprocess_input_args(self.tokenizer,default_kwargs)
+        postprocess_input_args(self.tokenizer,self.config,default_kwargs)
         generation_config = GenerationConfig(**default_kwargs)
 
 
@@ -195,7 +195,7 @@ class EngineAPI(EngineAPI_Base):
 
 
     def chat(self, query, history=None, **kwargs):
-        preprocess_input_args(self.tokenizer, kwargs)
+        preprocess_input_args(self.tokenizer,self.config,kwargs)
 
         messages = _build_message(query, history=history)
 
@@ -205,7 +205,7 @@ class EngineAPI(EngineAPI_Base):
                               repetition_penalty=1.1,
                               )
         default_kwargs.update(kwargs)
-        postprocess_input_args(self.tokenizer,default_kwargs)
+        postprocess_input_args(self.tokenizer,self.config,default_kwargs)
         generation_config = GenerationConfig(**default_kwargs)
         response = self.get_model().chat(tokenizer=self.tokenizer,
                                          messages=messages,
@@ -225,7 +225,7 @@ class EngineAPI(EngineAPI_Base):
             repetition_penalty=1.1,
         )
         default_kwargs.update(kwargs)
-        postprocess_input_args(self.tokenizer,default_kwargs)
+        postprocess_input_args(self.tokenizer,self.config,default_kwargs)
         response = Generate.generate(self.get_model(),
                                      tokenizer=self.tokenizer,
                                      query=input,**default_kwargs)

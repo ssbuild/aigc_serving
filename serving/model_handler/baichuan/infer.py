@@ -104,7 +104,7 @@ class EngineAPI(EngineAPI_Base):
 
 
     def chat_stream(self,  query, nchar=1, gtype='total', history=None,**kwargs):
-        preprocess_input_args(self.tokenizer,kwargs)
+        preprocess_input_args(self.tokenizer,self.config,kwargs)
         if history is None:
             history = []
         prompt = ""
@@ -119,7 +119,7 @@ class EngineAPI(EngineAPI_Base):
                               repetition_penalty=1.1,
                               )
         default_kwargs.update(kwargs)
-        postprocess_input_args(self.tokenizer,default_kwargs)
+        postprocess_input_args(self.tokenizer,self.config,default_kwargs)
         generation_config = GenerationConfig(**default_kwargs)
 
         prompt = query
@@ -171,7 +171,7 @@ class EngineAPI(EngineAPI_Base):
 
 
     def chat(self, query, history=None, **kwargs):
-        preprocess_input_args(self.tokenizer, kwargs)
+        preprocess_input_args(self.tokenizer,self.config,kwargs)
 
         if history is None:
             history = []
@@ -187,7 +187,7 @@ class EngineAPI(EngineAPI_Base):
             do_sample=True, top_p=0.7, temperature=0.95,
         )
         default_kwargs.update(kwargs)
-        postprocess_input_args(self.tokenizer,default_kwargs)
+        postprocess_input_args(self.tokenizer,self.config,default_kwargs)
         response = Generate.generate(self.get_model(),
                                      tokenizer=self.tokenizer,
                                      query=prompt, **kwargs)
@@ -204,7 +204,7 @@ class EngineAPI(EngineAPI_Base):
             do_sample=True, top_p=0.7, temperature=0.95,
         )
         default_kwargs.update(kwargs)
-        postprocess_input_args(self.tokenizer,default_kwargs)
+        postprocess_input_args(self.tokenizer,self.config,default_kwargs)
         response = Generate.generate(self.get_model(),
                                      tokenizer=self.tokenizer,
                                      query=input,**default_kwargs)

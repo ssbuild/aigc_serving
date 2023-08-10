@@ -126,7 +126,7 @@ class EngineAPI(EngineAPI_Base):
         return response
 
     def chat_stream(self, query, nchar=1,gtype='total', history=None, **kwargs):
-        preprocess_input_args(self.tokenizer, kwargs)
+        preprocess_input_args(self.tokenizer,self.config,kwargs)
         if history is None:
             history = []
 
@@ -138,7 +138,7 @@ class EngineAPI(EngineAPI_Base):
                             repetition_penalty=1.01,)
 
         default_kwargs.update(kwargs)
-        postprocess_input_args(self.tokenizer,default_kwargs)
+        postprocess_input_args(self.tokenizer,self.config,default_kwargs)
 
         chunk = ChunkData()
         chunk.n_id = 0
@@ -180,7 +180,7 @@ class EngineAPI(EngineAPI_Base):
 
 
     def chat(self, query,history=None, **kwargs):
-        preprocess_input_args(self.tokenizer, kwargs)
+        preprocess_input_args(self.tokenizer,self.config,kwargs)
         if history is None:
             history = []
 
@@ -191,7 +191,7 @@ class EngineAPI(EngineAPI_Base):
                               top_p=0.8,
                               repetition_penalty=1.01, )
         default_kwargs.update(kwargs)
-        postprocess_input_args(self.tokenizer,default_kwargs)
+        postprocess_input_args(self.tokenizer,self.config,default_kwargs)
         response, history = self.model.chat(self.tokenizer, query=query, **default_kwargs)
         return CompletionResult(result={
             "response": response,
@@ -207,7 +207,7 @@ class EngineAPI(EngineAPI_Base):
                               repetition_penalty=1.01, )
 
         default_kwargs.update(kwargs)
-        postprocess_input_args(self.tokenizer,default_kwargs)
+        postprocess_input_args(self.tokenizer,self.config,default_kwargs)
         output = self.model.chat(self.tokenizer, query=input, **default_kwargs)
         output_scores = default_kwargs.get('output_scores', False)
         if output_scores:
