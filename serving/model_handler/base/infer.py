@@ -91,9 +91,6 @@ class EngineAPI_Base(ABC):
             self.work_mode_str = 'hf'
             self.work_mode = WorkMode.STANDORD_HF
 
-        if self.work_mode == WorkMode.STANDORD_HF:
-            print("*" * 30, torch.cuda.current_device())
-
 
         if not skip_init:
             self.init_model()
