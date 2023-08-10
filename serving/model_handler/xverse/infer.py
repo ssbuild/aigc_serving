@@ -6,10 +6,10 @@ import os
 
 import torch
 from deep_training.data_helper import ModelArguments, DataArguments, DataHelper
-from transformers import HfArgumentParser, TextStreamer
+from transformers import HfArgumentParser
 from aigc_zoo.model_zoo.llm.llm_model import MyTransformer,LoraArguments,LoraModel,AutoConfig
 from aigc_zoo.utils.xverse_generate import Generate
-from serving.model_handler.base import EngineAPI_Base, preprocess_input_args,flat_input
+from serving.model_handler.base import EngineAPI_Base,flat_input
 from config.main import global_models_info_args
 from aigc_zoo.utils.streamgenerator import GenTextStreamer
 from serving.model_handler.base import CompletionResult,ChunkData,preprocess_input_args,postprocess_input_args

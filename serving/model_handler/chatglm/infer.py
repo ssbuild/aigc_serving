@@ -8,7 +8,7 @@ from deep_training.data_helper import ModelArguments,DataHelper
 from transformers import HfArgumentParser
 from aigc_zoo.model_zoo.chatglm.llm_model import MyTransformer, ChatGLMTokenizer, LoraArguments, setup_model_profile, \
     ChatGLMConfig,LoraModel
-from serving.model_handler.base import EngineAPI_Base, preprocess_input_args,flat_input
+from serving.model_handler.base import EngineAPI_Base,flat_input
 from config.main import global_models_info_args
 from serving.model_handler.base import CompletionResult,ChunkData,preprocess_input_args,postprocess_input_args
 

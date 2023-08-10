@@ -9,7 +9,7 @@ from deep_training.data_helper import ModelArguments,DataHelper
 from transformers import HfArgumentParser, BitsAndBytesConfig
 from aigc_zoo.model_zoo.qwen.llm_model import MyTransformer, QWenTokenizer, LoraArguments, \
     setup_model_profile, QWenConfig
-from serving.model_handler.base import EngineAPI_Base, preprocess_input_args,flat_input
+from serving.model_handler.base import EngineAPI_Base,flat_input
 from config.main import global_models_info_args
 from serving.model_handler.base import CompletionResult,ChunkData,preprocess_input_args,postprocess_input_args
 

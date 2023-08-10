@@ -10,14 +10,18 @@ from config.main import global_models_info_args
 from serving.utils import logger
 
 class WokerLoader:
-    def __init__(self,queue_mapper):
-        self.queue_mapper = queue_mapper
+    def __init__(self,):
+        self._queue_mapper = {}
         self.evt_quit = multiprocessing.Manager().Event()
         self.process_list = []
 
+    @property
+    def queue(self):
+        return self._queue_mapper
+
     def create(self):
         logger.info('WokerLoader create...')
-        queue_mapper = self.queue_mapper
+        queue_mapper = self._queue_mapper
         process_list = self.process_list
         for model_name, config in global_models_info_args.items():
             if not config["enable"]:

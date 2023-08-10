@@ -3,11 +3,8 @@
 # @Author: tk
 # @File：api
 import json
-import logging
 import traceback
 import typing
-from contextlib import asynccontextmanager
-
 from fastapi import HTTPException, Depends, FastAPI
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseSettings
@@ -53,11 +50,13 @@ def check_api_key(
 
 
 class Resource:
-   def __init__(self):
+    def __init__(self):
        self.valid_model_map = set([k for k, v in global_models_info_args.items() if v["enable"]])
-       self.queue_mapper = {}
        self.lifespan = None
-       self.work_node = WokerLoader(self.queue_mapper)
+
+    def set_mapper(self,queue_mapper):
+        self.queue_mapper = queue_mapper
+
 
 
 _g_instance = Resource()
@@ -66,11 +65,7 @@ def global_instance() -> Resource:
     global _g_instance
     return _g_instance
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    await global_instance().work_node.create()
-    yield
-    await global_instance().work_node.release()
+
 
 app = FastAPI()
 app.add_middleware(  # 添加中间件

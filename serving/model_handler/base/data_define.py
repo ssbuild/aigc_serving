@@ -1,10 +1,7 @@
 # -*- coding: utf-8 -*-
 # @Author  : ssbuild
 # @Time    : 2023/7/25 11:16
-import multiprocessing
 from enum import Enum
-from multiprocessing import queues
-
 from collections import namedtuple
 
 class WorkMode(Enum):

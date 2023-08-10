@@ -12,8 +12,6 @@ import torch.distributed as dist
 import torch.multiprocessing as mp
 import multiprocessing
 import threading
-from multiprocessing import Queue
-from deep_training.nlp.models.lora.v2 import LoraModel
 from serving.model_handler.base.data_define import WorkMode
 from serving.model_handler.base.data_process import preprocess_input_args,flat_input # noqa
 from serving.model_handler.base.data_define import CompletionResult # noqa
@@ -33,7 +31,7 @@ class EngineAPI_Base(ABC):
         self.model = None
 
         self.auto_quantize = model_config_dict.get('auto_quantize',True)
-        self.lora_model: typing.Optional[LoraModel] = None
+        self.lora_model = None
         self.current_adapter_name = ''
         self.lora_conf = model_config_dict['model_config']['lora']
         self.muti_lora_num = len(self.lora_conf.keys())
@@ -91,11 +89,11 @@ class EngineAPI_Base(ABC):
             self.work_mode_str = 'hf'
             self.work_mode = WorkMode.STANDORD_HF
 
-
         if not skip_init:
             self.init_model()
+
         self._init_thead_generator()
-        logger.info('serving ready')
+
 
     def init_model(self, device_id=None):
         self.model_config_dict['seed'] = None

@@ -44,7 +44,7 @@ def main():
     http_ = HTTP_Serving(queue_mapper,
                          http_ip='0.0.0.0',
                          http_port=8081,
-                         http_num_workers=4,)
+                         http_num_workers=1,)
     http_.start()
     process_list.append(http_)
     try:
