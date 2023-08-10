@@ -14,7 +14,6 @@ from config.main import global_models_info_args
 from serving.openai_api.openai_api_protocol import ModelCard, ModelPermission, ModelList, ChatCompletionRequest, Role, \
     ChatCompletionResponseStreamChoice, DeltaMessage, ChatCompletionStreamResponse, Finish, \
     ChatCompletionResponseChoice, ChatMessage, UsageInfo, ChatCompletionResponse
-from serving.serve.backend import WokerLoader
 from serving.utils import logger
 
 class AppSettings(BaseSettings):

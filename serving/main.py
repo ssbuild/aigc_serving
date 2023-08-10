@@ -6,13 +6,10 @@ import os
 import shutil
 import signal
 import sys
-
 root_dir = os.path.join(os.path.dirname(__file__),"..")
 root_dir = os.path.abspath(root_dir)
 sys.path.append(root_dir)
-import multiprocessing
 from serving.serve.backend import WokerLoader
-import time
 import uvicorn
 from config.main import global_serve_args
 from serving.utils import logger
