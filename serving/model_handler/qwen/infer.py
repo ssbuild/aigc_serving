@@ -158,7 +158,7 @@ class EngineAPI(EngineAPI_Base):
                     self.push_response(ret)
                     chunk.clear()
 
-        skip_word_list = [self.tokenizer.im_end_id, self.tokenizer.im_start_id,self.tokenizer.eos_token_id]
+        skip_word_list = [self.tokenizer.im_end_id, self.tokenizer.im_start_id, self.tokenizer.eos_token_id or 151643]
         streamer = GenTextStreamer(process_token_fn, chunk, tokenizer=self.tokenizer,skip_word_list=flat_input(skip_word_list),skip_prompt=True)
         _ = self.get_model().chat(tokenizer=self.tokenizer, streamer=streamer, query=query, **default_kwargs)
         if gtype == 'total':
