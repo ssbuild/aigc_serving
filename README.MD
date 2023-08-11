@@ -6,7 +6,7 @@
 
 ## update information
 ```text
-    08-11 官方配置文件更新，请使用aigc-zoo 0.1.17.post0 , 并更新官方config.json , generation_config.json 等信息
+    08-11 qwen官方配置文件更新，请使用aigc-zoo 0.1.17.post0 , 并更新官方config.json , generation_config.json 等信息
     08-10 0.1.17 release , fix new bugs
     08-08 support xverse-13b , 版本要求 deep_training 0.1.15.rc2
     08-07 support llama llama2 量化推理 , 版本要求 deep_training 0.1.15.rc1
