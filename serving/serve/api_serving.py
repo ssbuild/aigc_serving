@@ -14,8 +14,11 @@ from config.main import global_models_info_args
 from serving.openai_api.openai_api_protocol import ModelCard, ModelPermission, ModelList, ChatCompletionRequest, Role, \
     ChatCompletionResponseStreamChoice, DeltaMessage, ChatCompletionStreamResponse, Finish, \
     ChatCompletionResponseChoice, ChatMessage, UsageInfo, ChatCompletionResponse, CompletionRequest, \
-    CompletionResponseChoice, CompletionResponseStreamChoice, CompletionStreamResponse, CompletionResponse
+    CompletionResponseChoice, CompletionResponseStreamChoice, CompletionStreamResponse, CompletionResponse, \
+    ChatFunctionCallResponse
+from serving.react.qwen.react_prompt import parse_qwen_plugin_call
 from serving.serve.api_keys import auth_api_key
+from serving.serve.api_react import build_request_functions
 from serving.utils import logger
 from serving.serve.api_check import check_requests,create_error_response,ErrorCode
 
@@ -90,6 +93,9 @@ def create_chat_completion(request: typing.Union[CompletionRequest,ChatCompletio
 
 
 def _openai_chat(request: typing.Union[CompletionRequest,ChatCompletionRequest]):
+    functions = None
+    if request.model.lower().find('qwen') != -1:
+        functions = build_request_functions(request)
     self = global_instance()
     rs = request.build_request_chat()
     choices = []
@@ -107,14 +113,42 @@ def _openai_chat(request: typing.Union[CompletionRequest,ChatCompletionRequest])
                 prompt_length += len(x['q'])
                 prompt_length += len(x['a'])
             prompt_length += len(r['query'])
+            response_length += len(result["response"])
+            context_text = result["response"]
+            if functions is not None:
+                functions = request.functions
+                if "Thought:" in context_text:
+                    react_res = parse_qwen_plugin_call(context_text)
+                    if react_res is not None:
+                        # if plugin_name contains other str
+                        available_functions = [f.get("name",None) or f.get("name_for_model",None) for f in functions]
+                        plugin_name = react_res[1]
+                        if plugin_name not in available_functions:
+                            for fct in available_functions:
+                                if fct in plugin_name:
+                                    plugin_name = fct
+                                    break
 
-            response_length = len(result["response"])
-            choice_data = ChatCompletionResponseChoice(
-                index=len(choices),
-                message=ChatMessage(role=Role.ASSISTANT, content=result["response"]),
-                finish_reason=Finish.STOP
-            )
-            choices.append(choice_data)
+                        function_call = ChatFunctionCallResponse(
+                            thought=react_res[0],
+                            name=plugin_name,
+                            arguments=react_res[2],
+                        )
+                    else:
+                        function_call = None
+                    choices.append(
+                        ChatCompletionResponseChoice(
+                            index=len(choices),
+                            message=ChatMessage(role=Role.ASSISTANT,content="", function_call=function_call, functions=functions),
+                            finish_reason="function_call",
+                        )
+                    )
+            else:
+                choices.append(ChatCompletionResponseChoice(
+                    index=len(choices),
+                    message=ChatMessage(role=Role.ASSISTANT, content=context_text),
+                    finish_reason=Finish.STOP
+                ))
     usage = UsageInfo(
         prompt_tokens=prompt_length,
         completion_tokens=response_length,
@@ -194,7 +228,7 @@ def _openai_legend(request: CompletionRequest):
                 prompt_length += len(x['a'])
             prompt_length += len(r['query'])
 
-            response_length = len(result["response"])
+            response_length += len(result["response"])
             choice_data = CompletionResponseChoice(
                 index=len(choices),
                 text=result["response"],

@@ -1,6 +1,8 @@
 import json
+import typing
 from typing import Tuple, Union
 
+from serving.openai_api.openai_api_protocol import ChatMessage
 
 TOOL_DESC = """{name_for_model}: Call this tool to interact with the {name_for_human} API. What is the {name_for_human} API useful for? {description_for_model} Parameters: {parameters} Format the arguments as a JSON object."""
 
@@ -24,7 +26,11 @@ Begin!
 Question: {query}"""
 
 
-def get_qwen_react_prompt(messages, functions=None, function_call="auto"):
+__all__ = [
+    'get_qwen_react_prompt'
+]
+
+def get_qwen_react_prompt(messages: typing.List[ChatMessage], functions=None, function_call="auto"):
     if functions is not None:
         if "name" in functions[0]:
             new_function = []
@@ -53,14 +59,35 @@ def get_qwen_react_prompt(messages, functions=None, function_call="auto"):
 
                 new_function.append(new_info)
             functions = new_function
+        elif "name_for_model" in functions[0]:
+            new_function = []
+            for info in functions:
+                new_info = {}
+                new_info["name_for_model"] = info["name_for_model"]
+                new_info["name_for_human"] = info["name_for_human"]
+                new_info["description_for_model"] = info["description_for_model"]
+                new_info["parameters"] = []
+                params = new_info["parameters"]
+                for param_ in info["parameters"]:
+                    params.append({
+                        "name": param_["name"],
+                        "description": param_["description"],
+                        "required": param_["required"],
+                        "schema": param_.get("schema",{}),
+
+                    })
+                new_function.append(new_info)
+            functions = new_function
+
     else:
         for message in messages:
-            if message.get("functions", None):
-                functions = message["functions"]
+            if message.functions:
+                functions = message.functions
                 break
 
     if function_call != "auto" and isinstance(function_call, dict):
         functions = [info for info in functions if info["name_for_model"] in [function_call["name_for_model"]]]
+
 
     tool_descs, tool_names = [], []
     for info in functions:
@@ -78,14 +105,14 @@ def get_qwen_react_prompt(messages, functions=None, function_call="auto"):
 
     ret = ""
     for message in messages:
-        role, content = message["role"], message["content"]
+        role, content = message.role, message.content
         if role == "user":
             ret += REACT_PROMPT.format(tool_descs=tool_descs, tool_names=tool_names, query=content)
         elif role == "assistant":
-            if message.get("function_call"):
-                thought = message["function_call"]["thought"]
-                function_name = message["function_call"]["name"]
-                arguments = message["function_call"]["arguments"]
+            if message.function_call:
+                thought = message.function_call["thought"]
+                function_name = message.function_call["name"]
+                arguments = message.function_call["arguments"]
 
                 if thought is not None:
                     ret += f"\nThought: {thought.strip()}"
@@ -93,9 +120,10 @@ def get_qwen_react_prompt(messages, functions=None, function_call="auto"):
                 ret += f"\nAction: {function_name.strip()}"
                 ret += f"\nAction Input: {arguments.strip()}"
         elif role == "function":
-            ret += f"\nObservation: output of {message['name']} is {str(content).strip()}"
+            ret += f"\nObservation: output of {message.name} is {str(content).strip()}"
 
-    return [{"role": "user", "content": ret}], functions
+
+    return [ChatMessage(role="user",content=ret,)], functions
 
 
 def parse_qwen_plugin_call(text: str) -> Union[Tuple[str, str, str], None]:

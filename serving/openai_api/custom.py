@@ -8,6 +8,7 @@ __all__ = [
     'CustomParams'
 ]
 
+
 class CustomParams(BaseModel):
 
     adapter_name: Optional[str] = "default"
@@ -88,6 +89,7 @@ class CustomParams(BaseModel):
         r["params"] = {k: params[k] for k in keep_keys}
         return r
 
+
     def build_request_chat(self):
         r = []
         items = self.build_query_history()
@@ -112,6 +114,9 @@ class CustomParams(BaseModel):
                 }
                 r_ = self._update_params(r_)
                 r.append(r_)
+
+
+
         return r
 
     def build_request_streaming(self):

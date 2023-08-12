@@ -1,3 +1,4 @@
+import typing
 from enum import Enum
 from typing import Literal, Optional, List, Dict, Any, Union
 
@@ -69,6 +70,10 @@ class UsageInfo(BaseModel):
 class ChatMessage(BaseModel):
     role: str
     content: str
+    name: Optional[str] = None
+    functions: Optional[List[Dict[str, Any]]] = None
+    function_call: Optional[Union[str, Dict[str, str]]] = "auto"
+
 
 class ChatCompletionRequest(CustomParams):
     model: str
