@@ -88,7 +88,7 @@ def predict(input, chatbot, model, max_length, top_k, top_p, temperature, repeti
         "n": 1 # 返回 n 个choices
     }
     
-    completion = openai.Completion.create(**data)
+    completion = openai.ChatCompletion.create(**data)
     if stream:
         response = model+':'
         for choices in completion:

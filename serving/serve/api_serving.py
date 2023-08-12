@@ -5,6 +5,7 @@
 import json
 import traceback
 import typing
+import uuid
 
 from fastapi import FastAPI, Depends
 from starlette.middleware.cors import CORSMiddleware
@@ -123,42 +124,47 @@ def _openai_chat(request: typing.Union[CompletionRequest,ChatCompletionRequest])
 
 def _openai_chat_stream(request: typing.Union[CompletionRequest,ChatCompletionRequest]):
     self = global_instance()
-    choice_data = ChatCompletionResponseStreamChoice(
-        index=0,
-        delta=DeltaMessage(role=Role.ASSISTANT,content=''),
-        finish_reason=None
-    )
-    chunk = ChatCompletionStreamResponse(model=request.model, choices=[choice_data])
-    yield f"data: {chunk.json(exclude_unset=True, ensure_ascii=False)}\n\n"
 
-    r = request.build_request_streaming()
-    instance = self.queue_mapper[request.model]
-    request_id = instance.put(r)
+    for i in range(max(1, request.n)):
+        idx = str(uuid.uuid4())
+        choice_data = ChatCompletionResponseStreamChoice(
+            index=idx,
+            delta=DeltaMessage(role=Role.ASSISTANT,content=''),
+            finish_reason=None
+        )
+        chunk = ChatCompletionStreamResponse(model=request.model, choices=[choice_data])
+        yield f"data: {chunk.json(exclude_unset=True, ensure_ascii=False)}\n\n"
 
-    while True:
-        result = instance.get(request_id)
-        if result["code"] != 0:
-            yield f"data: {json.dumps(result, ensure_ascii=False)}\n\n"
-        elif not result["complete"] and len(result["response"]) > 0:
-            choice_data = ChatCompletionResponseStreamChoice(
-                index=0,
-                delta=DeltaMessage(role=Role.ASSISTANT,content=result["response"]),
-                finish_reason=None
-            )
-            chunk = ChatCompletionStreamResponse(model=request.model, choices=[choice_data])
-            yield f"data: {chunk.json(exclude_unset=True, ensure_ascii=False)}\n\n"
+        r = request.build_request_streaming()
+        instance = self.queue_mapper[request.model]
+        request_id = instance.put(r)
 
-        if result["complete"]:
-            break
+        while True:
+            result = instance.get(request_id)
+            if result["code"] != 0:
+                yield f"data: {json.dumps(result, ensure_ascii=False)}\n\n"
+                yield "data: [DONE]\n\n"
+                return
+            elif not result["complete"] and len(result["response"]) > 0:
+                choice_data = ChatCompletionResponseStreamChoice(
+                    index=idx,
+                    delta=DeltaMessage(role=Role.ASSISTANT,content=result["response"]),
+                    finish_reason=None
+                )
+                chunk = ChatCompletionStreamResponse(model=request.model, choices=[choice_data])
+                yield f"data: {chunk.json(exclude_unset=True, ensure_ascii=False)}\n\n"
+
+            if result["complete"]:
+                break
 
 
-    choice_data = ChatCompletionResponseStreamChoice(
-        index=0,
-        delta=DeltaMessage(),
-        finish_reason=Finish.STOP
-    )
-    chunk = ChatCompletionStreamResponse(model=request.model, choices=[choice_data])
-    yield f"data: {chunk.json(exclude_unset=True, ensure_ascii=False)}\n\n"
+        choice_data = ChatCompletionResponseStreamChoice(
+            index=idx,
+            delta=DeltaMessage(),
+            finish_reason=Finish.STOP
+        )
+        chunk = ChatCompletionStreamResponse(model=request.model, choices=[choice_data])
+        yield f"data: {chunk.json(exclude_unset=True, ensure_ascii=False)}\n\n"
     yield "data: [DONE]\n\n"
 
 
@@ -204,40 +210,45 @@ def _openai_legend(request: CompletionRequest):
 
 def _openai_legend_stream(request: CompletionRequest):
     self = global_instance()
-    choice_data = CompletionResponseStreamChoice(
-        index=0,
-        text="",
-        finish_reason=None
-    )
-    chunk = CompletionStreamResponse(model=request.model, choices=[choice_data])
-    yield f"data: {chunk.json(exclude_unset=True, ensure_ascii=False)}\n\n"
 
-    r = request.build_request_streaming()
-    instance = self.queue_mapper[request.model]
-    request_id = instance.put(r)
+    for i in range(max(1, request.n)):
+        idx = str(uuid.uuid4())
+        choice_data = CompletionResponseStreamChoice(
+            index=idx,
+            text="",
+            finish_reason=None
+        )
+        chunk = CompletionStreamResponse(model=request.model, choices=[choice_data])
+        yield f"data: {chunk.json(exclude_unset=True, ensure_ascii=False)}\n\n"
 
-    while True:
-        result = instance.get(request_id)
-        if result["code"] != 0:
-            yield f"data: {json.dumps(result, ensure_ascii=False)}\n\n"
-        elif not result["complete"] and len(result["response"]) > 0:
-            choice_data = CompletionResponseStreamChoice(
-                index=0,
-                text=result["response"],
-                finish_reason=None
-            )
-            chunk = CompletionStreamResponse(model=request.model, choices=[choice_data])
-            yield f"data: {chunk.json(exclude_unset=True, ensure_ascii=False)}\n\n"
+        r = request.build_request_streaming()
+        instance = self.queue_mapper[request.model]
+        request_id = instance.put(r)
 
-        if result["complete"]:
-            break
+        while True:
+            result = instance.get(request_id)
+            if result["code"] != 0:
+                yield f"data: {json.dumps(result, ensure_ascii=False)}\n\n"
+                yield "data: [DONE]\n\n"
+                return
+            elif not result["complete"] and len(result["response"]) > 0:
+                choice_data = CompletionResponseStreamChoice(
+                    index=idx,
+                    text=result["response"],
+                    finish_reason=None
+                )
+                chunk = CompletionStreamResponse(model=request.model, choices=[choice_data])
+                yield f"data: {chunk.json(exclude_unset=True, ensure_ascii=False)}\n\n"
+
+            if result["complete"]:
+                break
 
 
-    choice_data = CompletionResponseStreamChoice(
-        index=0,
-        text="",
-        finish_reason=Finish.STOP
-    )
-    chunk = CompletionStreamResponse(model=request.model, choices=[choice_data])
-    yield f"data: {chunk.json(exclude_unset=True, ensure_ascii=False)}\n\n"
+        choice_data = CompletionResponseStreamChoice(
+            index=idx,
+            text="",
+            finish_reason=Finish.STOP
+        )
+        chunk = CompletionStreamResponse(model=request.model, choices=[choice_data])
+        yield f"data: {chunk.json(exclude_unset=True, ensure_ascii=False)}\n\n"
     yield "data: [DONE]\n\n"
