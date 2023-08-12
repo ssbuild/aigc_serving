@@ -160,7 +160,7 @@ def _openai_chat_stream(request: typing.Union[CompletionRequest,ChatCompletionRe
     self = global_instance()
 
     for i in range(max(1, request.n)):
-        idx = str(uuid.uuid4())
+        idx = i
         choice_data = ChatCompletionResponseStreamChoice(
             index=idx,
             delta=DeltaMessage(role=Role.ASSISTANT,content=''),
@@ -246,7 +246,7 @@ def _openai_legend_stream(request: CompletionRequest):
     self = global_instance()
 
     for i in range(max(1, request.n)):
-        idx = str(uuid.uuid4())
+        idx = i
         choice_data = CompletionResponseStreamChoice(
             index=idx,
             text="",
