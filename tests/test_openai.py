@@ -12,7 +12,7 @@ model = "qwen-7b-chat-int4"
 # print("Models:", models)
 
 # Test completion API
-stream = True
+stream = False
 
 data = {
     "model": model,
@@ -38,4 +38,4 @@ if stream:
     print(text)
 else:
     for choice in completion.choices:
-        print("Completion result:", choice.text)
+        print("result:", choice.text)

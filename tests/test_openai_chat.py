@@ -2,8 +2,8 @@ import openai
 
 # 新版本
 openai.api_key = "EMPTY"
-openai.api_base = "http://192.168.2.180:8081/v1/chat"
-# openai.api_base = "http://101.42.176.124:8081/v1/chat"
+openai.api_base = "http://192.168.2.180:8081/v1"
+# openai.api_base = "http://101.42.176.124:8081/v1"
 model = "chatglm2-6b-int4"
 model = "qwen-7b-chat-int4"
 
@@ -28,7 +28,7 @@ data = {
 }
 
 
-completion = openai.Completion.create(**data)
+completion = openai.ChatCompletion.create(**data)
 if stream:
     text = ''
     for choices in completion:
@@ -40,4 +40,4 @@ if stream:
     print(text)
 else:
     for choice in completion.choices:
-        print("Completion result:", choice.message.content)
+        print("result:", choice.message.content)
