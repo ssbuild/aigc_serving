@@ -5,7 +5,7 @@
 
 
    
-   ![llm.png](images/llm.png)
+   ![llm.png](asserts/llm.png)
    <div align="center"> 图片来自于论文: [A Survey of Large Language Models](https://arxiv.org/pdf/2303.18223.pdf) </div>
 
 ## update information
