@@ -1,7 +1,7 @@
 
 ## 简介
 
-   aigc_serving lightweight and efficient Language service model reasoning
+   localserving lightweight and efficient Language service model reasoning
 
 
    
@@ -68,7 +68,7 @@ Models: {
       "created": 1690434104,
       "id": "bloom-560m",
       "object": "model",
-      "owned_by": "aigc_serving",
+      "owned_by": "localserving",
       "parent": null,
       "permission": [
         {
@@ -115,5 +115,5 @@ Completion result: ？我的父亲。我曾以为我是一个很坚强的女孩,
 
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=ssbuild/aigc_serving&type=Date)](https://star-history.com/#ssbuild/aigc_serving&Date)
+[![Star History Chart](https://api.star-history.com/svg?repos=ssbuild/localserving&type=Date)](https://star-history.com/#ssbuild/localserving&Date)
 

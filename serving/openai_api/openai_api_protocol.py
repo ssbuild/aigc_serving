@@ -51,7 +51,7 @@ class ModelCard(BaseModel):
     id: str
     object: str = "model"
     created: int = Field(default_factory=lambda: int(time.time()))
-    owned_by: str = "aigc_serving"
+    owned_by: str = "localserving"
     root: Optional[str] = None
     parent: Optional[str] = None
     permission: List[ModelPermission] = []
