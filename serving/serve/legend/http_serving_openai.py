@@ -30,7 +30,7 @@ class AppSettings(BaseSettings):
     api_keys: typing.List[str] = None
 
 app_settings = AppSettings()
-headers = {"User-Agent": "localserving"}
+headers = {"User-Agent": "aigc_serving"}
 get_bearer_token = HTTPBearer(auto_error=False)
 
 async def check_api_key(
@@ -86,7 +86,7 @@ class HTTP_Serving(Process):
 
         @app.get("/")
         def read_root():
-            return {"localserving": "hello world"}
+            return {"aigc_serving": "hello world"}
 
         #@app.get("/v1/models", dependencies=[Depends(check_api_key)])
         @app.get("/v1/models")

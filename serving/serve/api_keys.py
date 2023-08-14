@@ -12,7 +12,7 @@ class AppSettings(BaseSettings):
     api_keys: typing.List[str] = None
 
 app_settings = AppSettings()
-headers = {"User-Agent": "localserving"}
+headers = {"User-Agent": "aigc_serving"}
 get_bearer_token = HTTPBearer(auto_error=False)
 
 def auth_api_key(

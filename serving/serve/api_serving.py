@@ -52,7 +52,7 @@ app.add_middleware(  # 添加中间件
 
 @app.get("/")
 def read_root():
-    return {"localserving": "hello world"}
+    return {"aigc_serving": "hello world"}
 
 @app.get("/v1/models", dependencies=[Depends(auth_api_key)])
 async def list_models():
