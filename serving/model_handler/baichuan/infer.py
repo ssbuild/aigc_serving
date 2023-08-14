@@ -10,7 +10,7 @@ from transformers import HfArgumentParser, BitsAndBytesConfig, GenerationConfig
 from aigc_zoo.model_zoo.baichuan.llm_model import MyTransformer,BaiChuanConfig,BaiChuanTokenizer,LoraArguments,LoraModel
 from aigc_zoo.utils.llm_generate import Generate
 from config.main import global_models_info_args
-from serving.model_handler.base import EngineAPI_Base
+from serving.model_handler.base import EngineAPI_Base, LoraModelState
 from serving.model_handler.base import CompletionResult,ChunkData,preprocess_input_args,postprocess_input_args
 
 class NN_DataHelper(DataHelper):pass
@@ -83,14 +83,17 @@ class EngineAPI(EngineAPI_Base):
             pl_model.load_sft_weight(ckpt_dir, adapter_name=adapter_name)
         self.lora_model = pl_model.backbone
         if len(self.lora_conf) == 1:
-            self.lora_model.merge_and_unload()
-            self.lora_model.eval()
-
-            model = self.lora_model
-            if self.auto_quantize:
-                model.half().quantize(4)
+            if self.auto_merge_lora_single:
+                self.lora_state = LoraModelState.MERGE_AND_LOCKED
+                self.lora_model.merge_and_unload()
+                self.lora_model.eval()
+                model = self.lora_model
+                if hasattr(model,'quantize') and self.auto_quantize:
+                    model.half().quantize(4)
+                else:
+                    model.half()
             else:
-                model.half()
+                self.lora_model = self.lora_model.half().eval()
 
         else:
             self.lora_model = self.lora_model.half().eval()

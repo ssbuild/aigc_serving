@@ -16,7 +16,7 @@ stream = False
 
 data = {
     "model": model,
-    "adapter_name": "default",
+    "adapter_name": None, # lora头
     "prompt": ["你是谁?"],
     "top_p": 0.8,
     "temperature": 1.0,

@@ -11,7 +11,7 @@ __all__ = [
 
 class CustomParams(BaseModel):
 
-    adapter_name: Optional[str] = "default"
+    adapter_name: Optional[str] = None,
     gtype: Optional[str] = "increace",  # one of total,increace
     do_sample: Optional[bool] = True
     nchar: Optional[int] = None

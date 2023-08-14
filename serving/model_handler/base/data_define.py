@@ -16,6 +16,16 @@ class ChunkData:
     def clear(self):
         self.text = ''
 
+
+class LoraModelState(Enum):
+    NONE = 0
+    MERGED = 1
+    MERGE_AND_LOCKED = 2
+    UNMERGED = 3
+    DISABLED = 4
+
+
+
 CompletionResult = namedtuple('CompletionResult', ['code', 'result','msg','complete'],defaults=(0,{},"ok",True))
 
 #
