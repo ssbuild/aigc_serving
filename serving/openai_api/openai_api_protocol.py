@@ -55,6 +55,7 @@ class ModelCard(BaseModel):
     root: Optional[str] = None
     parent: Optional[str] = None
     permission: List[ModelPermission] = []
+    adapters: Optional[List[str]] = None
 
 
 class ModelList(BaseModel):

@@ -267,12 +267,13 @@ class EngineAPI_Base(ABC):
     def switch_lora(self,adapter_name):
         if len(self.lora_conf) == 0:
             return 0,'ok'
-
+        # 状态切换
         if self.lora_state == LoraModelState.MERGE_AND_LOCKED:
             if adapter_name is None or adapter_name == '':
                 return -1,'model is merge and locked , if want use base model , please set auto_merge_lora_single = False'
 
         if adapter_name is None or adapter_name == '':
+            self.current_adapter_name = adapter_name
             if self.lora_state == LoraModelState.DISABLED:
                 return 0, 'ok'
             self.lora_state = LoraModelState.DISABLED

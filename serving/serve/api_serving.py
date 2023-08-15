@@ -56,12 +56,18 @@ def read_root():
 
 @app.get("/v1/models", dependencies=[Depends(auth_api_key)])
 async def list_models():
-    models = [k for k, v in global_models_info_args.items() if v["enable"]]
-    models.sort()
+    models = [(k,v['model_config'].get('lora',{}),v.get('auto_merge_lora_single',False)) for k, v in global_models_info_args.items() if v["enable"]]
+    # models.sort()
     # TODO: return real model permission details
     model_cards = []
-    for m in models:
-        model_cards.append(ModelCard(id=m, root=m, permission=[ModelPermission()]))
+    for m,lora_conf,auto_merge_lora_single in models:
+        adapters = None
+        if len(lora_conf) > 1 or (len(lora_conf) == 1 and not auto_merge_lora_single):
+            adapters = list(lora_conf.keys())
+
+        model_cards.append(ModelCard(id=m, root=m,
+                                     permission=[ModelPermission()],
+                                     adapters=adapters))
     return ModelList(data=model_cards)
 
 
