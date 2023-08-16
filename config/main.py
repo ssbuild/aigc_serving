@@ -24,10 +24,10 @@ __all__ = [
 # 资源充足可以全部启用 , 并导入 global_models_info_args
 global_models_info_args = {
     # **baichuan_config,
-    # **baichuan2_config
+    # **baichuan2_config,
     # **bloom_conf,
     # **chatglm_conf,
-    # **chatglm2_conf
+    # **chatglm2_conf,
     # **internlm_conf,
     # **llama_conf,
     # **moss_conf,
