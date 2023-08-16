@@ -10,6 +10,7 @@
 
 ## update information
 ```text
+    08-16 推理可选使用 Rope NtkScale , 不训练扩展推理长度
     08-14 支持lora model 基础模型和lora头切换
     08-12 增加通义千问模型工具调用示例，支持 **`function call`** 特性，调用方式参考 [邮件发送助手](./tests/email_sender.py)、[定积分计算器](./tests/quad_calculator.py)、[SQL查询](./tests/sql_querier.py)
     08-11 qwen官方配置文件更新，请使用aigc-zoo 0.1.17.post0 , 并更新官方config.json , generation_config.json 等信息

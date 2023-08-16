@@ -32,6 +32,7 @@ class EngineAPI_Base(ABC):
 
         self.auto_quantize = model_config_dict.get('auto_quantize',True)
         self.auto_merge_lora_single = model_config_dict.get('auto_merge_lora_single',True)
+        self.ntk_scale = model_config_dict.get('ntk_scale', 1.0)
 
         self.lora_state: LoraModelState = LoraModelState.NONE
         self.lora_model = None

@@ -6,6 +6,7 @@ import os
 
 import torch
 from deep_training.data_helper import ModelArguments, DataArguments, DataHelper
+from deep_training.nlp.layers.rope_scale.patch import RotaryNtkScaledArguments
 from transformers import HfArgumentParser
 from aigc_zoo.model_zoo.llm.llm_model import MyTransformer,LoraArguments,LoraModel,AutoConfig
 from aigc_zoo.utils.xverse_generate import Generate
@@ -33,7 +34,11 @@ class EngineAPI(EngineAPI_Base):
         if config.pad_token_id is None or config.pad_token_id >= config.vocab_size:
             config.pad_token_id = tokenizer.eos_token_id
 
-        pl_model = MyTransformer(config=config, model_args=model_args, torch_dtype=config.torch_dtype, )
+        if self.ntk_scale > 1:
+            rope_args = RotaryNtkScaledArguments(max_position_embeddings=config.max_position_embeddings, alpha=self.ntk_scale)
+        else:
+            rope_args = None
+        pl_model = MyTransformer(config=config, model_args=model_args, torch_dtype=config.torch_dtype, rope_args=rope_args)
         model = pl_model.get_llm_model()
         model = model.eval()
         if hasattr(model,'quantize'):
@@ -78,9 +83,15 @@ class EngineAPI(EngineAPI_Base):
         if config.task_specific_params is not None and config.task_specific_params.get('vocab_size', None) is not None:
             config.vocab_size = config.task_specific_params['vocab_size']
 
+        if self.ntk_scale > 1:
+            rope_args = RotaryNtkScaledArguments(max_position_embeddings=config.max_position_embeddings,
+                                                 alpha=self.ntk_scale)
+        else:
+            rope_args = None
         pl_model = MyTransformer(config=config, model_args=model_args,
                                  lora_args=lora_args,
                                  torch_dtype=torch.float16, new_num_tokens=new_num_tokens,
+                                 rope_args=rope_args
                                  # load_in_8bit=global_args["load_in_8bit"],
                                  # # device_map="auto",
                                  # device_map = {"":0} # 第一块卡

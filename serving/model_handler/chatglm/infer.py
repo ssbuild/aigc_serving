@@ -5,6 +5,7 @@ import os.path
 
 import torch
 from deep_training.data_helper import ModelArguments,DataHelper
+from deep_training.nlp.layers.rope_scale.patch import RotaryNtkScaledArguments
 from transformers import HfArgumentParser
 from aigc_zoo.model_zoo.chatglm.llm_model import MyTransformer, ChatGLMTokenizer, LoraArguments, setup_model_profile, \
     ChatGLMConfig,LoraModel
@@ -32,7 +33,12 @@ class EngineAPI(EngineAPI_Base):
         assert tokenizer.eos_token_id == 130005
         config.initializer_weight = False
 
-        pl_model = MyTransformer(config=config, model_args=model_args, torch_dtype=torch.float16, )
+        if self.ntk_scale > 1:
+            rope_args = RotaryNtkScaledArguments(model_type='chatglm',
+                                                 max_position_embeddings=config.max_sequence_length, alpha=self.ntk_scale)
+        else:
+            rope_args = None
+        pl_model = MyTransformer(config=config, model_args=model_args, torch_dtype=torch.float16,rope_args=rope_args )
 
         model = pl_model.get_llm_model()
         model = model.eval()
@@ -78,9 +84,15 @@ class EngineAPI(EngineAPI_Base):
         if config.task_specific_params is not None and config.task_specific_params.get('vocab_size', None) is not None:
             config.vocab_size = config.task_specific_params['vocab_size']
 
+        if self.ntk_scale > 1:
+            rope_args = RotaryNtkScaledArguments(model_type='chatglm',
+                                                 max_position_embeddings=config.max_sequence_length, alpha=self.ntk_scale)
+        else:
+            rope_args = None
         pl_model = MyTransformer(config=config, model_args=model_args,
                                  lora_args=lora_args,
                                  torch_dtype=torch.float16, new_num_tokens=new_num_tokens,
+                                 rope_args=rope_args,
                                  # load_in_8bit=global_args["load_in_8bit"],
                                  # # device_map="auto",
                                  # device_map = {"":0} # 第一块卡
