@@ -11,7 +11,7 @@ from transformers import HfArgumentParser, BitsAndBytesConfig
 from aigc_zoo.model_zoo.internlm.llm_model import MyTransformer,InternLMConfig,InternLMTokenizer,\
     InternLMForCausalLM,LoraArguments,LoraModel
 from aigc_zoo.utils.llm_generate import Generate
-from serving.model_handler.base import EngineAPI_Base,flat_input
+from serving.model_handler.base import EngineAPI_Base, flat_input, LoraModelState
 from config.main import global_models_info_args
 from serving.model_handler.base import CompletionResult,ChunkData,preprocess_input_args,postprocess_input_args
 
@@ -87,14 +87,17 @@ class EngineAPI(EngineAPI_Base):
             pl_model.load_sft_weight(ckpt_dir, adapter_name=adapter_name)
         self.lora_model = pl_model.backbone
         if len(self.lora_conf) == 1:
-            self.lora_model.merge_and_unload()
-            self.lora_model.eval()
-
-            model = self.lora_model
-            if self.auto_quantize:
-                model.half().quantize(4)
+            if self.auto_merge_lora_single:
+                self.lora_state = LoraModelState.MERGE_AND_LOCKED
+                self.lora_model.merge_and_unload()
+                self.lora_model.eval()
+                model = self.lora_model
+                if hasattr(model,'quantize') and self.auto_quantize:
+                    model.half().quantize(4)
+                else:
+                    model.half()
             else:
-                model.half()
+                self.lora_model = self.lora_model.half().eval()
         else:
             self.lora_model = self.lora_model.half().eval()
 
@@ -126,7 +129,7 @@ class EngineAPI(EngineAPI_Base):
         return response
 
     def chat_stream(self, query, nchar=1,gtype='total', history=None, **kwargs):
-        preprocess_input_args(self.tokenizer, kwargs)
+        preprocess_input_args(self.tokenizer,self.config,kwargs)
         if history is None:
             history = []
 
@@ -138,7 +141,7 @@ class EngineAPI(EngineAPI_Base):
                             repetition_penalty=1.01,)
 
         default_kwargs.update(kwargs)
-        postprocess_input_args(self.tokenizer,default_kwargs)
+        postprocess_input_args(self.tokenizer,self.config,default_kwargs)
 
         chunk = ChunkData()
         chunk.n_id = 0
@@ -180,7 +183,7 @@ class EngineAPI(EngineAPI_Base):
 
 
     def chat(self, query,history=None, **kwargs):
-        preprocess_input_args(self.tokenizer, kwargs)
+        preprocess_input_args(self.tokenizer,self.config,kwargs)
         if history is None:
             history = []
 
@@ -191,7 +194,7 @@ class EngineAPI(EngineAPI_Base):
                               top_p=0.8,
                               repetition_penalty=1.01, )
         default_kwargs.update(kwargs)
-        postprocess_input_args(self.tokenizer,default_kwargs)
+        postprocess_input_args(self.tokenizer,self.config,default_kwargs)
         response, history = self.model.chat(self.tokenizer, query=query, **default_kwargs)
         return CompletionResult(result={
             "response": response,
@@ -207,7 +210,7 @@ class EngineAPI(EngineAPI_Base):
                               repetition_penalty=1.01, )
 
         default_kwargs.update(kwargs)
-        postprocess_input_args(self.tokenizer,default_kwargs)
+        postprocess_input_args(self.tokenizer,self.config,default_kwargs)
         output = self.model.chat(self.tokenizer, query=input, **default_kwargs)
         output_scores = default_kwargs.get('output_scores', False)
         if output_scores:

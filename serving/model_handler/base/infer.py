@@ -12,7 +12,7 @@ import torch.distributed as dist
 import torch.multiprocessing as mp
 import multiprocessing
 import threading
-from serving.model_handler.base.data_define import WorkMode
+from serving.model_handler.base.data_define import WorkMode, LoraModelState
 from serving.model_handler.base.data_process import preprocess_input_args,flat_input # noqa
 from serving.model_handler.base.data_define import CompletionResult # noqa
 
@@ -31,6 +31,9 @@ class EngineAPI_Base(ABC):
         self.model = None
 
         self.auto_quantize = model_config_dict.get('auto_quantize',True)
+        self.auto_merge_lora_single = model_config_dict.get('auto_merge_lora_single',True)
+
+        self.lora_state: LoraModelState = LoraModelState.NONE
         self.lora_model = None
         self.current_adapter_name = ''
         self.lora_conf = model_config_dict['model_config']['lora']
@@ -264,15 +267,32 @@ class EngineAPI_Base(ABC):
     def switch_lora(self,adapter_name):
         if len(self.lora_conf) == 0:
             return 0,'ok'
+        # 状态切换
+        if self.lora_state == LoraModelState.MERGE_AND_LOCKED:
+            if adapter_name is None or adapter_name == '':
+                return -1,'model is merge and locked , if want use base model , please set auto_merge_lora_single = False'
 
-        if adapter_name not in self.lora_conf:
-            return -1,'{} not in {}'.format(adapter_name,','.join(list(self.lora_conf.keys())))
+        if adapter_name is None or adapter_name == '':
+            self.current_adapter_name = adapter_name
+            if self.lora_state == LoraModelState.DISABLED:
+                return 0, 'ok'
+            self.lora_state = LoraModelState.DISABLED
+            self.lora_model.disable_adapter_layers()
+            return 0, 'ok'
+        else:
+            if adapter_name not in self.lora_conf:
+                return -1, '{} not in {}'.format(adapter_name, ','.join(list(self.lora_conf.keys())))
 
         if adapter_name == self.current_adapter_name:
             return 0, 'ok'
-        
+
+        if self.lora_state == LoraModelState.DISABLED:
+            self.lora_model.enable_adapter_layers()
+
+        self.lora_state = LoraModelState.MERGED
         self.current_adapter_name = adapter_name
         self.lora_model.set_adapter(adapter_name)
+        self.lora_state.merge_adapter() # noqa
         return 0,'ok'
 
     def trigger_generator(self ,r: typing.Dict,is_first=True):
@@ -307,7 +327,7 @@ class EngineAPI_Base(ABC):
             history = r.get('history', [])
             history = [(_["q"], _["a"]) for _ in history]
 
-            adapter_name = params.pop('adapter_name', 'default')
+            adapter_name = params.pop('adapter_name', None)
             code, msg = self.switch_lora(adapter_name)
             if code != 0:
                 yield ret._replace(code=code,result=None,msg=msg,complete=True)
@@ -352,7 +372,7 @@ class EngineAPI_Base(ABC):
             if not isinstance(params, dict):
                 return ret._replace(code=-1,msg="params error")
 
-            adapter_name = params.pop('adapter_name','default')
+            adapter_name = params.pop('adapter_name',None)
             code,msg = self.switch_lora(adapter_name)
             if code != 0:
                 return ret._replace(code=-1,msg=msg)

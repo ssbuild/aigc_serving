@@ -1,9 +1,9 @@
 import openai
 
-# Modify OpenAI's API key and API base to use vLLM's API server.
+# 旧版本
 openai.api_key = "EMPTY"
 openai.api_base = "http://192.168.2.180:8081/v1"
-openai.api_base = "http://101.42.176.124:8081/v1"
+# openai.api_base = "http://101.42.176.124:8081/v1"
 model = "chatglm2-6b-int4"
 model = "qwen-7b-chat-int4"
 
@@ -16,15 +16,15 @@ stream = False
 
 data = {
     "model": model,
-    "adapter_name": "default",
-    "messages": [{"role": "user", "content": "你是谁"}],
+    "adapter_name": None, # lora头
+    "prompt": ["你是谁?"],
     "top_p": 0.8,
     "temperature": 1.0,
     "frequency_penalty": 1.01,
     "stream": stream,
     "nchar": 1,# stream 字符
     "n": 1, # 返回 n 个choices
-    "stop": ["Observation:","Observation:\n"]
+    # "stop": ["Observation:","Observation:\n"]
 }
 
 
@@ -33,11 +33,9 @@ if stream:
     text = ''
     for choices in completion:
         c = choices.choices[0]
-        delta = c.delta
-        if hasattr(delta,'content'):
-            text += delta.content
-            print(delta.content)
+        text += c.text
+        print(c.text)
     print(text)
 else:
     for choice in completion.choices:
-        print("Completion result:", choice.message.content)
+        print("result:", choice.text)

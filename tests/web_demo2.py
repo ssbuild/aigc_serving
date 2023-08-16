@@ -77,7 +77,7 @@ def predict(input, chatbot, model, max_length, top_k, top_p, temperature, repeti
        
     data = {
         "model": model,
-        "adapter_name": "default",
+        "adapter_name": None, # lora头
         "messages": [{"role": "system", "content": prefix } ,{"role": "user", "content": input} ],
         # "messages": [{"role": "user", "content": prefix + input}],
         "top_p": top_p,
@@ -88,7 +88,7 @@ def predict(input, chatbot, model, max_length, top_k, top_p, temperature, repeti
         "n": 1 # 返回 n 个choices
     }
     
-    completion = openai.Completion.create(**data)
+    completion = openai.ChatCompletion.create(**data)
     if stream:
         response = model+':'
         for choices in completion:

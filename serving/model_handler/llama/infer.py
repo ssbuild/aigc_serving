@@ -9,7 +9,7 @@ from deep_training.data_helper import ModelArguments, DataArguments, DataHelper
 from transformers import HfArgumentParser
 from aigc_zoo.model_zoo.llm.llm_model import MyTransformer,LoraArguments,LoraModel,AutoConfig
 from aigc_zoo.utils.llm_generate import Generate
-from serving.model_handler.base import EngineAPI_Base,flat_input
+from serving.model_handler.base import EngineAPI_Base, flat_input, LoraModelState
 from config.main import global_models_info_args
 from aigc_zoo.utils.streamgenerator import GenTextStreamer
 from serving.model_handler.base import CompletionResult,ChunkData,preprocess_input_args,postprocess_input_args
@@ -96,17 +96,17 @@ class EngineAPI(EngineAPI_Base):
             pl_model.load_sft_weight(ckpt_dir, adapter_name=adapter_name)
         self.lora_model = pl_model.backbone
         if len(self.lora_conf) == 1:
-            self.lora_model.merge_and_unload()
-            self.lora_model.eval()
-
-            model = self.lora_model
-            if hasattr(model,'quantize'):
-                if self.auto_quantize:
+            if self.auto_merge_lora_single:
+                self.lora_state = LoraModelState.MERGE_AND_LOCKED
+                self.lora_model.merge_and_unload()
+                self.lora_model.eval()
+                model = self.lora_model
+                if hasattr(model,'quantize') and self.auto_quantize:
                     model.half().quantize(4)
                 else:
                     model.half()
             else:
-                model.half()
+                self.lora_model = self.lora_model.half().eval()
         else:
             self.lora_model = self.lora_model.half().eval()
 
@@ -117,7 +117,7 @@ class EngineAPI(EngineAPI_Base):
         return self.lora_model, config, tokenizer
 
     def chat_stream(self, query, nchar=1,gtype='total', history=None, **kwargs):
-        preprocess_input_args(self.tokenizer, kwargs)
+        preprocess_input_args(self.tokenizer,self.config,kwargs)
         if history is None:
             history = []
         prompt = ""
@@ -132,7 +132,7 @@ class EngineAPI(EngineAPI_Base):
             do_sample=True, top_p=0.7, temperature=0.95,
         )
         default_kwargs.update(kwargs)
-        postprocess_input_args(self.tokenizer,default_kwargs)
+        postprocess_input_args(self.tokenizer,self.config,default_kwargs)
         chunk = ChunkData()
         chunk.n_id = 0
         def process_token_fn(text,stream_end,chunk: ChunkData):
@@ -188,7 +188,7 @@ class EngineAPI(EngineAPI_Base):
             do_sample=True, top_p=0.7, temperature=0.95,
         )
         default_kwargs.update(kwargs)
-        postprocess_input_args(self.tokenizer,default_kwargs)
+        postprocess_input_args(self.tokenizer,self.config,default_kwargs)
         response = Generate.generate(self.get_model(),
                                      tokenizer=self.tokenizer,
                                      query=prompt, **kwargs)
@@ -206,7 +206,7 @@ class EngineAPI(EngineAPI_Base):
             do_sample=True, top_p=0.7, temperature=0.95,
         )
         default_kwargs.update(kwargs)
-        postprocess_input_args(self.tokenizer,default_kwargs)
+        postprocess_input_args(self.tokenizer,self.config,default_kwargs)
         response = Generate.generate(self.get_model(),
                                      tokenizer=self.tokenizer,
                                      query=input,**kwargs)

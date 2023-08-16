@@ -1,3 +1,4 @@
+import typing
 from enum import Enum
 from typing import Literal, Optional, List, Dict, Any, Union
 
@@ -6,6 +7,13 @@ import uuid
 from pydantic import BaseModel, Field
 from transformers import GenerationConfig
 
+from serving.openai_api.custom import CustomParams
+
+
+class ErrorResponse(BaseModel):
+    object: str = "error"
+    message: str
+    code: int
 
 class Role(str, Enum):
     USER = "user"
@@ -20,10 +28,7 @@ class Finish(str, Enum):
     FUNCTION_CALL = "function_call"
 
 
-class ErrorResponse(BaseModel):
-    object: str = "error"
-    message: str
-    code: int
+
 
 
 
@@ -50,6 +55,7 @@ class ModelCard(BaseModel):
     root: Optional[str] = None
     parent: Optional[str] = None
     permission: List[ModelPermission] = []
+    adapters: Optional[List[str]] = None
 
 
 class ModelList(BaseModel):
@@ -65,11 +71,14 @@ class UsageInfo(BaseModel):
 class ChatMessage(BaseModel):
     role: str
     content: str
+    name: Optional[str] = None
+    functions: Optional[List[Dict[str, Any]]] = None
+    function_call: Optional[Union[str, Dict[str, str]]] = "auto"
 
-class ChatCompletionRequest(BaseModel):
+
+class ChatCompletionRequest(CustomParams):
     model: str
     messages: List[ChatMessage]
-    adapter_name: Optional[str] = "default"
     temperature: Optional[float] = 0.7
     top_p: Optional[float] = 1.0
     n: Optional[int] = 1
@@ -79,6 +88,8 @@ class ChatCompletionRequest(BaseModel):
     presence_penalty: Optional[float] = None
     frequency_penalty: Optional[float] = None
     user: Optional[str] = None
+
+    adapter_name: Optional[str] = "default"
     gtype: Optional[str] = "increace",  # one of total,increace
     do_sample: Optional[bool] = True
     nchar: Optional[int] = None
@@ -122,93 +133,15 @@ class ChatCompletionRequest(BaseModel):
         query = prefix + self.messages[-1].content if not flag else self.messages[-1].content
         return (query,history)
 
-    def _update_params(self,r):
-        params = {
-            "adapter_name": self.adapter_name,
-            "max_new_tokens": self.max_tokens,
-            "top_p": self.top_p,
-            "min_length": self.min_length,
-            "min_new_tokens": self.min_new_tokens,
-            "early_stopping": self.early_stopping,
-            "max_time": self.max_time,
-            "num_beams": self.num_beams,
-            "num_beam_groups": self.num_beam_groups,
-            "penalty_alpha": self.penalty_alpha,
-            "top_k": self.top_k,
-            "epsilon_cutoff": self.epsilon_cutoff,
-            "eta_cutoff": self.eta_cutoff,
-            "diversity_penalty": self.diversity_penalty,
-            "encoder_repetition_penalty": self.encoder_repetition_penalty,
 
-            "forced_bos_token_id": self.forced_bos_token_id,
-            "forced_eos_token_id": self.forced_eos_token_id,
-            "guidance_scale": self.guidance_scale,
-            "low_memory": self.low_memory,
-        }
-        if self.frequency_penalty is not None and self.frequency_penalty > 0:
-            params["repetition_penalty"] = self.frequency_penalty
-
-        if self.presence_penalty is not None and self.presence_penalty > 0:
-            params["presence_penalty"] = self.presence_penalty
-
-        if self.repetition_penalty is not None:
-            params["repetition_penalty"] = self.repetition_penalty
-
-        if self.temperature <= 0:
-            self.temperature = 1
-
-        params["temperature"] = self.temperature
-
-        if self.stop is not None:
-            params["stop"] = self.stop
-
-        if self.stream:
-            params["gtype"] = self.gtype
-            params["nchar"] = self.nchar
-        else:
-            params["do_sample"] = self.do_sample
-
-        keep_keys = [k for k, v in params.items() if v is not None]
-        r["params"] = {k: params[k] for k in keep_keys}
-        return r
-
-    def build_request_chat(self):
-        query,history = self.build_query_history()
-        r = {
-            "method": "chat",
-            "model": self.model,
-            "history": history,
-            "query": query,
-        }
-        r = self._update_params(r)
-        return r
-    def build_request_streaming(self):
-        query,history = self.build_query_history()
-        r = {
-            "method": "chat_stream",
-            "model": self.model,
-            "history": history,
-            "query": query,
-        }
-        r = self._update_params(r)
-        return r
-
-    def build_request_generate(self):
-        query,history = self.build_query_history()
-        r = {
-            "method": "generate",
-            "model": self.model,
-            "history": history,
-            "texts": [query],
-        }
-        r = self._update_params(r)
-        return r
 
 
 class ChatFunctionCallResponse(BaseModel):
     name: str
     arguments: str
     thought: str = None
+
+
 
 class ChatCompletionResponseChoice(BaseModel):
     index: int
@@ -236,7 +169,7 @@ class DeltaMessage(BaseModel):
 class ChatCompletionResponseStreamChoice(BaseModel):
     index: int
     delta: DeltaMessage
-    finish_reason: Optional[Literal["stop", "length", "function_call","error"]]
+    finish_reason: Optional[Literal["stop", "length", "function_call"]]
 
 
 class ChatCompletionStreamResponse(BaseModel):
@@ -281,49 +214,56 @@ class EmbeddingsResponse(BaseModel):
     usage: UsageInfo
 
 
-# class CompletionRequest(BaseModel):
-#     model: str
-#     prompt: Union[str, List[Any]]
-#     suffix: Optional[str] = None
-#     temperature: Optional[float] = 0.7
-#     n: Optional[int] = 1
-#     max_tokens: Optional[int] = 16
-#     stop: Optional[Union[str, List[str]]] = None
-#     stream: Optional[bool] = False
-#     top_p: Optional[float] = None
-#     logprobs: Optional[int] = None
-#     echo: Optional[bool] = None
-#     presence_penalty: Optional[float] = None
-#     frequency_penalty: Optional[float] = None
-#     user: Optional[str] = None
-#
-#
-# class CompletionResponseChoice(BaseModel):
-#     index: int
-#     text: str
-#     logprobs: Optional[int] = None
-#     finish_reason: Optional[Literal["stop", "length"]]
-#
-#
-# class CompletionResponse(BaseModel):
-#     id: str = Field(default_factory=lambda: f"cmpl-{str(uuid.uuid4())}")
-#     object: str = "text_completion"
-#     created: int = Field(default_factory=lambda: int(time.time()))
-#     model: str
-#     choices: List[CompletionResponseChoice]
-#     usage: UsageInfo
-#
-#
-# class CompletionResponseStreamChoice(BaseModel):
-#     index: int
-#     text: str
-#     logprobs: Optional[float] = None
-#     finish_reason: Optional[Literal["stop", "length"]] = None
-#
-#
-# class CompletionStreamResponse(BaseModel):
-#     id: str = Field(default_factory=lambda: f"cmpl-{str(uuid.uuid4())}")
-#     object: str = "text_completion"
-#     created: int = Field(default_factory=lambda: int(time.time()))
-#     model: str
-#     choices: List[CompletionResponseStreamChoice]
+
+
+class CompletionRequest(CustomParams):
+    model: str
+    prompt: Union[str, List[Any]]
+    suffix: Optional[str] = None
+    temperature: Optional[float] = 0.7
+    n: Optional[int] = 1
+    max_tokens: Optional[int] = 512
+    stop: Optional[Union[str, List[str]]] = None
+    stream: Optional[bool] = False
+    top_p: Optional[float] = 1.0
+    logprobs: Optional[int] = None
+    echo: Optional[bool] = False
+    presence_penalty: Optional[float] = 0.0
+    frequency_penalty: Optional[float] = 0.0
+    user: Optional[str] = None
+
+    def build_query_history(self):
+        if isinstance(self.prompt,list):
+            return [(_,[]) for _ in self.prompt]
+        return [(self.prompt,[])]
+
+class CompletionResponseChoice(BaseModel):
+    index: int
+    text: str
+    logprobs: Optional[int] = None
+    finish_reason: Optional[Literal["stop", "length"]] = None
+
+
+class CompletionResponse(BaseModel):
+    id: str = Field(default_factory=lambda: f"cmpl-{uuid.uuid4()}")
+    object: str = "text_completion"
+    created: int = Field(default_factory=lambda: int(time.time()))
+    model: str
+    choices: List[CompletionResponseChoice]
+    usage: UsageInfo
+
+
+class CompletionResponseStreamChoice(BaseModel):
+    index: int
+    text: str
+    logprobs: Optional[float] = None
+    finish_reason: Optional[Literal["stop", "length"]] = None
+
+
+class CompletionStreamResponse(BaseModel):
+    id: str = Field(default_factory=lambda: f"cmpl-{uuid.uuid4()}")
+    object: str = "text_completion"
+    created: int = Field(default_factory=lambda: int(time.time()))
+    model: str
+    choices: List[CompletionResponseStreamChoice]
+

@@ -5,7 +5,7 @@ import typing
 
 import numpy as np
 import torch
-from transformers import PreTrainedTokenizer, LogitsProcessorList, LogitsProcessor
+from transformers import PreTrainedTokenizer, LogitsProcessorList, LogitsProcessor,PretrainedConfig
 
 
 class StopWordsLogitsProcessor(LogitsProcessor):
@@ -92,18 +92,14 @@ class StopWordsLogitsProcessor(LogitsProcessor):
 
 
 
-def preprocess_input_args(tokenizer: PreTrainedTokenizer,args_dict: dict):
+def preprocess_input_args(tokenizer: PreTrainedTokenizer,config: PretrainedConfig,args_dict: dict):
     return args_dict
 
 
-def postprocess_input_args(tokenizer: PreTrainedTokenizer,args_dict: dict):
+def postprocess_input_args(tokenizer: PreTrainedTokenizer,config: PretrainedConfig,args_dict: dict):
     stop = args_dict.pop('stop',None)
     if stop is None:
         return args_dict
-
-    logits_processor = args_dict.pop("logits_processor",None)
-    if logits_processor is None:
-        logits_processor = LogitsProcessorList()
 
     stop_words_ids = None
     if isinstance(stop,list):
@@ -117,14 +113,22 @@ def postprocess_input_args(tokenizer: PreTrainedTokenizer,args_dict: dict):
         stop_words_ids = [tokenizer.encode(stop,add_special_tokens=False)]
 
     if stop_words_ids:
-        stop_words_logits_processor = StopWordsLogitsProcessor(
-            stop_words_ids=stop_words_ids,
-            eos_token_id=tokenizer.eos_token_id,
-        )
-        logits_processor.append(stop_words_logits_processor)
+        if config.model_type.lower() == 'qwen':
+            args_dict["stop_words_ids"] = stop_words_ids
+        else:
+            logits_processor = args_dict.pop("logits_processor", None)
+            if logits_processor is None:
+                logits_processor = LogitsProcessorList()
 
-    if len(logits_processor):
-        args_dict["logits_processor"] = logits_processor
+            if stop_words_ids:
+                stop_words_logits_processor = StopWordsLogitsProcessor(
+                    stop_words_ids=stop_words_ids,
+                    eos_token_id=tokenizer.eos_token_id,
+                )
+                logits_processor.append(stop_words_logits_processor)
+
+            if len(logits_processor):
+                args_dict["logits_processor"] = logits_processor
     return args_dict
 
 def flat_input(ids: typing.Union[typing.List,int]):
