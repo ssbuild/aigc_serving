@@ -7,7 +7,6 @@ import openai
 # 新版本
 openai.api_key = "EMPTY"
 openai.api_base = "http://192.168.2.180:8081/v1"
-# openai.api_base = "http://101.42.176.124:8081/v1"
 model = "chatglm2-6b-int4"
 model = "qwen-7b-chat-int4"
 
