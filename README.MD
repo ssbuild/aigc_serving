@@ -26,10 +26,10 @@
     07-24 support chat
     07-23 support deepspeed , accelerate
 ```
-   推荐环境:
-   linux python >=3.8 torch >= 2.0.1
-   注意：
-   aigc_serving 都没有做模板，请在数据源处理模板
+
+## 注意
+   - 推荐环境: linux python >=3.8 torch >= 2.0.1
+   - aigc_serving 都没有做模板，请在代理处或者请求数据加模板
 
 ## install
 pip install -r requirements.txt
