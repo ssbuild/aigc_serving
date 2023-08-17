@@ -293,7 +293,6 @@ class EngineAPI_Base(ABC):
         self.lora_state = LoraModelState.MERGED
         self.current_adapter_name = adapter_name
         self.lora_model.set_adapter(adapter_name)
-        self.lora_state.merge_adapter() # noqa
         return 0,'ok'
 
     def trigger_generator(self ,r: typing.Dict,is_first=True):

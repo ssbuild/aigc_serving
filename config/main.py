@@ -14,6 +14,7 @@ from config.moss_conf import moss_conf
 from config.opt_conf import opt_conf
 from config.rwkv_conf import rwkv_conf
 from config.qwen_conf import qwen_conf
+from config.tiger_conf import tiger_conf
 
 
 __all__ = [
@@ -33,6 +34,7 @@ global_models_info_args = {
     # **moss_conf,
     # **opt_conf,
     # **rwkv_conf,
+    # **tiger_conf,
      **qwen_conf,
 
 }

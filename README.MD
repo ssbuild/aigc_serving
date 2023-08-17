@@ -10,6 +10,7 @@
 
 ## update information
 ```text
+    08-17 add tiger-chat-13b
     08-16 推理可选使用 Rope NtkScale , 不训练扩展推理长度
     08-14 支持lora model 基础模型和lora头切换
     08-12 增加通义千问模型工具调用示例，支持 **`function call`** 特性，调用方式参考 [邮件发送助手](./tests/email_sender.py)、[定积分计算器](./tests/quad_calculator.py)、[SQL查询](./tests/sql_querier.py)
@@ -27,7 +28,8 @@
 ```
    推荐环境:
    linux python >=3.8 torch >= 2.0.1
-    
+   注意：
+   aigc_serving 都没有做模板，请在数据源处理模板
 
 ## install
 pip install -r requirements.txt
