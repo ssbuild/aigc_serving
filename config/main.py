@@ -41,13 +41,11 @@ global_models_info_args = {
 
 global_serve_args = {
     "host": '0.0.0.0',
-    "port":8081,
-    "workers":4
+    "port": 8081,
+    "workers": 4
 }
 
 
 check_config(global_models_info_args)
-
-
 
 
