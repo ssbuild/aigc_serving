@@ -102,7 +102,7 @@ Completion result: ？我的父亲。我曾以为我是一个很坚强的女孩,
 ```
 
 
-### embedding tests/openai_client.py
+### embedding tests/test_openai_embedding.py
 ```python
 import openai
 # 新版本
