@@ -16,6 +16,7 @@ internlm_conf = {
         "auto_quantize": False, # 是否自动量化模型
         "auto_merge_lora_single": True, # 当仅有一个lora, 是否自动合并成一个模型，此方法将无法调用基础模型，只能使用合并后的权重
         "ntk_scale": 1, #  扩展位置长度 1 即为 1 * 2048 不扩充 , 4 即为 4 * 2048 以此类推
+        "max_batch_size": 1, # embdding max batch size
         "model_config": {
             "model_type": "internlm",
             "model_name_or_path": "/data/nlp/pre_models/torch/internlm/internlm-chat-7b",
@@ -38,6 +39,7 @@ internlm_conf = {
         ],
 
         "auto_quantize": False,  # 是否自动量化模型
+        "max_batch_size": 1, # embdding max batch size
         "model_config": {
             "model_type": "internlm",
             "model_name_or_path": "/data/nlp/pre_models/torch/internlm/internlm-chat-7b-int4",

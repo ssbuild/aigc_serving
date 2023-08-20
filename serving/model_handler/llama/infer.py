@@ -3,8 +3,8 @@
 # @Author: tk
 # @File：evaluate
 import os
-
 import torch
+from torch.nn import functional as F
 from deep_training.data_helper import ModelArguments, DataArguments, DataHelper
 from deep_training.nlp.layers.rope_scale.patch import RotaryNtkScaledArguments
 from transformers import HfArgumentParser
@@ -15,14 +15,10 @@ from config.main import global_models_info_args
 from aigc_zoo.utils.streamgenerator import GenTextStreamer
 from serving.model_handler.base import CompletionResult,ChunkData,preprocess_input_args,postprocess_input_args
 
-old_version = False
-try:
-    from transformers import AutoModelForCausalLM
-    from deep_training.utils.hf import register_transformer_model,register_transformer_config #noqa
-    from deep_training.nlp.models.rellama.modeling_llama import LlamaForCausalLM
-except:
-    old_version = True
-    pass
+
+from transformers import AutoModelForCausalLM
+from deep_training.utils.hf import register_transformer_model, register_transformer_config  # noqa
+from deep_training.nlp.models.rellama.modeling_llama import LlamaForCausalLM
 
 class NN_DataHelper(DataHelper):pass
 
@@ -30,8 +26,8 @@ class NN_DataHelper(DataHelper):pass
 
 class EngineAPI(EngineAPI_Base):
     def _load_model(self,device_id=None):
-        if not old_version:
-            register_transformer_model(LlamaForCausalLM, AutoModelForCausalLM)
+
+        register_transformer_model(LlamaForCausalLM, AutoModelForCausalLM)
         parser = HfArgumentParser((ModelArguments,))
         (model_args,) = parser.parse_dict(self.model_config_dict["model_config"], allow_extra_keys=True)
 
@@ -67,8 +63,7 @@ class EngineAPI(EngineAPI_Base):
         return model, config, tokenizer
 
     def _load_lora_model(self, device_id=None):
-        if not old_version:
-            register_transformer_model(LlamaForCausalLM, AutoModelForCausalLM)
+        register_transformer_model(LlamaForCausalLM, AutoModelForCausalLM)
         parser = HfArgumentParser((ModelArguments,))
         (model_args,) = parser.parse_dict(self.model_config_dict["model_config"], allow_extra_keys=True)
 
@@ -221,6 +216,18 @@ class EngineAPI(EngineAPI_Base):
                                      tokenizer=self.tokenizer,
                                      query=input,**kwargs)
         return response
+
+    def embedding(self, query, **kwargs):
+        model = self.get_model()
+        inputs = self.tokenizer(query, return_tensors="pt")
+        inputs = inputs.to(model.device)
+        model_output = model.forward(**inputs,return_dict=True, output_hidden_states=True, **kwargs)
+        data = model_output.hidden_states[-1]
+        data = F.normalize(torch.mean(data, dim=1), p=2, dim=1)
+        embedding = data.detach().tolist()
+        return CompletionResult(result={
+            "response": embedding,
+        })
 
 # if __name__ == '__main__':
 #     api_client = EngineAPI(global_models_info_args['bloom-560m'])

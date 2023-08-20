@@ -366,29 +366,43 @@ class EngineAPI_Base(ABC):
             if self.model_ds is None:
                 return ret._replace(code=-1, msg="ds_engine init failed")
 
-        method_fn = getattr(self, "chat")
-        if method_fn is not None:
-            params = r.get('params', {})
-            if not isinstance(params, dict):
-                return ret._replace(code=-1,msg="params error")
+        params = r.get('params', {})
+        if not isinstance(params, dict):
+            return ret._replace(code=-1, msg="params error")
 
+        method = r.get("method","chat")
+        if method not in ["chat","embedding"]:
+            return ret._replace(code=-1, msg="invalid method {}".format(method))
+        method_fn = getattr(self, method,None)
+        if method_fn is not None:
             adapter_name = params.pop('adapter_name',None)
             code,msg = self.switch_lora(adapter_name)
             if code != 0:
                 return ret._replace(code=-1,msg=msg)
+            if method == "chat":
+                query = r.get('query', "")
+                history = r.get('history', [])
+                history = [(_["q"], _["a"]) for _ in history]
+                node:CompletionResult = method_fn(query, history=history, **params)
+                # history = [{"q": _[0], "a": _[1]} for _ in results["history"]]
+                result = {
+                    "response": node.result["response"],
+                    # "history": history,
+                    "num_token": node.result.get('num_token',len(node.result["response"]))
+                }
+            else:
+                query = r.get('query')
+                if not isinstance(query,list):
+                    return ret._replace(code=-1, msg="invalid key query , list required".format(method))
 
-            query = r.get('query', "")
-            history = r.get('history', [])
-            history = [(_["q"], _["a"]) for _ in history]
-            node:CompletionResult = method_fn(query, history=history, **params)
-            # history = [{"q": _[0], "a": _[1]} for _ in results["history"]]
-            result = {
-                "response": node.result["response"],
-                # "history": history,
-                "num_token": node.result.get('num_token',node.result["response"])
-            }
+                node: CompletionResult = method_fn(query, **params)
+                result = {
+                    "response": node.result["response"],
+                }
         else:
             code = -1
             msg = "{} not exist method {}".format(self.model_config_dict['model_config']['model_type'], "chat")
             result = None
         return ret._replace(code=code,result=result, msg=msg)
+
+

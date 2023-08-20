@@ -5,11 +5,11 @@ from typing import Optional, Union, List, Dict, Any
 from pydantic import BaseModel
 
 __all__ = [
-    'CustomParams'
+    'CustomChatParams'
 ]
 
 
-class CustomParams(BaseModel):
+class CustomChatParams(BaseModel):
 
     adapter_name: Optional[str] = None,
     gtype: Optional[str] = "increace",  # one of total,increace
@@ -131,4 +131,23 @@ class CustomParams(BaseModel):
             "query": query,
         }
         r = self._update_params(r)
+        return r
+
+
+class CustomEmbeddingParams(BaseModel):
+    def build_data(self,max_batch_size):
+        max_batch_size = max(1,max_batch_size)
+        inputs = [self.input] if isinstance(self.input, str) else self.input
+        batches = [
+            inputs[i: min(i + max_batch_size, len(inputs))]
+            for i in range(0, len(inputs), max_batch_size)
+        ]
+        return batches
+    def build_request(self,data):
+        r = {
+            "method": "embedding",
+            "model": self.model,
+            "adapter_name": self.adapter_name,
+            "query": data,
+        }
         return r

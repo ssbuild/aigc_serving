@@ -10,6 +10,7 @@
 
 ## update information
 ```text
+    08-20 support embedding
     08-17 add tiger-chat-13b
     08-16 推理可选使用 Rope NtkScale , 不训练扩展推理长度
     08-14 支持lora model 基础模型和lora头切换
@@ -63,7 +64,8 @@ bash stop.sh
 ```
 
 
-## openai 接口  demo tests/openai_client.py
+## openai 接口  
+### chat demo tests/openai_client.py
 
 ```text
 Models: {
@@ -99,6 +101,36 @@ Completion result: ？我的父亲。我曾以为我是一个很坚强的女孩,
 
 ```
 
+
+### embedding tests/openai_client.py
+```python
+import openai
+# 新版本
+openai.api_key = "EMPTY"
+openai.api_base = "http://192.168.2.180:8081/v1"
+
+model = "chatglm2-6b-int4"
+model = "qwen-7b-chat-int4"
+
+# # Test list models API
+# models = openai.Model.list()
+# print("Models:", models)
+
+# Test completion API
+stream = False
+
+data = {
+    "model": model,
+    "adapter_name": None, # lora头
+    "input": ["你是谁",],
+}
+
+
+completion = openai.Embedding.create(**data)
+
+for d in completion.data:
+    print(d)
+```
 
 
 ## 推荐界面 ChatGPT-Next-Web

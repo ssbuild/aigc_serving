@@ -7,7 +7,7 @@ import uuid
 from pydantic import BaseModel, Field
 from transformers import GenerationConfig
 
-from serving.openai_api.custom import CustomParams
+from serving.openai_api.custom import CustomChatParams, CustomEmbeddingParams
 
 
 class ErrorResponse(BaseModel):
@@ -76,7 +76,7 @@ class ChatMessage(BaseModel):
     function_call: Optional[Union[str, Dict[str, str]]] = "auto"
 
 
-class ChatCompletionRequest(CustomParams):
+class ChatCompletionRequest(CustomChatParams):
     model: str
     messages: List[ChatMessage]
     temperature: Optional[float] = 0.7
@@ -200,11 +200,11 @@ class TokenCheckResponse(BaseModel):
     prompts: List[TokenCheckResponseItem]
 
 
-class EmbeddingsRequest(BaseModel):
+class EmbeddingsRequest(CustomEmbeddingParams):
     model: Optional[str] = None
-    engine: Optional[str] = None
     input: Union[str, List[Any]]
     user: Optional[str] = None
+    adapter_name: Optional[str] = None
 
 
 class EmbeddingsResponse(BaseModel):
@@ -216,7 +216,7 @@ class EmbeddingsResponse(BaseModel):
 
 
 
-class CompletionRequest(CustomParams):
+class CompletionRequest(CustomChatParams):
     model: str
     prompt: Union[str, List[Any]]
     suffix: Optional[str] = None

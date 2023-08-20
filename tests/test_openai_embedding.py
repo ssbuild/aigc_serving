@@ -1,0 +1,27 @@
+import openai
+
+# 新版本
+openai.api_key = "EMPTY"
+openai.api_base = "http://192.168.2.180:8081/v1"
+
+model = "chatglm2-6b-int4"
+model = "qwen-7b-chat-int4"
+
+# # Test list models API
+# models = openai.Model.list()
+# print("Models:", models)
+
+# Test completion API
+stream = False
+
+data = {
+    "model": model,
+    "adapter_name": None, # lora头
+    "input": ["你是谁",],
+}
+
+
+completion = openai.Embedding.create(**data)
+
+for d in completion.data:
+    print(d)

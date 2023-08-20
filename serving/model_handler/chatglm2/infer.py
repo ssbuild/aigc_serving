@@ -2,8 +2,8 @@
 # @Author  : ssbuild
 # @Time    : 2023/7/10 17:24
 import os
-
 import torch
+from torch.nn import functional as F
 from deep_training.data_helper import ModelArguments,DataHelper
 from deep_training.nlp.layers.rope_scale.patch import RotaryNtkScaledArguments
 from transformers import HfArgumentParser
@@ -188,6 +188,18 @@ class EngineAPI(EngineAPI_Base):
             return output
         response, history = output
         return response
+
+    def embedding(self, query, **kwargs):
+        model = self.get_model()
+        inputs = self.tokenizer(query, return_tensors="pt")
+        inputs = inputs.to(model.device)
+        model_output = model.forward(**inputs,return_dict=True, output_hidden_states=True, **kwargs)
+        data = model_output.hidden_states[-1]
+        data = F.normalize(torch.mean(data, dim=1), p=2, dim=1)
+        embedding = data.detach().tolist()
+        return CompletionResult(result={
+            "response": embedding,
+        })
 
 if __name__ == '__main__':
     api_client = EngineAPI(global_models_info_args['chatglm2-6b-int4'])

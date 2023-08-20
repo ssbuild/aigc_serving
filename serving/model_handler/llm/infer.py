@@ -3,8 +3,8 @@
 # @Author: tk
 # @File：evaluate
 import os
-
 import torch
+from torch.nn import functional as F
 from deep_training.data_helper import ModelArguments, DataArguments, DataHelper
 from transformers import HfArgumentParser
 from aigc_zoo.model_zoo.llm.llm_model import MyTransformer,LoraArguments,LoraModel,AutoConfig
@@ -190,6 +190,18 @@ class EngineAPI(EngineAPI_Base):
                                      tokenizer=self.tokenizer,
                                      query=input,**kwargs)
         return response
+
+    def embedding(self, query, **kwargs):
+        model = self.get_model()
+        inputs = self.tokenizer(query, return_tensors="pt")
+        inputs = inputs.to(model.device)
+        model_output = model.forward(**inputs,return_dict=True, output_hidden_states=True, **kwargs)
+        data = model_output.hidden_states[-1]
+        data = F.normalize(torch.mean(data, dim=1), p=2, dim=1)
+        embedding = data.detach().tolist()
+        return CompletionResult(result={
+            "response": embedding,
+        })
 
 if __name__ == '__main__':
     api_client = EngineAPI(global_models_info_args['bloom-560m'])

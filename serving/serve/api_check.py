@@ -62,3 +62,11 @@ def check_requests(request) -> Optional[JSONResponse]:
 
     return None
 
+
+def check_requests_embedding(request) -> Optional[JSONResponse]:
+    if isinstance(request.input,list)  and len(request.input) > 100:
+        return create_error_response(
+            ErrorCode.PARAM_OUT_OF_RANGE,
+            f"input is overflow , the minimum of 100",
+        )
+    return None

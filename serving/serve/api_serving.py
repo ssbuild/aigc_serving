@@ -15,12 +15,12 @@ from serving.openai_api.openai_api_protocol import ModelCard, ModelPermission, M
     ChatCompletionResponseStreamChoice, DeltaMessage, ChatCompletionStreamResponse, Finish, \
     ChatCompletionResponseChoice, ChatMessage, UsageInfo, ChatCompletionResponse, CompletionRequest, \
     CompletionResponseChoice, CompletionResponseStreamChoice, CompletionStreamResponse, CompletionResponse, \
-    ChatFunctionCallResponse
+    ChatFunctionCallResponse, EmbeddingsRequest, EmbeddingsResponse
 from serving.react.qwen.react_prompt import parse_qwen_plugin_call
 from serving.serve.api_keys import auth_api_key
 from serving.serve.api_react import build_request_functions
 from serving.utils import logger
-from serving.serve.api_check import check_requests,create_error_response,ErrorCode
+from serving.serve.api_check import check_requests, create_error_response, ErrorCode, check_requests_embedding
 
 
 class Resource:
@@ -55,7 +55,7 @@ def read_root():
     return {"aigc_serving": "hello world"}
 
 @app.get("/v1/models", dependencies=[Depends(auth_api_key)])
-async def list_models():
+def list_models():
     models = [(k,v['model_config'].get('lora',{}),v.get('auto_merge_lora_single',False)) for k, v in global_models_info_args.items() if v["enable"]]
     # models.sort()
     # TODO: return real model permission details
@@ -292,3 +292,69 @@ def _openai_legend_stream(request: CompletionRequest):
         chunk = CompletionStreamResponse(model=request.model, choices=[choice_data])
         yield f"data: {chunk.json(exclude_unset=True, ensure_ascii=False)}\n\n"
     yield "data: [DONE]\n\n"
+
+
+
+
+
+
+
+
+
+
+@app.post("/v1/embeddings", dependencies=[Depends(auth_api_key)])
+@app.post("/v1/engines/{model_name}/embeddings", dependencies=[Depends(auth_api_key)])
+def create_embeddings(request: EmbeddingsRequest, model_name: str = None):
+    """Creates embeddings for the text"""
+    if request.model is None:
+        request.model = model_name
+    self = global_instance()
+    try:
+        logger.info(request.json(indent=2, ensure_ascii=False))
+        error_check_ret = check_requests_embedding(request)
+        if error_check_ret is not None:
+            return error_check_ret
+
+        if request.model not in self.valid_model_map:
+            msg = "{} Invalid model: model not in [".format(request.model) + ','.join(self.valid_model_map) + "]"
+            return create_error_response(ErrorCode.INVALID_MODEL, msg)
+
+        conf = global_models_info_args[request.model]
+        max_batch_size = getattr(conf,"max_batch_size",1)
+
+        batches = request.build_data(max_batch_size)
+
+        data,prompt_length = [],0
+        for bs_id,bs in enumerate(batches):
+            r = request.build_request(bs)
+            instance = self.queue_mapper[request.model]
+            request_id = instance.put(r)
+            result = instance.get(request_id)
+            if result["code"] != 0:
+                logger.error(result["msg"])
+                return create_error_response(ErrorCode.INTERNAL_ERROR, result["msg"])
+            vecs = result["response"]
+            data += [
+                {
+                    "object": "embedding",
+                    "embedding": emb,
+                    "index": bs_id * 1024 + i,
+                }
+                for i, emb in enumerate(vecs)
+            ]
+            prompt_length += sum([len(i) for i in bs])
+
+        return EmbeddingsResponse(
+            data=data,
+            model=request.model,
+            usage=UsageInfo(
+                prompt_tokens=prompt_length,
+                total_tokens=prompt_length,
+                completion_tokens=None,
+            ),
+        ).dict(exclude_none=True)
+    except Exception as e:
+        traceback.print_exc()
+        logger.info(e)
+        return create_error_response(ErrorCode.INTERNAL_ERROR, str(e))
+

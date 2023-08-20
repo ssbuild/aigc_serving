@@ -16,6 +16,7 @@ qwen_conf = {
 
         "auto_quantize": False, # 是否自动量化模型
         "auto_merge_lora_single": True, # 当仅有一个lora, 是否自动合并成一个模型，此方法将无法调用基础模型，只能使用合并后的权重
+        "max_batch_size": 1, # embdding max batch size
         "model_config": {
             "model_type": "qwen",
             "model_name_or_path": "/data/nlp/pre_models/torch/qwen/Qwen-7B",
@@ -40,6 +41,7 @@ qwen_conf = {
 
         "auto_quantize": False, # 是否自动量化模型
         "auto_merge_lora_single": True, # 当仅有一个lora, 是否自动合并成一个模型，此方法将无法调用基础模型，只能使用合并后的权重
+        "max_batch_size": 1, # embdding max batch size
         "model_config": {
             "model_type": "qwen",
             "model_name_or_path": "/data/nlp/pre_models/torch/qwen/Qwen-7B-Chat",
@@ -65,6 +67,7 @@ qwen_conf = {
 
         "auto_quantize": False, # 是否自动量化模型
         "auto_merge_lora_single": True, # 当仅有一个lora, 是否自动合并成一个模型，此方法将无法调用基础模型，只能使用合并后的权重
+        "max_batch_size": 1, # embdding max batch size
         "model_config": {
             "model_type": "qwen",
             "model_name_or_path": "/data/nlp/pre_models/torch/qwen/qwen-7b-chat-int4",
