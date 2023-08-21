@@ -1,0 +1,31 @@
+xverse-13b:
+  auto_merge_lora_single: true
+  auto_quantize: false
+  enable: false
+  max_batch_size: 1
+  model_config:
+    do_lower_case: null
+    lora: {}
+    model_name_or_path: /data/nlp/pre_models/torch/xverse/XVERSE-13B
+    model_type: llama
+    use_fast_tokenizer: false
+  ntk_scale: 1
+  work_mode: deepspeed
+  workers:
+  - device_id:
+    - 0
+xverse-13b-int4:
+  auto_quantize: false
+  enable: false
+  max_batch_size: 1
+  model_config:
+    do_lower_case: null
+    lora: {}
+    model_name_or_path: /data/nlp/pre_models/torch/xverse/xverse-13b-int4
+    model_type: llama
+    use_fast_tokenizer: false
+  ntk_scale: 1
+  work_mode: deepspeed
+  workers:
+  - device_id:
+    - 0

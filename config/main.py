@@ -2,19 +2,10 @@
 # @Time:  18:46
 # @Author: tk
 # @File：constant_map
-from config.utils.env_check import check_config
-from config.baichuan_conf import baichuan_config
-from config.baichuan2_conf import baichuan2_config
-from config.bloom_conf import bloom_conf
-from config.chatglm_conf import chatglm_conf
-from config.chatglm2_conf import chatglm2_conf
-from config.internlm_conf import internlm_conf
-from config.llama_conf import llama_conf
-from config.moss_conf import moss_conf
-from config.opt_conf import opt_conf
-from config.rwkv_conf import rwkv_conf
-from config.qwen_conf import qwen_conf
-from config.tiger_conf import tiger_conf
+import os
+from config.pyconfig import load_config as load_config_python
+from config.yamlconfig import load_config as load_config_yaml
+
 
 
 __all__ = [
@@ -22,22 +13,7 @@ __all__ = [
     'global_serve_args'
 ]
 
-# 资源充足可以全部启用 , 并导入 global_models_info_args
-global_models_info_args = {
-    # **baichuan_config,
-    # **baichuan2_config,
-    # **bloom_conf,
-    # **chatglm_conf,
-    # **chatglm2_conf,
-    # **internlm_conf,
-    # **llama_conf,
-    # **moss_conf,
-    # **opt_conf,
-    # **rwkv_conf,
-    # **tiger_conf,
-     **qwen_conf,
-
-}
+from config.utils.env_check import check_config
 
 global_serve_args = {
     "host": '0.0.0.0',
@@ -45,7 +21,20 @@ global_serve_args = {
     "workers": 4
 }
 
+# 资源充足可以全部启用 , 并导入 global_models_info_args
+global_models_info_args = {
+
+}
+#从pyconfig 导入model config
+global_models_info_args.update(load_config_python())
+
+#从 yamlconfig 导入model config
+global_models_info_args.update(load_config_yaml())
+
+
+#从自定义的路径 导入model config
+AS_CONFIG_PATH = os.environ.get("AS_CONFIG_PATH",None)
+if AS_CONFIG_PATH is not None:
+    global_models_info_args.update(load_config_yaml(AS_CONFIG_PATH))
 
 check_config(global_models_info_args)
-
-

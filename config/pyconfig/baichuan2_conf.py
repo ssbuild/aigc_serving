@@ -29,7 +29,7 @@ baichuan2_config = {
         }
     },
     "baichuan-13b-chat-int4": {
-        "enable": True,
+        "enable": False,
         "work_mode": "deepspeed",  # one of deepspeed,accelerate,hf
         "workers": [
             {

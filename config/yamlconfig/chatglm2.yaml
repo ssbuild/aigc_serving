@@ -1,0 +1,47 @@
+chatglm2-6b:
+  auto_merge_lora_single: true
+  auto_quantize: false
+  enable: false
+  max_batch_size: 1
+  model_config:
+    do_lower_case: null
+    lora: {}
+    model_name_or_path: /data/nlp/pre_models/torch/chatglm2/chatglm2-6b
+    model_type: chatglm2
+    use_fast_tokenizer: false
+  ntk_scale: 1
+  work_mode: deepspeed
+  workers:
+  - device_id:
+    - 0
+chatglm2-6b-32k-int4:
+  auto_merge_lora_single: true
+  auto_quantize: false
+  enable: false
+  max_batch_size: 1
+  model_config:
+    do_lower_case: null
+    lora: {}
+    model_name_or_path: /data/nlp/pre_models/torch/chatglm2/chatglm2-6b-32k-int4
+    model_type: chatglm2
+    use_fast_tokenizer: false
+  work_mode: deepspeed
+  workers:
+  - device_id:
+    - 0
+chatglm2-6b-int4:
+  auto_merge_lora_single: true
+  auto_quantize: false
+  enable: false
+  max_batch_size: 1
+  model_config:
+    do_lower_case: null
+    lora: {}
+    model_name_or_path: /data/nlp/pre_models/torch/chatglm2/chatglm2-6b-int4
+    model_type: chatglm2
+    use_fast_tokenizer: false
+  ntk_scale: 1
+  work_mode: deepspeed
+  workers:
+  - device_id:
+    - 0

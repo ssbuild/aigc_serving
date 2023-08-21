@@ -32,7 +32,7 @@ chatglm2_conf = {
     },
 
     "chatglm2-6b-int4": {
-        "enable": True,
+        "enable": False,
         "work_mode": "deepspeed",  # one of deepspeed,accelerate,hf
         "workers": [
             {
