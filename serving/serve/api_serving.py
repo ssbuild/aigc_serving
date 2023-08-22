@@ -338,7 +338,7 @@ def create_embeddings(request: EmbeddingsRequest, model_name: str = None):
                 {
                     "object": "embedding",
                     "embedding": emb,
-                    "index": bs_id * 1024 + i,
+                    "index": bs_id * max_batch_size + i,
                 }
                 for i, emb in enumerate(vecs)
             ]
