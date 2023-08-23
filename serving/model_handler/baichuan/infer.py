@@ -1,14 +1,16 @@
 # -*- coding: utf-8 -*-
 # @Time:  18:49
 # @Author: tk
-# @File：evaluate
+# @File：infer
+import json
 import os
 import torch
 from torch.nn import functional as F
-from deep_training.data_helper import ModelArguments, DataArguments,DataHelper
+from deep_training.trainer.pl.modelweighter import default_peft_weight_preprocess
+from deep_training.data_helper import ModelArguments, DataHelper
 from deep_training.nlp.layers.rope_scale.patch import RotaryNtkScaledArguments
 from transformers import HfArgumentParser, BitsAndBytesConfig, GenerationConfig
-from aigc_zoo.model_zoo.baichuan.llm_model import MyTransformer,BaiChuanConfig,BaiChuanTokenizer,LoraArguments,LoraModel
+from aigc_zoo.model_zoo.baichuan.llm_model import MyTransformer,BaiChuanConfig,BaiChuanTokenizer,PetlArguments,PetlModel
 from aigc_zoo.utils.llm_generate import Generate
 from config.main import global_models_info_args
 from serving.model_handler.base import EngineAPI_Base, LoraModelState
@@ -68,7 +70,7 @@ class EngineAPI(EngineAPI_Base):
         if os.path.exists(os.path.join(ckpt_dir, 'config.json')):
             config = BaiChuanConfig.from_pretrained(ckpt_dir)
         config.initializer_weight = False
-        lora_args = LoraArguments.from_pretrained(ckpt_dir)
+        lora_args = PetlArguments.from_pretrained(ckpt_dir)
 
         assert lora_args.inference_mode == True
 
@@ -84,13 +86,29 @@ class EngineAPI(EngineAPI_Base):
                                  lora_args=lora_args,
                                  torch_dtype=torch.float16, new_num_tokens=new_num_tokens,
                                  rope_args=rope_args,
-                                 # load_in_8bit=global_args["load_in_8bit"],
+
                                  # # device_map="auto",
                                  # device_map = {"":0} # 第一块卡
                                  )
 
+        from deep_training.nlp.models.petl import LoraConfig,AdaLoraConfig,IA3Config
         for adapter_name, ckpt_dir in self.lora_conf.items():
-            pl_model.load_sft_weight(ckpt_dir, adapter_name=adapter_name)
+            config = None
+            with open(os.path.join(ckpt_dir,'adapter_config.json'), mode='r',encoding='utf-8') as f:
+                jd = json.loads(f.read())
+            peft_type = jd.get('peft_type',None)
+            if peft_type is not None:
+                peft_type: str
+                peft_type = peft_type.lower()
+                assert peft_type in ['lora','adalora','ia3']
+                jd["with_lora"] = True
+                if peft_type == 'lora':
+                    config = LoraConfig(**jd)
+                elif peft_type == 'adalora':
+                    config = AdaLoraConfig(**jd)
+                else:
+                    config = IA3Config(**jd)
+            pl_model.load_sft_weight(ckpt_dir, adapter_name=adapter_name,lora_config=config,map_preprocess=default_peft_weight_preprocess)
         self.lora_model = pl_model.backbone
         if len(self.lora_conf) == 1:
             if self.auto_merge_lora_single:
