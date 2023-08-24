@@ -5,11 +5,7 @@ import typing
 import pydantic
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-
-if pydantic.VERSION.startswith('1'):
-    from pydantic import BaseSettings
-else:
-    from pydantic.v1 import BaseSettings
+from pydantic import BaseSettings
 
 
 

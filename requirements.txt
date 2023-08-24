@@ -12,4 +12,4 @@ deepspeed
 transformers_stream_generator
 bitsandbytes>=0.39
 git+https://github.com/ssbuild/aigc_zoo#egg=aigc_zoo
-pydantic
+pydantic<2
