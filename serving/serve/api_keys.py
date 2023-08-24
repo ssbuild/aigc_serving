@@ -2,11 +2,13 @@
 # @Author  : ssbuild
 # @Time    : 2023/8/11 14:29
 import typing
+import pydantic
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-try:
+
+if pydantic.VERSION.startswith('1'):
     from pydantic import BaseSettings
-except:
+else:
     from pydantic.v1 import BaseSettings
 
 
