@@ -4,7 +4,11 @@
 import typing
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from pydantic import BaseSettings
+try:
+    from pydantic import BaseSettings
+except:
+    from pydantic.v1 import BaseSettings
+
 
 
 class AppSettings(BaseSettings):
