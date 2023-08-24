@@ -36,6 +36,12 @@
 pip install -r requirements.txt
 
 
+## docker build
+```commandline
+cd aigc_serving
+docker build -f docker/Dockerfile -t aigc_serving ..
+```
+
 ## 最新的安装包
  - [aigc-zoo](https://pypi.org/project/aigc-zoo/#history)
  - [deep-training](https://pypi.org/project/deep-training/#history)
