@@ -29,7 +29,7 @@
 ```
 
 ## 注意
-   - 推荐环境: linux python >=3.8 torch >= 2.0.1
+   - 推荐环境: linux python >=3.10 torch >= 2.0.1
    - aigc_serving tiger推理没做模版，请在代理处或者请求数据加模板
 
 ## install
