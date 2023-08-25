@@ -1,10 +1,15 @@
 #FROM nvcr.io/nvidia/pytorch:22.12-py3
-FROM xbuild/cuda:11.8.0-cudnn870-devel-ubuntu20.04
-#FROM xbuild/cuda:11.8.0-cudnn870-devel-ubuntu22.04
-env DEBIAN_FRONTEND=noninteractive
-RUN apt-get update -y && apt-get install -y python3.9 python3.9-distutils curl git && curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py && python3.9 get-pip.py
+#FROM xbuild/cuda:11.8.0-cudnn870-devel-ubuntu20.04
+FROM xbuild/cuda:11.8.0-cudnn870-devel-ubuntu22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update -y && apt-get install -y --no-install-recommends python3.10 python3.10-distutils curl git vim &&  \
+    rm -rf /var/lib/apt/lists/* &&  \
+    curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py &&  \
+    python3.10 get-pip.py
 
 WORKDIR /aigc_serving/
+ENV LANG=C.UTF-8
 ENV PYTHONPATH /aigc_serving/
 COPY aigc_serving /aigc_serving
 
