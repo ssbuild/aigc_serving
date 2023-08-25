@@ -10,7 +10,7 @@ from deep_training.trainer.pl.modelweighter import default_peft_weight_preproces
 from deep_training.data_helper import ModelArguments, DataHelper
 from transformers import HfArgumentParser, BitsAndBytesConfig, GenerationConfig
 from aigc_zoo.model_zoo.baichuan2.llm_model import MyTransformer,BaichuanConfig,BaichuanTokenizer,\
-    BaichuanForCausalLM,PetlArguments,PetlModel
+    MyBaichuanForCausalLM,PetlArguments,PetlModel
 from aigc_zoo.utils.llm_generate import Generate
 from serving.model_handler.base import EngineAPI_Base, flat_input, LoraModelState
 from config.main import global_models_info_args
@@ -54,7 +54,7 @@ class EngineAPI(EngineAPI_Base):
         pl_model = MyTransformer(config=config, model_args=model_args,
                                  torch_dtype=torch.float16, )
 
-        model: BaichuanForCausalLM = pl_model.get_llm_model()
+        model: MyBaichuanForCausalLM = pl_model.get_llm_model()
         model = model.eval()
         model.requires_grad_(False)
 
@@ -178,6 +178,7 @@ class EngineAPI(EngineAPI_Base):
                               )
         default_kwargs.update(kwargs)
         postprocess_input_args(self.tokenizer,self.config,default_kwargs)
+        stopping_criteria = default_kwargs.pop('stopping_criteria', None)
         generation_config = GenerationConfig(**default_kwargs)
 
 
@@ -187,9 +188,10 @@ class EngineAPI(EngineAPI_Base):
 
         response = None
         for response in self.get_model().chat(tokenizer=self.tokenizer,
-                                         messages=messages,
-                                         stream=True,
-                                         generation_config=generation_config):
+                                              messages=messages,
+                                              stream=True,
+                                              generation_config=generation_config,
+                                              stopping_criteria=stopping_criteria):
             n_id += 1
             chunk.text = response
             if n_id % nchar == 0:
@@ -229,10 +231,12 @@ class EngineAPI(EngineAPI_Base):
                               )
         default_kwargs.update(kwargs)
         postprocess_input_args(self.tokenizer,self.config,default_kwargs)
+        stopping_criteria = default_kwargs.pop('stopping_criteria', None)
         generation_config = GenerationConfig(**default_kwargs)
         response = self.get_model().chat(tokenizer=self.tokenizer,
                                          messages=messages,
-                                         generation_config=generation_config)
+                                         generation_config=generation_config,
+                                         stopping_criteria=stopping_criteria)
         history = history + [(query, response)]
         return CompletionResult(result={
             "response": response,

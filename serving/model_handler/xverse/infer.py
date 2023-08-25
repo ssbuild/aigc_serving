@@ -9,7 +9,7 @@ from torch.nn import functional as F
 from deep_training.trainer.pl.modelweighter import default_peft_weight_preprocess
 from deep_training.data_helper import ModelArguments,  DataHelper
 from deep_training.nlp.layers.rope_scale.patch import RotaryNtkScaledArguments
-from transformers import HfArgumentParser
+from transformers import HfArgumentParser, GenerationConfig
 from aigc_zoo.model_zoo.llm.llm_model import MyTransformer,PetlArguments,PetlModel,AutoConfig
 from aigc_zoo.utils.xverse_generate import Generate
 from serving.model_handler.base import EngineAPI_Base, flat_input, LoraModelState
@@ -18,16 +18,37 @@ from aigc_zoo.utils.streamgenerator import GenTextStreamer
 from serving.model_handler.base import CompletionResult,ChunkData,preprocess_input_args,postprocess_input_args
 from transformers import AutoModelForCausalLM
 from deep_training.utils.hf import register_transformer_model, register_transformer_config  # noqa
-from deep_training.nlp.models.xverse.modeling_xverse import XverseForCausalLM, XverseConfig
+# from deep_training.nlp.models.xverse.modeling_xverse import XverseForCausalLM, XverseConfig
+from aigc_zoo.model_zoo.xverse.llm_model import MyXverseForCausalLM, XverseConfig
 
 class NN_DataHelper(DataHelper):pass
 
 
+def build_messages(query,history = None):
+    if history is None:
+        history = []
+    messages = []
+    for q, a in history:
+        messages.append({
+            "role": "user",
+            "content": q
+        })
+        messages.append({
+            "role": "assistant",
+            "content": a
+        })
+
+    messages.append({
+        "role": "user",
+        "content": query
+    })
+    return messages
+
 
 class EngineAPI(EngineAPI_Base):
     def _load_model(self,device_id=None):
-        register_transformer_config(register_transformer_config)
-        register_transformer_model(XverseForCausalLM, AutoModelForCausalLM)
+        register_transformer_config(XverseConfig)
+        register_transformer_model(MyXverseForCausalLM, AutoModelForCausalLM)
         parser = HfArgumentParser((ModelArguments,))
         (model_args,) = parser.parse_dict(self.model_config_dict["model_config"], allow_extra_keys=True)
 
@@ -63,8 +84,8 @@ class EngineAPI(EngineAPI_Base):
         return model, config, tokenizer
 
     def _load_lora_model(self, device_id=None):
-        register_transformer_config(register_transformer_config)
-        register_transformer_model(XverseForCausalLM, AutoModelForCausalLM)
+        register_transformer_config(XverseConfig)
+        register_transformer_model(MyXverseForCausalLM, AutoModelForCausalLM)
         parser = HfArgumentParser((ModelArguments,))
         (model_args,) = parser.parse_dict(self.model_config_dict["model_config"], allow_extra_keys=True)
 
@@ -141,22 +162,26 @@ class EngineAPI(EngineAPI_Base):
 
     def chat_stream(self, query, nchar=1,gtype='total', history=None, **kwargs):
         preprocess_input_args(self.tokenizer,self.config,kwargs)
-
         if history is None:
             history = []
-        prompt = ""
-        for q, a in history:
-            prompt += q
-            prompt += a
-        prompt += query
-
-        default_kwargs = dict(
-            eos_token_id=self.config.eos_token_id,
-            pad_token_id=self.config.eos_token_id,
-            do_sample=True, top_p=0.7, temperature=0.95,
-        )
+        default_kwargs = {
+            "pad_token_id": self.config.pad_token_id,
+            "bos_token_id": self.config.bos_token_id,
+            "eos_token_id": self.config.eos_token_id,
+            "max_new_tokens": 512,
+            "temperature": 0.5,
+            "top_k": 30,
+            "top_p": 0.85,
+            "repetition_penalty": 1.1,
+            "do_sample": True,
+        }
         default_kwargs.update(kwargs)
         postprocess_input_args(self.tokenizer,self.config,default_kwargs)
+
+        stopping_criteria = default_kwargs.pop('stopping_criteria',None)
+        generation_config = GenerationConfig(**default_kwargs)
+        messages = build_messages(query, history)
+
         chunk = ChunkData()
         chunk.n_id = 0
         def process_token_fn(text,stream_end,chunk: ChunkData):
@@ -177,7 +202,11 @@ class EngineAPI(EngineAPI_Base):
 
         skip_word_list = default_kwargs.get('eos_token_id',None) or [self.tokenizer.eos_token_id]
         streamer = GenTextStreamer(process_token_fn,chunk,tokenizer=self.tokenizer,skip_word_list=flat_input(skip_word_list),skip_prompt=True)
-        _ = Generate.generate(self.get_model(),tokenizer=self.tokenizer,streamer=streamer, query=prompt, **default_kwargs)
+
+        _ = self.get_model().chat(tokenizer=self.tokenizer,messages=messages,
+                                  generation_config=generation_config,
+                                  streamer=streamer,
+                                  stopping_criteria=stopping_criteria)
         if gtype == 'total':
             ret = CompletionResult(result={
                 "response": chunk.text,
@@ -199,22 +228,25 @@ class EngineAPI(EngineAPI_Base):
         preprocess_input_args(self.tokenizer,self.config,kwargs)
         if history is None:
             history = []
-        prompt = ""
-        for q, a in history:
-            prompt += q
-            prompt += a
-        prompt += query
-
-        default_kwargs = dict(
-            eos_token_id=self.config.eos_token_id,
-            pad_token_id=self.config.eos_token_id,
-            do_sample=True, top_p=0.7, temperature=0.95,
-        )
+        default_kwargs = {
+            "pad_token_id": self.config.pad_token_id,
+            "bos_token_id": self.config.bos_token_id,
+            "eos_token_id": self.config.eos_token_id,
+            "max_new_tokens": 512,
+            "temperature": 0.5,
+            "top_k": 30,
+            "top_p": 0.85,
+            "repetition_penalty": 1.1,
+            "do_sample": True,
+        }
         default_kwargs.update(kwargs)
-        postprocess_input_args(self.tokenizer,self.config,default_kwargs)
-        response = Generate.generate(self.get_model(),
-                                     tokenizer=self.tokenizer,
-                                     query=prompt, **kwargs)
+        postprocess_input_args(self.tokenizer, self.config, default_kwargs)
+        stopping_criteria = default_kwargs.pop('stopping_criteria', None)
+        generation_config = GenerationConfig(**default_kwargs)
+        messages = build_messages(query, history)
+        response = self.get_model().chat(tokenizer=self.tokenizer,messages=messages,
+                                         generation_config=generation_config,
+                                         stopping_criteria=stopping_criteria)
         history = history + [(query, response)]
         return CompletionResult(result={
             "response": response,
