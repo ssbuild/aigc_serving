@@ -29,12 +29,24 @@
 ```
 
 ## 注意
-   - 推荐环境: linux python >=3.8 torch >= 2.0.1
+   - 推荐环境: linux python >=3.10 torch >= 2.0.1
    - aigc_serving tiger推理没做模版，请在代理处或者请求数据加模板
 
 ## install
 pip install -r requirements.txt
 
+
+## docker
+
+### build
+```commandline
+cd aigc_serving
+docker build -f docker/Dockerfile -t aigc_serving ..
+```
+### docker run
+```commandline
+docker run -it --runtime=nvidia --name test aigc_serving
+```
 
 ## 最新的安装包
  - [aigc-zoo](https://pypi.org/project/aigc-zoo/#history)
@@ -63,41 +75,52 @@ cd script
 bash stop.sh
 ```
 
+## 客户端测试 tests
 
 ## openai 接口  
-### chat demo tests/openai_client.py
+### chat demo tests/test_openai_chat.py
 
 ```text
-Models: {
-  "data": [
-    {
-      "created": 1690434104,
-      "id": "bloom-560m",
-      "object": "model",
-      "owned_by": "aigc_serving",
-      "parent": null,
-      "permission": [
-        {
-          "allow_create_engine": false,
-          "allow_fine_tuning": false,
-          "allow_logprobs": true,
-          "allow_sampling": true,
-          "allow_search_indices": true,
-          "allow_view": true,
-          "created": 1690434104,
-          "group": null,
-          "id": "modelperm-fd413444-e293-4500-a4f6-653c773f17f8",
-          "is_blocking": false,
-          "object": "model_permission",
-          "organization": "*"
-        }
-      ],
-      "root": "bloom-560m"
-    }
-  ],
-  "object": "list"
+import openai
+
+# 旧版本
+openai.api_key = "EMPTY"
+openai.api_base = "http://192.168.2.180:8081/v1"
+model = "chatglm2-6b-int4"
+model = "qwen-7b-chat-int4"
+
+# # Test list models API
+# models = openai.Model.list()
+# print("Models:", models)
+
+# Test completion API
+stream = False
+
+data = {
+    "model": model,
+    "adapter_name": None, # lora头
+    "prompt": ["你是谁?"],
+    "top_p": 0.8,
+    "temperature": 1.0,
+    "frequency_penalty": 1.01,
+    "stream": stream,
+    "nchar": 1,# stream 字符
+    "n": 1, # 返回 n 个choices
+    # "stop": ["Observation:","Observation:\n"]
 }
-Completion result: ？我的父亲。我曾以为我是一个很坚强的女孩,但是当我遇到这个男孩的时候我才发现原来我没有那么的坚强！曾经我们相恋了三个月的时间,他却让我失去了理智并且对我很冷淡.一次又一次地伤害了我！我开始怀疑自己的感情是不是真的能够长久的存在下去！于是我在网上看到了这样一篇文章:其实爱情是很容易变质的！也许是你喜欢上了别人才变的爱你；也可能是你因为爱而爱上另一个人才会把你放弃；而或许是你不懂珍惜一个人就已经不在乎了！</s>
+
+
+completion = openai.Completion.create(**data)
+if stream:
+    text = ''
+    for choices in completion:
+        c = choices.choices[0]
+        text += c.text
+        print(c.text)
+    print(text)
+else:
+    for choice in completion.choices:
+        print("result:", choice.text)
 
 ```
 
@@ -137,15 +160,14 @@ for d in completion.data:
 
 ![界面](asserts/1.png)
 ![界面](asserts/moss.png)
+
 ## 
     纯粹而干净的代码
 
 
 ## 注意事项
-```text
-1、 如果deepspeed ， 确保 num_attention_heads % len(device_id) == 0
-
-```
+ - 1、 如果deepspeed ， 确保 num_attention_heads % len(device_id) == 0
+ - 2、 模型键值，必须以模型名开始 , 不区分大小写
 
 
 

@@ -2,9 +2,11 @@
 # @Author  : ssbuild
 # @Time    : 2023/8/11 14:29
 import typing
+import pydantic
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import BaseSettings
+
 
 
 class AppSettings(BaseSettings):
