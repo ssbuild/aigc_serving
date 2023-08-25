@@ -15,7 +15,7 @@ def load_config(path_dir = None):
     for file in fs:
         with open(file,mode='r',encoding='utf-8') as f:
             c = yaml.full_load(f)
-        for conf in c.values():
+        for k,conf in c.items():
             if not isinstance(conf,dict):
                 continue
             if 'model_config' not in conf:
@@ -23,6 +23,6 @@ def load_config(path_dir = None):
                 continue
             if not conf.get('enable',False):
                 continue
-            yaml_config.update(c)
+            yaml_config[k] = conf
 
     return yaml_config

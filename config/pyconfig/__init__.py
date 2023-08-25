@@ -18,14 +18,14 @@ def load_config():
     from config.pyconfig.xverse_conf import xverse_conf
 
     def _update_config(group_conig, dict_objs):
-        for config in group_conig.values():
+        for k,config in group_conig.items():
             if not isinstance(config, dict):
                 continue
             if not "model_config" in config:
                 continue
             if not config['enable']:
                 continue
-            dict_objs.update(config)
+            dict_objs[k]=config
 
     all_config = {}
 
