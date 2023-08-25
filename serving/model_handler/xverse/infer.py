@@ -18,7 +18,8 @@ from aigc_zoo.utils.streamgenerator import GenTextStreamer
 from serving.model_handler.base import CompletionResult,ChunkData,preprocess_input_args,postprocess_input_args
 from transformers import AutoModelForCausalLM
 from deep_training.utils.hf import register_transformer_model, register_transformer_config  # noqa
-from deep_training.nlp.models.xverse.modeling_xverse import XverseForCausalLM, XverseConfig
+# from deep_training.nlp.models.xverse.modeling_xverse import XverseForCausalLM, XverseConfig
+from aigc_zoo.model_zoo.xverse.llm_model import MyXverseForCausalLM, XverseConfig
 
 class NN_DataHelper(DataHelper):pass
 
@@ -46,8 +47,8 @@ def build_messages(query,history = None):
 
 class EngineAPI(EngineAPI_Base):
     def _load_model(self,device_id=None):
-        register_transformer_config(register_transformer_config)
-        register_transformer_model(XverseForCausalLM, AutoModelForCausalLM)
+        register_transformer_config(XverseConfig)
+        register_transformer_model(MyXverseForCausalLM, AutoModelForCausalLM)
         parser = HfArgumentParser((ModelArguments,))
         (model_args,) = parser.parse_dict(self.model_config_dict["model_config"], allow_extra_keys=True)
 
@@ -83,8 +84,8 @@ class EngineAPI(EngineAPI_Base):
         return model, config, tokenizer
 
     def _load_lora_model(self, device_id=None):
-        register_transformer_config(register_transformer_config)
-        register_transformer_model(XverseForCausalLM, AutoModelForCausalLM)
+        register_transformer_config(XverseConfig)
+        register_transformer_model(MyXverseForCausalLM, AutoModelForCausalLM)
         parser = HfArgumentParser((ModelArguments,))
         (model_args,) = parser.parse_dict(self.model_config_dict["model_config"], allow_extra_keys=True)
 
@@ -201,7 +202,8 @@ class EngineAPI(EngineAPI_Base):
         skip_word_list = default_kwargs.get('eos_token_id',None) or [self.tokenizer.eos_token_id]
         streamer = GenTextStreamer(process_token_fn,chunk,tokenizer=self.tokenizer,skip_word_list=flat_input(skip_word_list),skip_prompt=True)
 
-        _ = self.get_model.chat(tokenizer=self.tokenizer,messages=messages,generation_config=generation_config,streamer=streamer)
+
+        _ = self.get_model().chat(tokenizer=self.tokenizer,messages=messages,generation_config=generation_config,streamer=streamer)
         if gtype == 'total':
             ret = CompletionResult(result={
                 "response": chunk.text,

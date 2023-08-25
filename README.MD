@@ -5,12 +5,12 @@
 
 
    
-   ![llm.png](asserts/llm.png)
+   ![llm.png](assets/llm.png)
    <div align="center"> 图片来自于论文: [A Survey of Large Language Models](https://arxiv.org/pdf/2303.18223.pdf) </div>
 
 ## update information
 ```text
-    08-25 support xverse-13b-chat
+    08-25 aigc-zoo 0.2.0.post1 support xverse-13b-chat
     08-20 support embedding
     08-17 add tiger-chat-13b
     08-16 推理可选使用 Rope NtkScale , 不训练扩展推理长度
@@ -159,9 +159,9 @@ for d in completion.data:
 
 ## 推荐界面 ChatGPT-Next-Web
 
-![界面](asserts/1.png)
-![界面](asserts/moss.png)
-
+![界面](assets/1.png)
+![界面](assets/moss.png)
+![界面](assets/xverse.png)
 ## 
     纯粹而干净的代码
 
