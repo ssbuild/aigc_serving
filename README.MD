@@ -10,7 +10,7 @@
 
 ## update information
 ```text
-    08-25 aigc-zoo 0.2.0.post1 support xverse-13b-chat
+    08-25 aigc-zoo 0.2.0.post1 support xverse-13b-chat , 已有模型 实现 stop 功能
     08-20 support embedding
     08-17 add tiger-chat-13b
     08-16 推理可选使用 Rope NtkScale , 不训练扩展推理长度

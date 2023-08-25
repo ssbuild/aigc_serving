@@ -178,6 +178,7 @@ class EngineAPI(EngineAPI_Base):
         default_kwargs.update(kwargs)
         postprocess_input_args(self.tokenizer,self.config,default_kwargs)
 
+        stopping_criteria = default_kwargs.pop('stopping_criteria',None)
         generation_config = GenerationConfig(**default_kwargs)
         messages = build_messages(query, history)
 
@@ -202,8 +203,10 @@ class EngineAPI(EngineAPI_Base):
         skip_word_list = default_kwargs.get('eos_token_id',None) or [self.tokenizer.eos_token_id]
         streamer = GenTextStreamer(process_token_fn,chunk,tokenizer=self.tokenizer,skip_word_list=flat_input(skip_word_list),skip_prompt=True)
 
-
-        _ = self.get_model().chat(tokenizer=self.tokenizer,messages=messages,generation_config=generation_config,streamer=streamer)
+        _ = self.get_model().chat(tokenizer=self.tokenizer,messages=messages,
+                                  generation_config=generation_config,
+                                  streamer=streamer,
+                                  stopping_criteria=stopping_criteria)
         if gtype == 'total':
             ret = CompletionResult(result={
                 "response": chunk.text,
@@ -238,10 +241,12 @@ class EngineAPI(EngineAPI_Base):
         }
         default_kwargs.update(kwargs)
         postprocess_input_args(self.tokenizer, self.config, default_kwargs)
-
+        stopping_criteria = default_kwargs.pop('stopping_criteria', None)
         generation_config = GenerationConfig(**default_kwargs)
         messages = build_messages(query, history)
-        response = self.get_model().chat(tokenizer=self.tokenizer,messages=messages,generation_config=generation_config)
+        response = self.get_model().chat(tokenizer=self.tokenizer,messages=messages,
+                                         generation_config=generation_config,
+                                         stopping_criteria=stopping_criteria)
         history = history + [(query, response)]
         return CompletionResult(result={
             "response": response,
