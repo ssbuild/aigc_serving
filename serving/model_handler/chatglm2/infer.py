@@ -201,7 +201,7 @@ class EngineAPI(EngineAPI_Base):
         inputs = self.tokenizer(query, return_tensors="pt")
         inputs = inputs.to(model.device)
         model_output = model.forward(**inputs,return_dict=True, output_hidden_states=True, **kwargs)
-        data = model_output.hidden_states[-1]
+        data = model_output.hidden_states[-1].transpose(0, 1)
         data = F.normalize(torch.mean(data, dim=1), p=2, dim=1)
         embedding = data.detach().tolist()
         return CompletionResult(result={
