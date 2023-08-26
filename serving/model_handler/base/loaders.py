@@ -25,3 +25,8 @@ def load_lora_config(ckpt_dir):
     else:
         config = PetlArguments.from_pretrained(ckpt_dir)
     return config
+
+
+if __name__ == '__main__':
+    lora_args = load_lora_config('lora')
+    print(lora_args)
