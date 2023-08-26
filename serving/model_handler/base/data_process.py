@@ -127,37 +127,23 @@ class StopWordsCriteria(StoppingCriteria):
             )
 
     def __call__(self, input_ids: torch.LongTensor, scores: torch.FloatTensor, **kwargs) -> bool:
-        stopped_samples = self._calc_stopped_samples(input_ids)
-        for i, should_stop in enumerate(stopped_samples):
-            if should_stop:
-                return True
-        return False
+        return self._calc_stopped_samples(input_ids)
 
-    def _tokens_match(self, prev_tokens: torch.LongTensor, tokens: typing.List[int]) -> bool:
-        if len(tokens) == 0:
-            # if bad word tokens is just one token always ban it
-            return True
-        elif len(tokens) > len(prev_tokens):
-            # if bad word tokens are longer then prev input_ids they can't be equal
-            return False
-        elif prev_tokens[-len(tokens):].tolist() == tokens:
-            # if tokens match
-            return True
-        else:
-            return False
 
-    def _calc_stopped_samples(self, prev_input_ids: typing.Iterable[int]) -> typing.Iterable[int]:
-        stopped_samples = []
+
+    def _calc_stopped_samples(self, prev_input_ids:  torch.LongTensor) -> bool:
+        match = False
+        ids = []
         for prev_input_ids_slice in prev_input_ids:
-            match = False
-            for stop_token_seq in self.stop_words_ids:
-                if self._tokens_match(prev_input_ids_slice, stop_token_seq):
-                    # if tokens do not match continue
-                    match = True
-                    break
-            stopped_samples.append(match)
+            ids.extend(prev_input_ids_slice.tolist())
 
-        return stopped_samples
+
+        for stop_token_seq in self.stop_words_ids:
+            pre_ids = ids[-len(stop_token_seq):]
+            if stop_token_seq == pre_ids:
+                match = True
+                break
+        return match
 
 
 def preprocess_input_args(tokenizer: PreTrainedTokenizer,config: PretrainedConfig,args_dict: dict):
@@ -181,20 +167,20 @@ def postprocess_input_args(tokenizer: PreTrainedTokenizer,config: PretrainedConf
         stop_words_ids = [tokenizer.encode(stop,add_special_tokens=False)]
 
     if stop_words_ids:
-        if config.model_type.lower() == 'qwen':
-            args_dict["stop_words_ids"] = stop_words_ids
-        else:
-            stopping_criteria = args_dict.pop("stopping_criteria", None)
-            if stopping_criteria is None:
-                stopping_criteria = StoppingCriteriaList()
-            stop_words_criteria= StopWordsCriteria(
-                stop_words_ids=stop_words_ids,
-                eos_token_id=tokenizer.eos_token_id,
-            )
-            stopping_criteria.append(stop_words_criteria)
+        # if config.model_type.lower() == 'qwen':
+        #     args_dict["stop_words_ids"] = stop_words_ids
+        # else:
+        stopping_criteria = args_dict.pop("stopping_criteria", None)
+        if stopping_criteria is None:
+            stopping_criteria = StoppingCriteriaList()
+        stop_words_criteria= StopWordsCriteria(
+            stop_words_ids=stop_words_ids,
+            eos_token_id=tokenizer.eos_token_id,
+        )
+        stopping_criteria.append(stop_words_criteria)
 
-            if len(stopping_criteria):
-                args_dict["stopping_criteria"] = stopping_criteria
+        if len(stopping_criteria):
+            args_dict["stopping_criteria"] = stopping_criteria
     return args_dict
 
 def flat_input(ids: typing.Union[typing.List,int]):
