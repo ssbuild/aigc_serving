@@ -78,7 +78,7 @@ class EngineAPI(EngineAPI_Base):
         if os.path.exists(os.path.join(ckpt_dir,'config.json')):
             config = ChatGLMConfig.from_pretrained(ckpt_dir)
         config.initializer_weight = False
-        lora_args = load_lora_config(ckpt_dir)
+        lora_args,ls_peft = load_lora_config(ckpt_dir)
 
         assert lora_args.inference_mode == True and config.pre_seq_len is None
 
@@ -102,7 +102,7 @@ class EngineAPI(EngineAPI_Base):
 
 
         for adapter_name, ckpt_dir in self.lora_conf.items():
-            lora_args = load_lora_config(ckpt_dir)
+            lora_args,ls_peft = load_lora_config(ckpt_dir)
             pl_model.load_sft_weight(ckpt_dir, adapter_name=adapter_name, lora_config=lora_args,map_preprocess=default_peft_weight_preprocess)
         self.lora_model = pl_model.backbone
         if len(self.lora_conf) == 1:
