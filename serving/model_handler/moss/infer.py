@@ -13,7 +13,7 @@ from transformers import HfArgumentParser
 from aigc_zoo.model_zoo.moss.llm_model import MyTransformer,MossConfig,MossTokenizer,PetlArguments,PetlModel
 from aigc_zoo.generator_utils.generator_moss import Generate
 from serving.model_handler.base import EngineAPI_Base, flat_input, preprocess_input_args, postprocess_input_args, \
-    CompletionResult, LoraModelState, ChunkData
+    CompletionResult, LoraModelState, ChunkData, load_lora_config
 from config.main import global_models_info_args
 class NN_DataHelper(DataHelper):pass
 
@@ -58,7 +58,7 @@ class EngineAPI(EngineAPI_Base):
         if os.path.exists(os.path.join(ckpt_dir, 'config.json')):
             config = MossConfig.from_pretrained(ckpt_dir)
         config.initializer_weight = False
-        lora_args = PetlArguments.from_pretrained(ckpt_dir)
+        lora_args = load_lora_config(ckpt_dir)
 
         assert lora_args.inference_mode == True
 
@@ -74,24 +74,9 @@ class EngineAPI(EngineAPI_Base):
                                  # device_map = {"":0} # 第一块卡
                                  )
 
-        from deep_training.nlp.models.petl import LoraConfig,AdaLoraConfig,IA3Config
         for adapter_name, ckpt_dir in self.lora_conf.items():
-            config = None
-            with open(os.path.join(ckpt_dir,'adapter_config.json'), mode='r',encoding='utf-8') as f:
-                jd = json.loads(f.read())
-            peft_type = jd.get('peft_type',None)
-            if peft_type is not None:
-                peft_type: str
-                peft_type = peft_type.lower()
-                assert peft_type in ['lora','adalora','ia3']
-                jd["with_lora"] = True
-                if peft_type == 'lora':
-                    config = LoraConfig(**jd)
-                elif peft_type == 'adalora':
-                    config = AdaLoraConfig(**jd)
-                else:
-                    config = IA3Config(**jd)
-            pl_model.load_sft_weight(ckpt_dir, adapter_name=adapter_name,lora_config=config,map_preprocess=default_peft_weight_preprocess)
+            lora_args = load_lora_config(ckpt_dir)
+            pl_model.load_sft_weight(ckpt_dir, adapter_name=adapter_name,lora_config=lora_args,map_preprocess=default_peft_weight_preprocess)
         self.lora_model = pl_model.backbone
         if len(self.lora_conf) == 1:
             if self.auto_merge_lora_single:
