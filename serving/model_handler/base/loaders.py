@@ -11,20 +11,22 @@ def load_lora_config(ckpt_dir):
     with open(os.path.join(ckpt_dir, 'adapter_config.json'), mode='r', encoding='utf-8') as f:
         jd = json.loads(f.read())
     peft_type = jd.get('peft_type', None)
+    is_peft =False
     if peft_type is not None:
+        is_peft = True
         peft_type: str
         peft_type = peft_type.lower()
         assert peft_type in ['lora', 'adalora', 'ia3']
         jd["with_lora"] = True
         if peft_type == 'lora':
-            config = LoraConfig(**jd)
+            lora_config = LoraConfig(**jd)
         elif peft_type == 'adalora':
-            config = AdaLoraConfig(**jd)
+            lora_config = AdaLoraConfig(**jd)
         else:
-            config = IA3Config(**jd)
+            lora_config = IA3Config(**jd)
     else:
-        config = PetlArguments.from_pretrained(ckpt_dir)
-    return config
+        lora_config = PetlArguments.from_pretrained(ckpt_dir)
+    return lora_config,is_peft
 
 
 if __name__ == '__main__':
