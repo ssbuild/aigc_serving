@@ -139,11 +139,10 @@ class EngineAPI(EngineAPI_Base):
         default_kwargs.update(kwargs)
         postprocess_input_args(self.tokenizer,self.config,default_kwargs)
 
-
         chunk = ChunkData()
         chunk.idx = 0
         n_id = 0
-        for response, history in self.model.stream_chat(self.tokenizer, query=query, **default_kwargs):
+        for response, history in self.get_model().stream_chat(self.tokenizer, query=query, **default_kwargs):
             n_id += 1
             chunk.text = response
             if n_id % nchar == 0:
