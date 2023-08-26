@@ -89,7 +89,6 @@ class StopWordsLogitsProcessor(LogitsProcessor):
                     match = True
                     break
             stopped_samples.append(match)
-
         return stopped_samples
 
 
@@ -127,10 +126,10 @@ class StopWordsCriteria(StoppingCriteria):
             ), "Stop words token sequences {} cannot have an empty list".format(
                 stop_words_ids
             )
-        self.init_pos = 0
-
+        self.init_pos = None
     def __call__(self, input_ids: torch.LongTensor, scores: torch.FloatTensor, **kwargs) -> bool:
-
+        if self.init_pos is None:
+            self.init_pos = input_ids.size(1)
         return self._calc_stopped_samples(input_ids)
 
 
@@ -140,7 +139,7 @@ class StopWordsCriteria(StoppingCriteria):
             return False
         kmp = KMP()
         for ids_ in input_ids:
-            ids = ids_.tolist()
+            ids = ids_.tolist()[self.init_pos:]
             for stop_token_seq in self.stop_words_ids:
                 if kmp.indexOf(ids, stop_token_seq) != -1:
                     return True
