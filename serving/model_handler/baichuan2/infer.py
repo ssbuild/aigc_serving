@@ -13,7 +13,7 @@ from aigc_zoo.model_zoo.baichuan2.llm_model import MyTransformer,BaichuanConfig,
     MyBaichuanForCausalLM,PetlArguments,PetlModel
 from aigc_zoo.utils.llm_generate import Generate
 from serving.model_handler.base import EngineAPI_Base, flat_input, LoraModelState, load_lora_config
-from config.main import global_models_info_args
+from serving.config_parser.main import global_models_info_args
 from serving.model_handler.base import CompletionResult,ChunkData,preprocess_input_args,postprocess_input_args
 
 
@@ -155,6 +155,7 @@ class EngineAPI(EngineAPI_Base):
         return response
 
     def chat_stream(self,  query, nchar=1,gtype='total', history=None,**kwargs):
+        chunk = ChunkData(nchar=nchar, stop=kwargs.get('stop', None), mode=gtype)
         preprocess_input_args(self.tokenizer,self.config,kwargs)
 
         messages = _build_message(query,history=history)
@@ -164,14 +165,9 @@ class EngineAPI(EngineAPI_Base):
                               repetition_penalty=1.1,
                               )
         default_kwargs.update(kwargs)
-        postprocess_input_args(self.tokenizer,self.config,default_kwargs)
+        postprocess_input_args(self.tokenizer,self.config,chunk,default_kwargs)
         stopping_criteria = default_kwargs.pop('stopping_criteria', None)
         generation_config = GenerationConfig(**default_kwargs)
-
-
-        chunk = ChunkData()
-        chunk.idx = 0
-        n_id = 0
 
         response = None
         for response in self.get_model().chat(tokenizer=self.tokenizer,
@@ -179,31 +175,23 @@ class EngineAPI(EngineAPI_Base):
                                               stream=True,
                                               generation_config=generation_config,
                                               stopping_criteria=stopping_criteria):
-            n_id += 1
-            chunk.text = response
-            if n_id % nchar == 0:
-                if gtype == 'total':
-                    yield CompletionResult(result={
-                        "response": chunk.text,
-                        "history": history,
-                        "num_token": n_id
-                    },complete=False)
-                else:
-                    yield CompletionResult(result={
-                        "response": chunk.text[chunk.idx:],
-                        "history": history,
-                        "num_token": n_id
-                    },complete=False)
-                    chunk.idx = len(response)
+            chunk.step(response)
+            if chunk.can_output():
+                text = chunk.step_text()
+                yield CompletionResult(result={
+                    "response": text,
+                    "history": history,
+                    "num_token": chunk.n_id
+                }, complete=False)
 
         history = history + [(query, response)]
-
-        if gtype != 'total' and chunk.idx != len(chunk.text):
+        text = chunk.final_text()
+        if text is not None:
             yield CompletionResult(result={
-                "response": chunk.text[chunk.idx:],
+                "response": text,
                 "history": history,
-                "num_token": n_id
-            },complete=False)
+                "num_token": chunk.n_id
+            }, complete=False)
 
 
     def chat(self, query, history=None, **kwargs):
@@ -217,7 +205,7 @@ class EngineAPI(EngineAPI_Base):
                               repetition_penalty=1.1,
                               )
         default_kwargs.update(kwargs)
-        postprocess_input_args(self.tokenizer,self.config,default_kwargs)
+        postprocess_input_args(self.tokenizer,self.config,None,default_kwargs)
         stopping_criteria = default_kwargs.pop('stopping_criteria', None)
         generation_config = GenerationConfig(**default_kwargs)
         response = self.get_model().chat(tokenizer=self.tokenizer,
@@ -239,7 +227,7 @@ class EngineAPI(EngineAPI_Base):
             repetition_penalty=1.1,
         )
         default_kwargs.update(kwargs)
-        postprocess_input_args(self.tokenizer,self.config,default_kwargs)
+        postprocess_input_args(self.tokenizer,self.config,None,default_kwargs)
         response = Generate.generate(self.get_model(),
                                      tokenizer=self.tokenizer,
                                      query=input,**default_kwargs)

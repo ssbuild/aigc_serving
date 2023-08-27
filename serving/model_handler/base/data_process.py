@@ -93,7 +93,7 @@ class StopWordsLogitsProcessor(LogitsProcessor):
 
 
 class StopWordsCriteria(StoppingCriteria):
-    def __init__(self, stop_words_ids: typing.Iterable[typing.Iterable[int]], eos_token_id: int):
+    def __init__(self, stop_words_ids: typing.Iterable[typing.Iterable[int]], eos_token_id: int,chunk=None):
 
         if not isinstance(stop_words_ids, typing.List) or len(stop_words_ids) == 0:
             raise ValueError(
@@ -127,11 +127,19 @@ class StopWordsCriteria(StoppingCriteria):
                 stop_words_ids
             )
         self.init_pos = None
+        self.chunk = chunk
+
+
+
     def __call__(self, input_ids: torch.LongTensor, scores: torch.FloatTensor, **kwargs) -> bool:
+        if self.chunk is not None:
+            finished = getattr(self.chunk,'finished',False)
+            if finished:
+                return True
+
         if self.init_pos is None:
             self.init_pos = input_ids.size(1)
         return self._calc_stopped_samples(input_ids)
-
 
 
     def _calc_stopped_samples(self, input_ids:  torch.LongTensor) -> bool:
@@ -151,7 +159,7 @@ def preprocess_input_args(tokenizer: PreTrainedTokenizer,config: PretrainedConfi
     return args_dict
 
 
-def postprocess_input_args(tokenizer: PreTrainedTokenizer,config: PretrainedConfig,args_dict: dict):
+def postprocess_input_args(tokenizer: PreTrainedTokenizer,config: PretrainedConfig,chunk,args_dict: dict):
     stop = args_dict.pop('stop',None)
     if stop is None:
         return args_dict
@@ -177,6 +185,7 @@ def postprocess_input_args(tokenizer: PreTrainedTokenizer,config: PretrainedConf
         stop_words_criteria= StopWordsCriteria(
             stop_words_ids=stop_words_ids,
             eos_token_id=tokenizer.eos_token_id,
+            chunk=chunk,
         )
         stopping_criteria.append(stop_words_criteria)
 

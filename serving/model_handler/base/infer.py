@@ -147,6 +147,10 @@ class EngineAPI_Base(ABC):
                 self.model_ds.chat = self.model.chat
             if hasattr(self.model,'chat_stream'):
                 self.model_ds.chat_stream = self.model.chat_stream
+
+            if hasattr(self.model, 'stream_chat'):
+                self.model_ds.stream_chat = self.model.stream_chat
+
             self.model_ds.device = self.model.device
             self.loop_forever(rank)
         except Exception as e:

@@ -12,7 +12,7 @@ from deep_training.nlp.layers.rope_scale.patch import RotaryNtkScaledArguments
 from transformers import HfArgumentParser, BitsAndBytesConfig, GenerationConfig
 from aigc_zoo.model_zoo.baichuan.llm_model import MyTransformer,BaiChuanConfig,BaiChuanTokenizer,PetlArguments,PetlModel
 from aigc_zoo.utils.llm_generate import Generate
-from config.main import global_models_info_args
+from serving.config_parser.main import global_models_info_args
 from serving.model_handler.base import EngineAPI_Base, LoraModelState, load_lora_config
 from serving.model_handler.base import CompletionResult,ChunkData,preprocess_input_args,postprocess_input_args
 
@@ -122,6 +122,8 @@ class EngineAPI(EngineAPI_Base):
 
 
     def chat_stream(self,  query, nchar=1, gtype='total', history=None,**kwargs):
+        chunk = ChunkData(nchar=nchar, stop=kwargs.get('stop', None), mode=gtype)
+
         preprocess_input_args(self.tokenizer,self.config,kwargs)
         if history is None:
             history = []
@@ -137,7 +139,7 @@ class EngineAPI(EngineAPI_Base):
                               repetition_penalty=1.1,
                               )
         default_kwargs.update(kwargs)
-        postprocess_input_args(self.tokenizer,self.config,default_kwargs)
+        postprocess_input_args(self.tokenizer,self.config,chunk,default_kwargs)
         generation_config = GenerationConfig(**default_kwargs)
 
         prompt = query
@@ -156,34 +158,25 @@ class EngineAPI(EngineAPI_Base):
                 yield self.tokenizer.decode(outputs, skip_special_tokens=True)
 
 
-        chunk = ChunkData()
-        chunk.idx = 0
-        n_id = 0
+
         response = None
         for response in stream_generator():
-            n_id += 1
-            chunk.text = response
-            if n_id % nchar == 0:
-                if gtype == 'total':
-                    yield CompletionResult(result={
-                        "response": chunk.text,
-                        "history": history,
-                        "num_token": n_id
-                    },complete=False)
-                else:
-                    yield CompletionResult(result={
-                        "response": chunk.text[chunk.idx:],
-                        "history": history,
-                        "num_token": n_id
-                    },complete=False)
-                    chunk.idx = len(response)
+            chunk.step(response)
+            if chunk.can_output():
+                text = chunk.step_text()
+                yield CompletionResult(result={
+                    "response": text,
+                    "history": history,
+                    "num_token": chunk.n_id
+                }, complete=False)
 
         history = history + [(query, response)]
-        if gtype != 'total' and chunk.idx != len(chunk.text):
+        text = chunk.final_text()
+        if text is not None:
             yield CompletionResult(result={
-                "response": chunk.text[chunk.idx:],
+                "response": text,
                 "history": history,
-                "num_token": n_id
+                "num_token": chunk.n_id
             },complete=False)
 
 
@@ -205,7 +198,7 @@ class EngineAPI(EngineAPI_Base):
             do_sample=True, top_p=0.7, temperature=0.95,
         )
         default_kwargs.update(kwargs)
-        postprocess_input_args(self.tokenizer,self.config,default_kwargs)
+        postprocess_input_args(self.tokenizer,self.config,None,default_kwargs)
         response = Generate.generate(self.get_model(),
                                      tokenizer=self.tokenizer,
                                      query=prompt, **kwargs)
@@ -222,7 +215,7 @@ class EngineAPI(EngineAPI_Base):
             do_sample=True, top_p=0.7, temperature=0.95,
         )
         default_kwargs.update(kwargs)
-        postprocess_input_args(self.tokenizer,self.config,default_kwargs)
+        postprocess_input_args(self.tokenizer,self.config,None,default_kwargs)
         response = Generate.generate(self.get_model(),
                                      tokenizer=self.tokenizer,
                                      query=input,**default_kwargs)

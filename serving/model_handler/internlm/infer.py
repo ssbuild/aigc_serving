@@ -15,7 +15,7 @@ from aigc_zoo.model_zoo.internlm.llm_model import MyTransformer,InternLMConfig,I
     InternLMForCausalLM,PetlArguments,PetlModel
 from aigc_zoo.utils.llm_generate import Generate
 from serving.model_handler.base import EngineAPI_Base, flat_input, LoraModelState, load_lora_config
-from config.main import global_models_info_args
+from serving.config_parser.main import global_models_info_args
 from serving.model_handler.base import CompletionResult,ChunkData,preprocess_input_args,postprocess_input_args
 
 
@@ -147,6 +147,7 @@ class EngineAPI(EngineAPI_Base):
         return response
 
     def chat_stream(self, query, nchar=1,gtype='total', history=None, **kwargs):
+        chunk = ChunkData(nchar=nchar, stop=kwargs.get('stop', None), mode=gtype)
         preprocess_input_args(self.tokenizer,self.config,kwargs)
         if history is None:
             history = []
@@ -159,38 +160,23 @@ class EngineAPI(EngineAPI_Base):
                             repetition_penalty=1.01,)
 
         default_kwargs.update(kwargs)
-        postprocess_input_args(self.tokenizer,self.config,default_kwargs)
+        postprocess_input_args(self.tokenizer,self.config,chunk,default_kwargs)
 
-        chunk = ChunkData()
-        chunk.n_id = 0
+
         def process_token_fn(text, stream_end, chunk: ChunkData):
-            chunk.n_id += 1
-            chunk.text += text
-            chunk.idx += 1
-            if chunk.idx % nchar == 0 or stream_end or chunk.idx == 1:
+            chunk.step(text,is_append=True)
+            if chunk.can_output() or stream_end :
+                text = chunk.step_text()
                 ret = CompletionResult(result={
-                        "response": chunk.text,
+                        "response": text,
                         "history": history,
                         "num_token": chunk.n_id
                     }, complete=False)
-                if gtype == 'total':
-                    self.push_response(ret)
-                    chunk.idx = 0
-                else:
-                    self.push_response(ret)
-                    chunk.clear()
+                self.push_response(ret)
 
         skip_word_list = [self.tokenizer.eos_token_id,2, 103028]
         streamer = GenTextStreamer(process_token_fn, chunk, tokenizer=self.tokenizer,skip_word_list=flat_input(skip_word_list),skip_prompt=True)
         _ = self.get_model().chat( tokenizer=self.tokenizer, streamer=streamer, query=query, **default_kwargs)
-        if gtype == 'total':
-            ret = CompletionResult(result={
-                "response": chunk.text,
-                "history": history,
-                "num_token": chunk.n_id
-            }, complete=False)
-            self.push_response(ret)
-
         ret = CompletionResult(result={
             "response": "",
             "history": history,
@@ -212,7 +198,7 @@ class EngineAPI(EngineAPI_Base):
                               top_p=0.8,
                               repetition_penalty=1.01, )
         default_kwargs.update(kwargs)
-        postprocess_input_args(self.tokenizer,self.config,default_kwargs)
+        postprocess_input_args(self.tokenizer,self.config,None,default_kwargs)
         response, history = self.model.chat(self.tokenizer, query=query, **default_kwargs)
         return CompletionResult(result={
             "response": response,
@@ -228,7 +214,7 @@ class EngineAPI(EngineAPI_Base):
                               repetition_penalty=1.01, )
 
         default_kwargs.update(kwargs)
-        postprocess_input_args(self.tokenizer,self.config,default_kwargs)
+        postprocess_input_args(self.tokenizer,self.config,None,default_kwargs)
         output = self.model.chat(self.tokenizer, query=input, **default_kwargs)
         output_scores = default_kwargs.get('output_scores', False)
         if output_scores:
