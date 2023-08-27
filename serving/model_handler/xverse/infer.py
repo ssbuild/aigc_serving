@@ -212,7 +212,7 @@ class EngineAPI(EngineAPI_Base):
             "do_sample": True,
         }
         default_kwargs.update(kwargs)
-        postprocess_input_args(self.tokenizer, self.config, default_kwargs)
+        postprocess_input_args(self.tokenizer, self.config,None, default_kwargs)
         stopping_criteria = default_kwargs.pop('stopping_criteria', None)
         generation_config = GenerationConfig(**default_kwargs)
         messages = build_messages(query, history)
