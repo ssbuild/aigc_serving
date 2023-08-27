@@ -159,7 +159,7 @@ def preprocess_input_args(tokenizer: PreTrainedTokenizer,config: PretrainedConfi
     return args_dict
 
 
-def postprocess_input_args(tokenizer: PreTrainedTokenizer,config: PretrainedConfig,chunk,args_dict: dict):
+def postprocess_input_args(tokenizer: PreTrainedTokenizer,config: PretrainedConfig,chunk,args_dict):
     stop = args_dict.pop('stop',None)
     if stop is None:
         return args_dict
