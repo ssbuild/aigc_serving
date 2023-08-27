@@ -11,7 +11,7 @@ root_dir = os.path.abspath(root_dir)
 sys.path.append(root_dir)
 from serving.serve.backend import WokerLoader
 import uvicorn
-from config.main import global_serve_args
+from serving.config_parser.main import global_serve_args
 from serving.utils import logger
 from serving.serve.api_serving import global_instance, app
 

@@ -12,7 +12,7 @@ from transformers import HfArgumentParser, BitsAndBytesConfig
 from aigc_zoo.model_zoo.qwen.llm_model import MyTransformer, QWenTokenizer, PetlArguments, \
     setup_model_profile, QWenConfig
 from serving.model_handler.base import EngineAPI_Base, flat_input, LoraModelState, load_lora_config
-from config.main import global_models_info_args
+from serving.config_parser.main import global_models_info_args
 from serving.model_handler.base import CompletionResult,ChunkData,preprocess_input_args,postprocess_input_args
 
 
@@ -127,6 +127,7 @@ class EngineAPI(EngineAPI_Base):
 
 
     def chat_stream(self, query, nchar=1,gtype='total', history=None, **kwargs):
+        chunk = ChunkData(nchar=nchar, stop=kwargs.get('stop', None), mode=gtype)
         preprocess_input_args(self.tokenizer,self.config,kwargs)
         if history is None:
             history = []
@@ -143,45 +144,26 @@ class EngineAPI(EngineAPI_Base):
             "top_p": 0.5,
         }
         default_kwargs.update(kwargs)
-        postprocess_input_args(self.tokenizer,self.config,default_kwargs)
-
-        chunk = ChunkData()
-        chunk.n_id = 0
+        postprocess_input_args(self.tokenizer,self.config,chunk,default_kwargs)
         def process_token_fn(text, stream_end, chunk: ChunkData):
-            chunk.n_id += 1
-            chunk.text += text
-            chunk.idx += 1
-            if chunk.idx % nchar == 0 or stream_end or chunk.idx == 1:
-                ret = CompletionResult(result={
-                    "response": chunk.text,
+            chunk.step(text, is_append=True)
+            if chunk.can_output() or stream_end:
+                text = chunk.step_text()
+                self.push_response(CompletionResult(result={
+                    "response": text,
                     "history": history,
                     "num_token": chunk.n_id
-                }, complete=False)
-                if gtype == 'total':
-                    self.push_response(ret)
-                    chunk.idx = 0
-                else:
-                    self.push_response(ret)
-                    chunk.clear()
+                }, complete=False))
 
         skip_word_list = [self.tokenizer.im_end_id, self.tokenizer.im_start_id, self.tokenizer.eos_token_id or 151643]
         skip_word_list += default_kwargs.get('stop_words_ids',[])
         streamer = GenTextStreamer(process_token_fn, chunk, tokenizer=self.tokenizer,skip_word_list=flat_input(skip_word_list),skip_prompt=True)
         _ = self.get_model().chat(tokenizer=self.tokenizer, streamer=streamer, query=query, **default_kwargs)
-        if gtype == 'total':
-            ret = CompletionResult(result={
-                "response": chunk.text,
-                "history": history,
-                "num_token": chunk.n_id
-            }, complete=False)
-            self.push_response(ret)
-
-        ret = CompletionResult(result={
+        self.push_response(CompletionResult(result={
             "response": "",
             "history": history,
             "num_token": chunk.n_id
-        }, complete=True)
-        self.push_response(ret)
+        }, complete=True))
         return None
 
 
@@ -199,7 +181,7 @@ class EngineAPI(EngineAPI_Base):
             "top_p": 0.5,
         }
         default_kwargs.update(kwargs)
-        postprocess_input_args(self.tokenizer,self.config,default_kwargs)
+        postprocess_input_args(self.tokenizer,self.config,None,default_kwargs)
         response, history = self.model.chat(self.tokenizer, query=query,  **default_kwargs)
         return CompletionResult(result={
             "response": response,
@@ -212,7 +194,7 @@ class EngineAPI(EngineAPI_Base):
             do_sample=True, top_p=0.7, temperature=0.95,
         )
         default_kwargs.update(kwargs)
-        postprocess_input_args(self.tokenizer,self.config,default_kwargs)
+        postprocess_input_args(self.tokenizer,self.config,None,default_kwargs)
         #response, history = self.model.chat(self.tokenizer, query=input,  **kwargs)
         output = self.model.chat(self.tokenizer, query=input, **default_kwargs)
         output_scores = default_kwargs.get('output_scores', False)

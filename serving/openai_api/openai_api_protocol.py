@@ -89,29 +89,7 @@ class ChatCompletionRequest(CustomChatParams):
     frequency_penalty: Optional[float] = None
     user: Optional[str] = None
 
-    adapter_name: Optional[str] = "default"
-    gtype: Optional[str] = "increace",  # one of total,increace
-    do_sample: Optional[bool] = True
-    nchar: Optional[int] = None
-    min_length: Optional[int] =None
-    min_new_tokens: Optional[int] =None
-    early_stopping: Optional[Union[bool, str]] = None
-    max_time: Optional[float] = None
-    num_beams: Optional[int] = None
-    num_beam_groups: Optional[int] = None
-    penalty_alpha: Optional[float] = None
-    top_k: Optional[int] = None
-    epsilon_cutoff: Optional[float] = None
-    eta_cutoff: Optional[float] = None
-    diversity_penalty: Optional[float] = None
-    encoder_repetition_penalty: Optional[float] = None
-    repetition_penalty: Optional[float] = None
-    forced_bos_token_id: Optional[int] = None
-    forced_eos_token_id: Optional[int] = None
-    guidance_scale: Optional[float] = None
-    low_memory: Optional[bool] = None
-    functions: Optional[List[Dict[str, Any]]] = None
-    function_call: Union[str, Dict[str, str]] = "auto"
+
 
     def build_query_history(self):
         prev_messages = self.messages[:-1]
