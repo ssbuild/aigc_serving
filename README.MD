@@ -62,19 +62,34 @@ docker run -it --runtime=nvidia --name test aigc_serving
 
 
 
-## 启动
-修改 config/main.py 配置文件
+## 服务启动和停止
 
 ```commandline
+# 启动
 cd script
 bash start.sh
-```
-
-##  停止
-```commandline
+# 停止
 cd script
 bash stop.sh
 ```
+## 加密服务启动和停止
+### 第一步加密工程
+```commandline
+pip install -U se_imports
+cd code_encode
+python encode.py
+```
+### 第二步加密工程部署
+```commandline
+pip install -U se_imports
+# 启动
+cd script_se
+bash start.sh
+# 停止
+cd script_se
+bash stop.sh
+```
+
 
 ## 推荐模型指标评估
  -  [openai/evals](https://github.com/openai/evals)
