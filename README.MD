@@ -76,6 +76,18 @@ cd script
 bash stop.sh
 ```
 
+## 推荐模型指标评估
+ -  [openai/evals](https://github.com/openai/evals)
+ -  [ssbuild/aigc_eval](https://github.com/ssbuild/aigc_eval)
+
+## 推荐界面 ChatGPT-Next-Web
+
+![界面](assets/1.png)
+![界面](assets/moss.png)
+![界面](assets/xverse.png)
+
+
+
 ## 客户端测试 tests
 
 ## openai 接口  
@@ -156,12 +168,6 @@ for d in completion.data:
     print(d)
 ```
 
-
-## 推荐界面 ChatGPT-Next-Web
-
-![界面](assets/1.png)
-![界面](assets/moss.png)
-![界面](assets/xverse.png)
 ## 
     纯粹而干净的代码
 
