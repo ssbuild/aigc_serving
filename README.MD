@@ -46,18 +46,12 @@ docker build -f docker/Dockerfile -t aigc_serving ..
 ```
 ### docker run
 ```commandline
-docker run -it --runtime=nvidia --name test aigc_serving
+docker run -it --runtime=nvidia --name aigc_serving aigc_serving
 ```
 
 ## 最新的安装包
  - [aigc-zoo](https://pypi.org/project/aigc-zoo/#history)
  - [deep-training](https://pypi.org/project/deep-training/#history)
-
-```text
- 安装顺序 
- 先安装 aigc-zoo
- 再安装 deep-training
-```
 
 
 
@@ -93,7 +87,7 @@ bash stop.sh
 
 ## 推荐模型指标评估
  -  [openai/evals](https://github.com/openai/evals)
- -  [ssbuild/aigc_eval](https://github.com/ssbuild/aigc_eval)
+ -  [ssbuild/aigc_eval](https://github.com/ssbuild/aigc_eval) 
 
 ## 推荐界面 ChatGPT-Next-Web
 
