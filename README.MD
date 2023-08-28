@@ -87,7 +87,7 @@ bash stop.sh
 
 ## 推荐模型指标评估
  -  [openai/evals](https://github.com/openai/evals)
- -  [ssbuild/aigc_eval 构建中...](https://github.com/ssbuild/aigc_eval) 
+ -  [ssbuild/aigc_eval](https://github.com/ssbuild/aigc_eval) 
 
 ## 推荐界面 ChatGPT-Next-Web
 
