@@ -33,15 +33,18 @@ llm = ChatOpenAI(
     model_name="qwen-7b-chat-int4",
     temperature=0,
     max_tokens=2000,
-    frequency_penalty=0,
+    frequency_penalty=1.01,
     presence_penalty=0,
-    top_p=1.0,
     streaming=stream,
-    adapter_name = None, # lora头
-    stop = ["Observation:"],
+    model_kwargs={
+        "adapter_name": None,# lora头
+        "stop":  ["Observation:"],
+        "top_p": 1.0,
+    },
+
     openai_api_key = "EMPTY",
     openai_api_base = "http://192.168.2.180:8081/v1"
 )
 
-completion = llm.generate([messages])
+completion = llm.generate([messages],stop=None)
 print(completion)
