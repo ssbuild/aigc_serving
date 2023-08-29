@@ -198,7 +198,7 @@ def postprocess_chat_response(response,**kwargs):
     if stops is not None:
         for stop in stops:
             if isinstance(stop,str) and stop in response:
-                response = response.split(stop)[0]
+                response = response.split(stop)[0] + stop
     return response
 
 def flat_input(ids: typing.Union[typing.List,int]):
