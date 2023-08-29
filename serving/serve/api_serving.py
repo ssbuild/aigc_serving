@@ -152,7 +152,7 @@ def _openai_chat(request: typing.Union[CompletionRequest,ChatCompletionRequest])
             else:
                 choices.append(ChatCompletionResponseChoice(
                     index=len(choices),
-                    message=ChatMessage(role=Role.ASSISTANT, content=context_text),
+                    message=ChatMessage(role=Role.ASSISTANT, content=context_text,function_call=None),
                     finish_reason=Finish.STOP
                 ))
     usage = UsageInfo(
