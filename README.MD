@@ -70,8 +70,8 @@ bash stop.sh
 ### 第一步加密工程
 ```commandline
 pip install -U se_imports
-cd code_encode
-python encode.py
+cd code_crypto
+python cc.py
 ```
 ### 第二步加密工程部署
 ```commandline

@@ -5,11 +5,17 @@
 import shutil
 
 
-def test_se_project(src_dir='/home/aigc_serving', dst_dir='/home/aigc_serving_se', package_name='serving'):
+def test_se_project(src_dir='/home/aigc_serving', dst_dir='/home/aigc_serving_se'):
     from se_imports import se_project_crypto
 
     # 忽略复制文件，文件对工程运行没有用
-    ignore = shutil.ignore_patterns('tests', '.git', '.idea', 'setup.py','code_encode','docs','docker','config_template','assets')
+    ignore = shutil.ignore_patterns('tests', '.git',
+                                    '.gitignore',
+                                    'legend.MD',
+                                    'README.MD',
+                                    'script',
+                                    '.idea', 'setup.py','code_crypto',
+                                    'docs','docker','config_template','assets')
 
     # package_name
     # 如果是pypi包，package_name 需要设置包名,否则可以设置None
@@ -57,6 +63,6 @@ def test_se_project(src_dir='/home/aigc_serving', dst_dir='/home/aigc_serving_se
 
 src_project = r'E:\algo_project_2023\aigc_serving'
 
-dst_project = r'E:\tmp\aigc_serving'
+dst_project = r'E:\tmp\se_serving'
 
 test_se_project(src_project,dst_project)
