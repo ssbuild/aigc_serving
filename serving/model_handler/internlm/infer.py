@@ -14,7 +14,8 @@ from transformers import HfArgumentParser, BitsAndBytesConfig
 from aigc_zoo.model_zoo.internlm.llm_model import MyTransformer,InternLMConfig,InternLMTokenizer,\
     InternLMForCausalLM,PetlArguments,PetlModel
 from aigc_zoo.utils.llm_generate import Generate
-from serving.model_handler.base import EngineAPI_Base, flat_input, LoraModelState, load_lora_config
+from serving.model_handler.base import EngineAPI_Base, flat_input, LoraModelState, load_lora_config, \
+    postprocess_chat_response
 from serving.config_parser.main import global_models_info_args
 from serving.model_handler.base import CompletionResult,ChunkData,preprocess_input_args,postprocess_input_args
 
@@ -200,6 +201,7 @@ class EngineAPI(EngineAPI_Base):
         default_kwargs.update(kwargs)
         postprocess_input_args(self.tokenizer,self.config,None,default_kwargs)
         response, history = self.model.chat(self.tokenizer, query=query, **default_kwargs)
+        response = postprocess_chat_response(response, **kwargs)
         return CompletionResult(result={
             "response": response,
             "history": history

@@ -193,6 +193,14 @@ def postprocess_input_args(tokenizer: PreTrainedTokenizer,config: PretrainedConf
             args_dict["stopping_criteria"] = stopping_criteria
     return args_dict
 
+def postprocess_chat_response(response,**kwargs):
+    stops = kwargs.get('stop',None)
+    if stops is not None:
+        for stop in stops:
+            if isinstance(stop,str) and stop in response:
+                response = response.split(stop)[0]
+    return response
+
 def flat_input(ids: typing.Union[typing.List,int]):
     if isinstance(ids,int):
         return [ids]

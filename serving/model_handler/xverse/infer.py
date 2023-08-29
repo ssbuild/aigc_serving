@@ -11,13 +11,15 @@ from deep_training.data_helper import ModelArguments,  DataHelper
 from deep_training.nlp.layers.rope_scale.patch import RotaryNtkScaledArguments
 from transformers import HfArgumentParser, GenerationConfig
 from aigc_zoo.utils.xverse_generate import Generate
-from serving.model_handler.base import EngineAPI_Base, flat_input, LoraModelState, load_lora_config
+from serving.model_handler.base import EngineAPI_Base, flat_input, LoraModelState, load_lora_config, \
+    postprocess_chat_response
 from aigc_zoo.utils.streamgenerator import GenTextStreamer
 from serving.model_handler.base import CompletionResult,ChunkData,preprocess_input_args,postprocess_input_args
 from transformers import AutoModelForCausalLM
 from deep_training.utils.hf import register_transformer_model, register_transformer_config  # noqa
 # from deep_training.nlp.models.xverse.modeling_xverse import XverseForCausalLM, XverseConfig
 from aigc_zoo.model_zoo.xverse.llm_model import MyTransformer,MyXverseForCausalLM, XverseConfig,PetlArguments,PetlModel,AutoConfig
+
 
 class NN_DataHelper(DataHelper):pass
 
@@ -219,6 +221,7 @@ class EngineAPI(EngineAPI_Base):
         response = self.get_model().chat(tokenizer=self.tokenizer,messages=messages,
                                          generation_config=generation_config,
                                          stopping_criteria=stopping_criteria)
+        response = postprocess_chat_response(response, **kwargs)
         history = history + [(query, response)]
         return CompletionResult(result={
             "response": response,
