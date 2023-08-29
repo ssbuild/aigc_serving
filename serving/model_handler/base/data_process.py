@@ -196,9 +196,11 @@ def postprocess_input_args(tokenizer: PreTrainedTokenizer,config: PretrainedConf
 def postprocess_chat_response(response,**kwargs):
     stops = kwargs.get('stop',None)
     if stops is not None:
-        for stop in stops:
-            if isinstance(stop,str) and stop in response:
-                response = response.split(stop)[0] + stop
+        pos = [response.find(stop) for stop in stops if isinstance(stop,str)]
+        pos = [_ for _ in pos if _ != -1]
+        if pos:
+            pos = min(pos)
+            response = response[:pos]
     return response
 
 def flat_input(ids: typing.Union[typing.List,int]):

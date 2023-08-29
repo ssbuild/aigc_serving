@@ -55,11 +55,12 @@ class ChunkData:
             self.text = words
 
         if self.stop is not None:
-            for stop in self.stop:
-                if isinstance(stop, str) and stop in self.text:
-                    self.text = self.text.split(stop)[0] + stop
-                    self._is_finished = True
-                    break
+            pos = [self.text.find(stop) for stop in self.stop if isinstance(stop, str)]
+            pos = [_ for _ in pos if _ != -1]
+            if pos:
+                pos = min(pos)
+                self.text = self.text[:pos]
+                self._is_finished = True
 
         self.n_pos = len(self.text)
 
