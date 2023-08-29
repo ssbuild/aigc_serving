@@ -47,19 +47,20 @@ class ChunkData:
     def step(self,words,is_append = False):
         if self._is_finished:
             return
-        
-        if self.stop is not None:
-            for stop in self.stop:
-                if stop in self.text:
-                    self._is_finished = True
-                    return
-
 
         self.n_id += 1
         if is_append:
             self.text += words
         else:
             self.text = words
+
+        if self.stop is not None:
+            for stop in self.stop:
+                if isinstance(stop, str) and stop in self.text:
+                    self.text = self.text.split(stop)[0] + stop
+                    self._is_finished = True
+                    break
+
         self.n_pos = len(self.text)
 
 
