@@ -4,5 +4,5 @@
 
 from .infer import EngineAPI_Base,flat_input,CompletionResult
 from .data_define import ChunkData,LoraModelState
-from .data_process import preprocess_input_args,postprocess_input_args
+from .data_process import preprocess_input_args,postprocess_input_args,postprocess_chat_response
 from .loaders import load_lora_config

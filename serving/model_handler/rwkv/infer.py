@@ -13,7 +13,8 @@ from transformers import HfArgumentParser
 from aigc_zoo.model_zoo.rwkv4.llm_model import MyTransformer, RwkvConfig, \
     set_model_profile,PetlArguments,PetlModel
 from aigc_zoo.utils.rwkv4_generate import Generate
-from serving.model_handler.base import EngineAPI_Base, flat_input, LoraModelState, load_lora_config
+from serving.model_handler.base import EngineAPI_Base, flat_input, LoraModelState, load_lora_config, \
+    postprocess_chat_response
 from serving.config_parser.main import global_models_info_args
 from serving.model_handler.base import CompletionResult,ChunkData,preprocess_input_args,postprocess_input_args
 
@@ -167,6 +168,7 @@ class EngineAPI(EngineAPI_Base):
         response = Generate.generate(self.get_model(),
                                      tokenizer=self.tokenizer,
                                      query=prompt, **default_kwargs)
+        response = postprocess_chat_response(response, **kwargs)
         history = history + [(query, response)]
         return CompletionResult(result={
             "response": response,

@@ -12,7 +12,8 @@ from transformers import HfArgumentParser, BitsAndBytesConfig, GenerationConfig
 from aigc_zoo.model_zoo.baichuan2.llm_model import MyTransformer,BaichuanConfig,BaichuanTokenizer,\
     MyBaichuanForCausalLM,PetlArguments,PetlModel
 from aigc_zoo.utils.llm_generate import Generate
-from serving.model_handler.base import EngineAPI_Base, flat_input, LoraModelState, load_lora_config
+from serving.model_handler.base import EngineAPI_Base, flat_input, LoraModelState, load_lora_config, \
+    postprocess_chat_response
 from serving.config_parser.main import global_models_info_args
 from serving.model_handler.base import CompletionResult,ChunkData,preprocess_input_args,postprocess_input_args
 
@@ -212,6 +213,7 @@ class EngineAPI(EngineAPI_Base):
                                          messages=messages,
                                          generation_config=generation_config,
                                          stopping_criteria=stopping_criteria)
+        response = postprocess_chat_response(response, **kwargs)
         history = history + [(query, response)]
         return CompletionResult(result={
             "response": response,

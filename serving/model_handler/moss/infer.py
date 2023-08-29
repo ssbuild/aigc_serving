@@ -13,8 +13,10 @@ from transformers import HfArgumentParser
 from aigc_zoo.model_zoo.moss.llm_model import MyTransformer,MossConfig,MossTokenizer,PetlArguments,PetlModel
 from aigc_zoo.generator_utils.generator_moss import Generate
 from serving.model_handler.base import EngineAPI_Base, flat_input, preprocess_input_args, postprocess_input_args, \
-    CompletionResult, LoraModelState, ChunkData, load_lora_config
+    CompletionResult, LoraModelState, ChunkData, load_lora_config, postprocess_chat_response
 from serving.config_parser.main import global_models_info_args
+
+
 class NN_DataHelper(DataHelper):pass
 
 
@@ -147,6 +149,7 @@ class EngineAPI(EngineAPI_Base):
         default_kwargs.update(kwargs)
         postprocess_input_args(self.tokenizer,self.config,None,default_kwargs)
         response,history = self.gen_core.chat(prompt,history=history, **default_kwargs)
+        response = postprocess_chat_response(response, **kwargs)
         history = history + [(query, response)]
         return CompletionResult(result={
             "response": response,

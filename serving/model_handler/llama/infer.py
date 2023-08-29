@@ -12,15 +12,16 @@ from deep_training.nlp.layers.rope_scale.patch import RotaryNtkScaledArguments
 from transformers import HfArgumentParser
 from aigc_zoo.model_zoo.llm.llm_model import MyTransformer,PetlArguments,PetlModel,AutoConfig
 from aigc_zoo.utils.llm_generate import Generate
-from serving.model_handler.base import EngineAPI_Base, flat_input, LoraModelState, load_lora_config
+from serving.model_handler.base import EngineAPI_Base, flat_input, LoraModelState, load_lora_config, \
+    postprocess_chat_response
 from serving.config_parser.main import global_models_info_args
 from aigc_zoo.utils.streamgenerator import GenTextStreamer
 from serving.model_handler.base import CompletionResult,ChunkData,preprocess_input_args,postprocess_input_args
-
-
 from transformers import AutoModelForCausalLM
 from deep_training.utils.hf import register_transformer_model, register_transformer_config  # noqa
 from deep_training.nlp.models.rellama.modeling_llama import LlamaForCausalLM
+
+
 
 class NN_DataHelper(DataHelper):pass
 
@@ -191,6 +192,7 @@ class EngineAPI(EngineAPI_Base):
         response = Generate.generate(self.get_model(),
                                      tokenizer=self.tokenizer,
                                      query=prompt, **kwargs)
+        response = postprocess_chat_response(response, **kwargs)
         history = history + [(query, response)]
         return CompletionResult(result={
             "response": response,
