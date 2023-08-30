@@ -46,7 +46,7 @@ docker build -f docker/Dockerfile -t aigc_serving ..
 ```
 ### docker run
 ```commandline
-docker run -it --runtime=nvidia --name aigc_serving aigc_serving
+docker run -it --runtime=nvidia --name aigc_serving aigc_serving:latest
 ```
 
 ## 最新的安装包
@@ -87,7 +87,7 @@ bash stop.sh
 
 ## 推荐模型指标评估
  -  [openai/evals](https://github.com/openai/evals)
- -  [ssbuild/aigc_eval](https://github.com/ssbuild/aigc_eval) 
+ -  [ssbuild/aigc_evals](https://github.com/ssbuild/aigc_evals) 
 
 ## 推荐界面 ChatGPT-Next-Web
 
@@ -105,7 +105,6 @@ bash stop.sh
 ```text
 import openai
 
-# 旧版本
 openai.api_key = "EMPTY"
 openai.api_base = "http://192.168.2.180:8081/v1"
 model = "chatglm2-6b-int4"
