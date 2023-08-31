@@ -182,11 +182,11 @@ class EngineAPI_Base(ABC):
             r = self.pull_request()
             try:
                 if r.get('method', "chat") == 'chat_stream':
-                    for item in self.trigger_generator(r=r, is_first=False):
+                    for item in self._do_work_generator(r=r):
                         self.push_response(item)
                     continue
                 else:
-                    ret = self.trigger(r=r, is_first=False)
+                    ret = self._do_work(r=r)
             except KeyboardInterrupt:
                 break
             except Exception as e:
@@ -235,7 +235,7 @@ class EngineAPI_Base(ABC):
         while True:
             r = self.pull_request()
             try:
-                gen_out = self.trigger_generator(r=r, is_first=False)
+                gen_out = self._do_work_generator(r=r)
                 for out in gen_out:
                     self.push_response(out)
             except KeyboardInterrupt:
@@ -299,33 +299,13 @@ class EngineAPI_Base(ABC):
         self.lora_model.set_adapter(adapter_name)
         return 0,'ok'
 
-    def trigger_generator(self ,r: typing.Dict,is_first=True):
-        ret = CompletionResult()
-        if is_first:
-            self.clear_data()
-        if self.work_mode == WorkMode.DS:
-            if is_first:
-                for i in range(self.world_size):
-                    self.push_request(r)
-                while True:
-                    result_tuple = self.pull_response()
-                    yield result_tuple
-                    if result_tuple.complete:
-                        break
-                return None
 
-            if self.model_ds is None:
-                yield ret._replace(code=-1,result=None,msg="ds_engine init failed",complete=True)
-        else:
-            if is_first:
-                self.push_request(r)
-                while True:
-                    result_tuple = self.pull_response()
-                    yield result_tuple
-                    if result_tuple.complete:
-                        break
-                return None
+    def _do_work_generator(self, r: typing.Dict):
+        ret = CompletionResult()
         try:
+            if self.work_mode == WorkMode.DS and self.model_ds is None:
+                yield ret._replace(code=-1,result=None,msg="ds_engine init failed",complete=True)
+
             params = r.get('params', {})
             query = r.get('query', "")
             history = r.get('history', [])
@@ -356,47 +336,58 @@ class EngineAPI_Base(ABC):
         yield ret._replace(code=code,result=result,msg=msg,complete=True)
 
 
-    def trigger(self ,r: typing.Dict,is_first=True):
-        ret = CompletionResult(complete=True)
-        if is_first:
-            self.clear_data()
+    def trigger_generator(self ,r: typing.Dict):
+        self.clear_data()
         if self.work_mode == WorkMode.DS:
-            if is_first:
-                for i in range(self.world_size):
-                    self.push_request(r)
+            for i in range(self.world_size):
+                self.push_request(r)
+            while True:
                 result_tuple = self.pull_response()
-                return result_tuple
+                yield result_tuple
+                if result_tuple.complete:
+                    break
 
-            if self.model_ds is None:
-                return ret._replace(code=-1, msg="ds_engine init failed")
+        else:
+            self.push_request(r)
+            while True:
+                result_tuple = self.pull_response()
+                yield result_tuple
+                if result_tuple.complete:
+                    break
+        return None
+
+    def _do_work(self,r: typing.Dict):
+        ret = CompletionResult(complete=True)
+        if self.work_mode == WorkMode.DS and self.model_ds is None:
+            return ret._replace(code=-1, msg="ds_engine init failed")
 
         params = r.get('params', {})
         if not isinstance(params, dict):
             return ret._replace(code=-1, msg="params error")
 
-        method = r.get("method","chat")
-        if method not in ["chat","embedding"]:
+        method = r.get("method", "chat")
+        if method not in ["chat", "embedding"]:
             return ret._replace(code=-1, msg="invalid method {}".format(method))
-        method_fn = getattr(self, method,None)
+        method_fn = getattr(self, method, None)
         if method_fn is not None:
-            adapter_name = params.pop('adapter_name',None)
-            code,msg = self.switch_lora(adapter_name)
+            adapter_name = params.pop('adapter_name', None)
+            code, msg = self.switch_lora(adapter_name)
             if code != 0:
-                return ret._replace(code=-1,msg=msg)
+                return ret._replace(code=-1, msg=msg)
             if method == "chat":
                 query = r.get('query', "")
                 history = r.get('history', [])
                 history = [(_["q"], _["a"]) for _ in history]
-                node:CompletionResult = method_fn(query, history=history, **params)
+                node: CompletionResult = method_fn(query, history=history, **params)
                 # history = [{"q": _[0], "a": _[1]} for _ in results["history"]]
                 result = {
                     "response": node.result["response"],
-                    # "history": history,
-                    "num_token": node.result.get('num_token',len(node.result["response"]))
+                    # #"history": history,
+                    "num_token": node.result.get('num_token', len(node.result["response"]))
                 }
             else:
                 query = r.get('query')
-                if not isinstance(query,list):
+                if not isinstance(query, list):
                     return ret._replace(code=-1, msg="invalid key query , list required".format(method))
 
                 node: CompletionResult = method_fn(query, **params)
@@ -407,6 +398,18 @@ class EngineAPI_Base(ABC):
             code = -1
             msg = "{} not exist method {}".format(self.model_config_dict['model_config']['model_type'], "chat")
             result = None
-        return ret._replace(code=code,result=result, msg=msg)
+        return ret._replace(code=code, result=result, msg=msg)
+
+    def trigger(self ,r: typing.Dict):
+        if self.work_mode == WorkMode.DS:
+            self.clear_data()
+            for i in range(self.world_size):
+                self.push_request(r)
+            result_tuple = self.pull_response()
+            return result_tuple
+        return self._do_work(r)
+
+
+
 
 

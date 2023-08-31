@@ -154,7 +154,7 @@ class EngineAPI(EngineAPI_Base):
                 text = chunk.step_text()
                 ret = CompletionResult(result={
                     "response": text,
-                    "history": history,
+                    #"history": history,
                     "num_token": chunk.n_id
                 }, complete=False)
                 self.push_response(ret)
@@ -165,7 +165,7 @@ class EngineAPI(EngineAPI_Base):
 
         ret = CompletionResult(result={
             "response": "",
-            "history": history,
+            #"history": history,
             "num_token": chunk.n_id
         }, complete=True)
         self.push_response(ret)
@@ -196,7 +196,7 @@ class EngineAPI(EngineAPI_Base):
         history = history + [(query, response)]
         return CompletionResult(result={
             "response": response,
-            "history": history
+            #"history": history
         })
 
 

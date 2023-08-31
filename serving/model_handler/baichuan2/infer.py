@@ -181,7 +181,7 @@ class EngineAPI(EngineAPI_Base):
                 text = chunk.step_text()
                 yield CompletionResult(result={
                     "response": text,
-                    "history": history,
+                    #"history": history,
                     "num_token": chunk.n_id
                 }, complete=False)
 
@@ -190,7 +190,7 @@ class EngineAPI(EngineAPI_Base):
         if text is not None:
             yield CompletionResult(result={
                 "response": text,
-                "history": history,
+                #"history": history,
                 "num_token": chunk.n_id
             }, complete=False)
 
@@ -217,7 +217,7 @@ class EngineAPI(EngineAPI_Base):
         history = history + [(query, response)]
         return CompletionResult(result={
             "response": response,
-            "history": history
+            #"history": history
         })
 
 
