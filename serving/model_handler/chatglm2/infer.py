@@ -149,7 +149,7 @@ class EngineAPI(EngineAPI_Base):
                 text = chunk.step_text()
                 yield CompletionResult(result={
                     "response": text,
-                    "history": history,
+                    #"history": history,
                     "num_token": chunk.n_id
                 }, complete=False)
 
@@ -158,7 +158,7 @@ class EngineAPI(EngineAPI_Base):
         if text is not None:
             yield CompletionResult(result={
                 "response": text,
-                "history": history,
+                #"history": history,
                 "num_token": chunk.n_id
             }, complete=False)
 
@@ -174,7 +174,7 @@ class EngineAPI(EngineAPI_Base):
         response = postprocess_chat_response(response,**kwargs)
         return CompletionResult(result={
             "response": response,
-            "history": history
+            #"history": history
         })
 
     def generate(self,input,**kwargs):
@@ -204,14 +204,3 @@ class EngineAPI(EngineAPI_Base):
             "response": embedding,
         })
 
-if __name__ == '__main__':
-    api_client = EngineAPI(global_models_info_args['chatglm2-6b-int4'])
-    api_client.init()
-    text_list = [
-        "写一个诗歌，关于冬天",
-        "晚上睡不着应该怎么办",
-    ]
-    for input in text_list:
-        response = api_client.generate(input)
-        print("input", input)
-        print("response", response)

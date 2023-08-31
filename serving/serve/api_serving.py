@@ -179,8 +179,10 @@ def _openai_chat_stream(request: typing.Union[CompletionRequest,ChatCompletionRe
         instance = self.queue_mapper[request.model]
         request_id = instance.put(r)
 
+        request_seq_id = 1
         while True:
-            result = instance.get(request_id)
+            result = instance.get(request_id,request_seq_id)
+            request_seq_id += 1
             if result["code"] != 0:
                 yield f"data: {json.dumps(result, ensure_ascii=False)}\n\n"
                 yield "data: [DONE]\n\n"
@@ -264,9 +266,10 @@ def _openai_legend_stream(request: CompletionRequest):
         r = request.build_request_streaming()
         instance = self.queue_mapper[request.model]
         request_id = instance.put(r)
-
+        request_seq_id = 1
         while True:
-            result = instance.get(request_id)
+            result = instance.get(request_id,request_seq_id)
+            request_seq_id += 1
             if result["code"] != 0:
                 yield f"data: {json.dumps(result, ensure_ascii=False)}\n\n"
                 yield "data: [DONE]\n\n"

@@ -152,7 +152,7 @@ class EngineAPI(EngineAPI_Base):
                 text = chunk.step_text()
                 self.push_response(CompletionResult(result={
                     "response": text,
-                    "history": history,
+                    #"history": history,
                     "num_token": chunk.n_id
                 }, complete=False))
 
@@ -162,7 +162,7 @@ class EngineAPI(EngineAPI_Base):
         _ = self.get_model().chat(tokenizer=self.tokenizer, streamer=streamer, query=query, **default_kwargs)
         self.push_response(CompletionResult(result={
             "response": "",
-            "history": history,
+            #"history": history,
             "num_token": chunk.n_id
         }, complete=True))
         return None
@@ -187,7 +187,7 @@ class EngineAPI(EngineAPI_Base):
         response = postprocess_chat_response(response, **kwargs)
         return CompletionResult(result={
             "response": response,
-            "history": history
+            #"history": history
         })
 
     def generate(self,input,**kwargs):
