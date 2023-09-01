@@ -19,7 +19,7 @@ xverse_conf  = {
         "ntk_scale": 1,  # 扩展位置长度 1 即为 1 * 2048 不扩充 , 4 即为 4 * 2048 以此类推
         "max_batch_size": 1,  # embdding max batch size
         "model_config": {
-            "model_type": "llama",
+            "model_type": "xverse",
             "model_name_or_path": "/data/nlp/pre_models/torch/xverse/XVERSE-13B-Chat",
             "use_fast_tokenizer": False,
             "do_lower_case": None,
@@ -45,7 +45,7 @@ xverse_conf  = {
         "ntk_scale": 1,  # 扩展位置长度 1 即为 1 * 2048 不扩充 , 4 即为 4 * 2048 以此类推
         "max_batch_size": 1,  # embdding max batch size
         "model_config": {
-            "model_type": "llama",
+            "model_type": "xverse",
             "model_name_or_path": "/data/nlp/pre_models/torch/xverse/xverse-13b-chat-int4",
             "use_fast_tokenizer": False,
             "do_lower_case": None,
@@ -73,7 +73,7 @@ xverse_conf  = {
         "ntk_scale": 1, #  扩展位置长度 1 即为 1 * 2048 不扩充 , 4 即为 4 * 2048 以此类推
         "max_batch_size": 1, # embdding max batch size
         "model_config": {
-            "model_type": "llama",
+            "model_type": "xverse",
             "model_name_or_path": "/data/nlp/pre_models/torch/xverse/XVERSE-13B",
             "use_fast_tokenizer": False,
             "do_lower_case": None,
@@ -99,7 +99,7 @@ xverse_conf  = {
         "ntk_scale": 1, #  扩展位置长度 1 即为 1 * 2048 不扩充 , 4 即为 4 * 2048 以此类推
         "max_batch_size": 1, # embdding max batch size
         "model_config": {
-            "model_type": "llama",
+            "model_type": "xverse",
             "model_name_or_path": "/data/nlp/pre_models/torch/xverse/xverse-13b-int4",
             "use_fast_tokenizer": False,
             "do_lower_case": None,
