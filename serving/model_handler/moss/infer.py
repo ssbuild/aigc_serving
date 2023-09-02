@@ -15,6 +15,7 @@ from aigc_zoo.generator_utils.generator_moss import Generate
 from serving.model_handler.base import EngineAPI_Base, flat_input, preprocess_input_args, postprocess_input_args, \
     CompletionResult, LoraModelState, ChunkData, load_lora_config, postprocess_chat_response
 from serving.config_parser.main import global_models_info_args
+from serving.model_handler.base.data_define import WorkMode
 
 
 class NN_DataHelper(DataHelper):pass
@@ -35,11 +36,23 @@ class EngineAPI(EngineAPI_Base):
             config.pad_token_id = tokenizer.eos_token_id
         pl_model = MyTransformer(config=config, model_args=model_args, torch_dtype=torch.float16, )
         model = pl_model.get_llm_model()
-        model.eval().half()
-        if device_id is None:
-            model.cuda()
+        model.eval()
+
+        if not model.quantized:
+            # 按需修改，目前只支持 4/8 bit 量化 ， 可以保存量化模型
+            if self.auto_quantize and hasattr(model,"quantize"):
+                model.half().quantize(4)
+            else:
+                model.half()
         else:
-            model.cuda(device_id)
+            # 已经量化
+            model.half()
+
+        if self.work_mode != WorkMode.ACCELERATE:
+            if device_id is None:
+                model.cuda()
+            else:
+                model.cuda(device_id)
 
         self.gen_core = Generate(model,tokenizer)
         return model,config,tokenizer
@@ -97,10 +110,11 @@ class EngineAPI(EngineAPI_Base):
         else:
             self.lora_model = self.lora_model.half().eval()
 
-        if device_id is None:
-            self.lora_model.cuda()
-        else:
-            self.lora_model.cuda(device_id)
+        if self.work_mode != WorkMode.ACCELERATE:
+            if device_id is None:
+                self.lora_model.cuda()
+            else:
+                self.lora_model.cuda(device_id)
         self.gen_core = Generate(self.lora_model, tokenizer)
         return self.lora_model, config, tokenizer
 

@@ -20,6 +20,8 @@ from deep_training.utils.hf import register_transformer_model, register_transfor
 # from deep_training.nlp.models.xverse.modeling_xverse import XverseForCausalLM, XverseConfig
 from aigc_zoo.model_zoo.xverse.llm_model import MyTransformer,MyXverseForCausalLM, XverseConfig,PetlArguments,PetlModel,AutoConfig
 
+from serving.model_handler.base.data_define import WorkMode
+
 
 class NN_DataHelper(DataHelper):pass
 
@@ -77,10 +79,11 @@ class EngineAPI(EngineAPI_Base):
         else:
             model.half()
 
-        if device_id is None:
-            model.cuda()
-        else:
-            model.cuda(device_id)
+        if self.work_mode != WorkMode.ACCELERATE:
+            if device_id is None:
+                model.cuda()
+            else:
+                model.cuda(device_id)
         return model, config, tokenizer
 
     def _load_lora_model(self, device_id=None):
@@ -142,10 +145,11 @@ class EngineAPI(EngineAPI_Base):
         else:
             self.lora_model = self.lora_model.half().eval()
 
-        if device_id is None:
-            self.lora_model.cuda()
-        else:
-            self.lora_model.cuda(device_id)
+        if self.work_mode != WorkMode.ACCELERATE:
+            if device_id is None:
+                self.lora_model.cuda()
+            else:
+                self.lora_model.cuda(device_id)
         return self.lora_model, config, tokenizer
 
     def chat_stream(self, query, nchar=1,gtype='total', history=None, **kwargs):
