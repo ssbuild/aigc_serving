@@ -10,6 +10,7 @@
 
 ## update information
 ```text
+    09-03 增加tiger , openbuddy 模板 ， test openbuddy-70b passed
     08-26 fix same group stream order
     08-25 aigc-zoo 0.2.0.post1 support xverse-13b-chat , 已有模型 实现 stop 功能
     08-20 support embedding
@@ -32,7 +33,6 @@
 
 ## 注意
    - 推荐环境: linux python >=3.10 torch >= 2.0.1
-   - aigc_serving tiger推理没做模版，请在代理处或者请求数据加模板
 
 ## install
 pip install -r requirements.txt

@@ -2,6 +2,7 @@
 # @Time:  19:26
 # @Author: tk
 # @File：infer
+import functools
 import json
 import os
 import torch
@@ -21,6 +22,9 @@ from transformers import AutoModelForCausalLM
 from deep_training.utils.hf import register_transformer_model, register_transformer_config  # noqa
 from deep_training.nlp.models.rellama.modeling_llama import LlamaForCausalLM
 
+from serving.model_handler.base.data_define import WorkMode
+from serving.prompt.openbuddy import get_chat as get_chat_openbuddy
+from serving.prompt.tigger import get_chat as get_chat_tiger
 
 
 class NN_DataHelper(DataHelper):pass
@@ -59,10 +63,11 @@ class EngineAPI(EngineAPI_Base):
         else:
             model.half()
 
-        if device_id is None:
-            model.cuda()
-        else:
-            model.cuda(device_id)
+        if self.work_mode != WorkMode.ACCELERATE:
+            if device_id is None:
+                model.cuda()
+            else:
+                model.cuda(device_id)
         return model, config, tokenizer
 
     def _load_lora_model(self, device_id=None):
@@ -122,27 +127,45 @@ class EngineAPI(EngineAPI_Base):
         else:
             self.lora_model = self.lora_model.half().eval()
 
-        if device_id is None:
-            self.lora_model.cuda()
-        else:
-            self.lora_model.cuda(device_id)
+        if self.work_mode != WorkMode.ACCELERATE:
+            if device_id is None:
+                self.lora_model.cuda()
+            else:
+                self.lora_model.cuda(device_id)
         return self.lora_model, config, tokenizer
+
+
+    @functools.cached_property
+    def is_openbuddy(self):
+        return 'openbuddy' in self.model_config_dict["model_config"]["model_name_or_path"].lower()
+
+    @functools.cached_property
+    def is_tigger(self):
+        return 'tiger' in self.model_config_dict["model_config"]["model_name_or_path"].lower()
 
     def chat_stream(self, query, nchar=1,gtype='total', history=None, **kwargs):
         chunk = ChunkData(nchar=nchar, stop=kwargs.get('stop', None), mode=gtype)
         preprocess_input_args(self.tokenizer,self.config,kwargs)
+
         if history is None:
             history = []
-        prompt = ""
-        for q, a in history:
-            prompt += q
-            prompt += a
-        prompt += query
+
+        if self.is_openbuddy:
+            prompt = get_chat_openbuddy(self.tokenizer,query,history)
+        elif self.is_tigger:
+            prompt = get_chat_tiger(self.tokenizer,query, history)
+        else:
+            prompt = ""
+            for q, a in history:
+                prompt += q
+                prompt += a
+            prompt += query
 
         default_kwargs = dict(
+            bos_token_id=self.config.bos_token_id,
             eos_token_id=self.config.eos_token_id,
             pad_token_id=self.config.eos_token_id,
-            do_sample=True, top_p=0.7, temperature=0.95,
+            do_sample=True,
         )
         default_kwargs.update(kwargs)
         postprocess_input_args(self.tokenizer,self.config,chunk,default_kwargs)
@@ -176,16 +199,23 @@ class EngineAPI(EngineAPI_Base):
     def chat(self, query, history=None, **kwargs):
         if history is None:
             history = []
-        prompt = ""
-        for q, a in history:
-            prompt += q
-            prompt += a
-        prompt += query
+
+        if self.is_openbuddy:
+            prompt = get_chat_openbuddy(query, history)
+        elif self.is_tigger:
+            prompt = get_chat_tiger(query, history)
+        else:
+            prompt = ""
+            for q, a in history:
+                prompt += q
+                prompt += a
+            prompt += query
 
         default_kwargs = dict(
+            bos_token_id=self.config.bos_token_id,
             eos_token_id=self.config.eos_token_id,
             pad_token_id=self.config.eos_token_id,
-            do_sample=True, top_p=0.7, temperature=0.95,
+            do_sample=True,
         )
         default_kwargs.update(kwargs)
         postprocess_input_args(self.tokenizer,self.config,None,default_kwargs)
