@@ -17,6 +17,7 @@ from serving.model_handler.base import EngineAPI_Base, flat_input, LoraModelStat
     postprocess_chat_response
 from serving.config_parser.main import global_models_info_args
 from serving.model_handler.base import CompletionResult,ChunkData,preprocess_input_args,postprocess_input_args
+from serving.model_handler.base.data_define import WorkMode
 
 
 class NN_DataHelper(DataHelper):pass
@@ -40,10 +41,12 @@ class EngineAPI(EngineAPI_Base):
 
         model.requires_grad_(False)
         model.eval().half()
-        if device_id is None:
-            model.cuda()
-        else:
-            model.cuda(device_id)
+
+        if self.work_mode != WorkMode.ACCELERATE:
+            if device_id is None:
+                model.cuda()
+            else:
+                model.cuda(device_id)
         return model,config,tokenizer
 
     def _load_lora_model(self, device_id=None):
@@ -101,10 +104,11 @@ class EngineAPI(EngineAPI_Base):
         else:
             self.lora_model = self.lora_model.half().eval()
 
-        if device_id is None:
-            self.lora_model.cuda()
-        else:
-            self.lora_model.cuda(device_id)
+        if self.work_mode != WorkMode.ACCELERATE:
+            if device_id is None:
+                self.lora_model.cuda()
+            else:
+                self.lora_model.cuda(device_id)
         return self.lora_model, config, tokenizer
 
     def chat_stream(self, query, nchar=1,gtype='total', history=None, **kwargs):

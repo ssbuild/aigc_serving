@@ -15,6 +15,7 @@ from aigc_zoo.utils.llm_generate import Generate
 from serving.config_parser.main import global_models_info_args
 from serving.model_handler.base import EngineAPI_Base, LoraModelState, load_lora_config, postprocess_chat_response
 from serving.model_handler.base import CompletionResult,ChunkData,preprocess_input_args,postprocess_input_args
+from serving.model_handler.base.data_define import WorkMode
 
 
 class NN_DataHelper(DataHelper):pass
@@ -53,11 +54,11 @@ class EngineAPI(EngineAPI_Base):
             # 已经量化
             model.half()
 
-
-        if device_id is None:
-            model.cuda()
-        else:
-            model.cuda(device_id)
+        if self.work_mode != WorkMode.ACCELERATE:
+            if device_id is None:
+                model.cuda()
+            else:
+                model.cuda(device_id)
 
     def _load_lora_model(self, device_id=None):
         parser = HfArgumentParser((ModelArguments,))
@@ -114,10 +115,11 @@ class EngineAPI(EngineAPI_Base):
         else:
             self.lora_model = self.lora_model.half().eval()
 
-        if device_id is None:
-            self.lora_model.cuda()
-        else:
-            self.lora_model.cuda(device_id)
+        if self.work_mode != WorkMode.ACCELERATE:
+            if device_id is None:
+                self.lora_model.cuda()
+            else:
+                self.lora_model.cuda(device_id)
         return self.lora_model, config, tokenizer
 
 

@@ -15,6 +15,7 @@ from serving.model_handler.base import EngineAPI_Base, flat_input, LoraModelStat
     postprocess_chat_response
 from serving.config_parser.main import global_models_info_args
 from serving.model_handler.base import CompletionResult,ChunkData,preprocess_input_args,postprocess_input_args
+from serving.model_handler.base.data_define import WorkMode
 
 
 class NN_DataHelper(DataHelper):pass
@@ -62,10 +63,11 @@ class EngineAPI(EngineAPI_Base):
             # 已经量化
             model.half()
 
-        if device_id is None:
-            model.cuda()
-        else:
-            model.cuda(device_id)
+        if self.work_mode != WorkMode.ACCELERATE:
+            if device_id is None:
+                model.cuda()
+            else:
+                model.cuda(device_id)
 
         return model,config,tokenizer
 
