@@ -201,9 +201,9 @@ class EngineAPI(EngineAPI_Base):
             history = []
 
         if self.is_openbuddy:
-            prompt = get_chat_openbuddy(query, history)
+            prompt = get_chat_openbuddy(self.tokenizer,query, history)
         elif self.is_tigger:
-            prompt = get_chat_tiger(query, history)
+            prompt = get_chat_tiger(self.tokenizer,query, history)
         else:
             prompt = ""
             for q, a in history:
