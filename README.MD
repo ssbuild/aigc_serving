@@ -10,6 +10,7 @@
 
 ## update information
 ```text
+    09-06 support baichuan2
     09-03 增加tiger , openbuddy 模板 ， test openbuddy-70b passed
     08-26 fix same group stream order
     08-25 aigc-zoo 0.2.0.post1 support xverse-13b-chat , 已有模型 实现 stop 功能

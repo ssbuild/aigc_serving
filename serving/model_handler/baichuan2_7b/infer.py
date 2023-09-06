@@ -8,12 +8,13 @@ import torch
 from torch.nn import functional as F
 from deep_training.trainer.pl.modelweighter import default_peft_weight_preprocess
 from deep_training.data_helper import ModelArguments, DataHelper
-from deep_training.nlp.layers.rope_scale.patch import RotaryNtkScaledArguments
 from transformers import HfArgumentParser, BitsAndBytesConfig, GenerationConfig
-from aigc_zoo.model_zoo.baichuan.llm_model import MyTransformer,BaiChuanConfig,BaiChuanTokenizer,PetlArguments,PetlModel
+from aigc_zoo.model_zoo.baichuan.baichuan2_7b.llm_model import MyTransformer,BaichuanConfig,BaichuanTokenizer,\
+    MyBaichuanForCausalLM,PetlArguments,PetlModel
 from aigc_zoo.utils.llm_generate import Generate
+from serving.model_handler.base import EngineAPI_Base, flat_input, LoraModelState, load_lora_config, \
+    postprocess_chat_response
 from serving.config_parser.main import global_models_info_args
-from serving.model_handler.base import EngineAPI_Base, LoraModelState, load_lora_config, postprocess_chat_response
 from serving.model_handler.base import CompletionResult,ChunkData,preprocess_input_args,postprocess_input_args
 from serving.model_handler.base.data_define import WorkMode
 
@@ -21,26 +22,41 @@ from serving.model_handler.base.data_define import WorkMode
 class NN_DataHelper(DataHelper):pass
 
 
+
+def _build_message(query,history= None):
+    if history is None:
+        history = []
+    messages = []
+    for q, a in history:
+        messages.append({
+            "role": "user",
+            "content": q
+        })
+        messages.append({
+            "role": "assistant",
+            "content": a
+        })
+
+    messages.append({
+        "role": "user",
+        "content": query
+    })
+    return messages
+
 class EngineAPI(EngineAPI_Base):
-
-
     def _load_model(self,device_id=None):
         parser = HfArgumentParser((ModelArguments,))
         (model_args,) = parser.parse_dict(self.model_config_dict["model_config"], allow_extra_keys=True)
 
         dataHelper = NN_DataHelper(model_args)
-        tokenizer, config, _, _ = dataHelper.load_tokenizer_and_config(config_class_name=BaiChuanConfig,
-                                                                       tokenizer_class_name=BaiChuanTokenizer)
+        tokenizer, config, _, _ = dataHelper.load_tokenizer_and_config(config_class_name=BaichuanConfig,
+                                                                       tokenizer_class_name=BaichuanTokenizer)
         config.pad_token_id = config.eos_token_id
 
-        if self.ntk_scale > 1:
-            rope_args = RotaryNtkScaledArguments(max_position_embeddings=config.max_position_embeddings, alpha=self.ntk_scale)
-        else:
-            rope_args = None
         pl_model = MyTransformer(config=config, model_args=model_args,
-                                 torch_dtype=torch.float16,rope_args=rope_args )
+                                 torch_dtype=torch.float16, )
 
-        model = pl_model.get_llm_model()
+        model: MyBaichuanForCausalLM = pl_model.get_llm_model()
         model = model.eval()
         model.requires_grad_(False)
 
@@ -60,17 +76,22 @@ class EngineAPI(EngineAPI_Base):
             else:
                 model.cuda(device_id)
 
+        return model,config,tokenizer
+
+
+
     def _load_lora_model(self, device_id=None):
         parser = HfArgumentParser((ModelArguments,))
         (model_args,) = parser.parse_dict(self.model_config_dict["model_config"], allow_extra_keys=True)
 
         dataHelper = NN_DataHelper(model_args)
-        tokenizer, config, _, _ = dataHelper.load_tokenizer_and_config(config_class_name=BaiChuanConfig,
-                                                                       tokenizer_class_name=BaiChuanTokenizer)
+        tokenizer, config, _, _ = dataHelper.load_tokenizer_and_config(config_class_name=BaichuanConfig,
+                                                                       tokenizer_class_name=BaichuanTokenizer)
+        config.pad_token_id = config.eos_token_id
 
         ckpt_dir = list(self.lora_conf.values())[0]
         if os.path.exists(os.path.join(ckpt_dir, 'config.json')):
-            config = BaiChuanConfig.from_pretrained(ckpt_dir)
+            config = BaichuanConfig.from_pretrained(ckpt_dir)
         config.initializer_weight = False
         lora_args,ls_peft = load_lora_config(ckpt_dir)
 
@@ -80,15 +101,10 @@ class EngineAPI(EngineAPI_Base):
         if config.task_specific_params is not None and config.task_specific_params.get('vocab_size', None) is not None:
             config.vocab_size = config.task_specific_params['vocab_size']
 
-        if self.ntk_scale > 1:
-            rope_args = RotaryNtkScaledArguments(max_position_embeddings=config.max_position_embeddings, alpha=self.ntk_scale)
-        else:
-            rope_args = None
         pl_model = MyTransformer(config=config, model_args=model_args,
                                  lora_args=lora_args,
                                  torch_dtype=torch.float16, new_num_tokens=new_num_tokens,
-                                 rope_args=rope_args,
-
+                                 
                                  # # device_map="auto",
                                  # device_map = {"":0} # 第一块卡
                                  )
@@ -99,6 +115,7 @@ class EngineAPI(EngineAPI_Base):
                                      lora_config=lora_args,
                                      map_preprocess=default_peft_weight_preprocess if ls_peft else None)
         self.lora_model = pl_model.backbone
+        self.lora_state = LoraModelState.NONE
         if len(self.lora_conf) == 1:
             if self.auto_merge_lora_single:
                 self.lora_state = LoraModelState.MERGE_AND_LOCKED
@@ -111,7 +128,6 @@ class EngineAPI(EngineAPI_Base):
                     model.half()
             else:
                 self.lora_model = self.lora_model.half().eval()
-
         else:
             self.lora_model = self.lora_model.half().eval()
 
@@ -122,20 +138,31 @@ class EngineAPI(EngineAPI_Base):
                 self.lora_model.cuda(device_id)
         return self.lora_model, config, tokenizer
 
+    @torch.no_grad()
+    def _generate(self,  query: str,do_sample=True, top_p=0.7, temperature=0.95, logits_processor=None, **kwargs):
+        gen_kwargs = {"do_sample": do_sample, "top_p": top_p,
+                      "temperature": temperature, "logits_processor": logits_processor, **kwargs}
+        output_scores = gen_kwargs.get('output_scores', False)
+        if output_scores:
+            gen_kwargs['return_dict_in_generate'] = True
+        # prompt = "Human：" + query + "\nAssistant："
+        # 自行加模板
+        prompt = query
+        inputs = self.tokenizer([prompt], return_tensors="pt")
+        inputs = inputs.to(self.model.device)
+        outputs = self.model.generate(**inputs, **gen_kwargs)
+        if output_scores:
+            score = outputs.scores[0]
+            return score
+        outputs = outputs.tolist()[0][len(inputs["input_ids"][0]):]
+        response = self.tokenizer.decode(outputs)
+        return response
 
-
-    def chat_stream(self,  query, nchar=1, gtype='total', history=None,**kwargs):
+    def chat_stream(self,  query, nchar=1,gtype='total', history=None,**kwargs):
         chunk = ChunkData(nchar=nchar, stop=kwargs.get('stop', None), mode=gtype)
-
         preprocess_input_args(self.tokenizer,self.config,kwargs)
-        if history is None:
-            history = []
-        prompt = ""
-        for q, a in history:
-            prompt += q
-            prompt += a
-        prompt += query
 
+        messages = _build_message(query,history=history)
         default_kwargs = dict(eos_token_id=self.model.config.eos_token_id,
                               pad_token_id=self.model.config.eos_token_id,
                               do_sample=True, top_k=5, top_p=0.85, temperature=0.3,
@@ -143,27 +170,15 @@ class EngineAPI(EngineAPI_Base):
                               )
         default_kwargs.update(kwargs)
         postprocess_input_args(self.tokenizer,self.config,chunk,default_kwargs)
+        stopping_criteria = default_kwargs.pop('stopping_criteria', None)
         generation_config = GenerationConfig(**default_kwargs)
 
-        prompt = query
-        inputs = self.tokenizer([prompt], return_tensors="pt")
-        inputs = inputs.to(self.get_model().device)
-
-        from transformers_stream_generator.main import NewGenerationMixin, StreamGenerationConfig
-        self.__class__.generate = NewGenerationMixin.generate
-        self.__class__.sample_stream = NewGenerationMixin.sample_stream
-        stream_config = StreamGenerationConfig(**generation_config.to_dict(), do_stream=True)
-
-        def stream_generator():
-            outputs = []
-            for token in self.get_model().generate(**inputs, generation_config=stream_config):
-                outputs.append(token.item())
-                yield self.tokenizer.decode(outputs, skip_special_tokens=True)
-
-
-
         response = None
-        for response in stream_generator():
+        for response in self.get_model().chat(tokenizer=self.tokenizer,
+                                              messages=messages,
+                                              stream=True,
+                                              generation_config=generation_config,
+                                              stopping_criteria=stopping_criteria):
             chunk.step(response)
             if chunk.can_output():
                 text = chunk.step_text()
@@ -180,31 +195,27 @@ class EngineAPI(EngineAPI_Base):
                 "response": text,
                 #"history": history,
                 "num_token": chunk.n_id
-            },complete=False)
-
+            }, complete=False)
 
 
     def chat(self, query, history=None, **kwargs):
         preprocess_input_args(self.tokenizer,self.config,kwargs)
 
-        if history is None:
-            history = []
-        prompt = ""
-        for q, a in history:
-            prompt += q
-            prompt += a
-        prompt += query
+        messages = _build_message(query, history=history)
 
-        default_kwargs = dict(
-            eos_token_id=self.model.config.eos_token_id,
-            pad_token_id=self.model.config.eos_token_id,
-            do_sample=True, top_p=0.7, temperature=0.95,
-        )
+        default_kwargs = dict(eos_token_id=self.model.config.eos_token_id,
+                              pad_token_id=self.model.config.eos_token_id,
+                              do_sample=True, top_k=5, top_p=0.85, temperature=0.3,
+                              repetition_penalty=1.1,
+                              )
         default_kwargs.update(kwargs)
         postprocess_input_args(self.tokenizer,self.config,None,default_kwargs)
-        response = Generate.generate(self.get_model(),
-                                     tokenizer=self.tokenizer,
-                                     query=prompt, **kwargs)
+        stopping_criteria = default_kwargs.pop('stopping_criteria', None)
+        generation_config = GenerationConfig(**default_kwargs)
+        response = self.get_model().chat(tokenizer=self.tokenizer,
+                                         messages=messages,
+                                         generation_config=generation_config,
+                                         stopping_criteria=stopping_criteria)
         response = postprocess_chat_response(response, **kwargs)
         history = history + [(query, response)]
         return CompletionResult(result={
@@ -212,11 +223,13 @@ class EngineAPI(EngineAPI_Base):
             #"history": history
         })
 
+
+
     def generate(self,input,**kwargs):
-        default_kwargs = dict(
-            eos_token_id=self.model.config.eos_token_id,
+        default_kwargs = dict(eos_token_id=self.model.config.eos_token_id,
             pad_token_id=self.model.config.eos_token_id,
-            do_sample=True, top_p=0.7, temperature=0.95,
+            do_sample=True, top_k=5,top_p=0.85, temperature=0.3,
+            repetition_penalty=1.1,
         )
         default_kwargs.update(kwargs)
         postprocess_input_args(self.tokenizer,self.config,None,default_kwargs)
@@ -233,14 +246,12 @@ class EngineAPI(EngineAPI_Base):
         data = model_output.hidden_states[-1]
         data = F.normalize(torch.mean(data, dim=1), p=2, dim=1)
         embedding = data.detach().tolist()
-
         return CompletionResult(result={
             "response": embedding,
         })
 
-
 if __name__ == '__main__':
-    api_client = EngineAPI(global_models_info_args['baichuan-7B'])
+    api_client = EngineAPI(global_models_info_args['Baichuan-13B-Chat'])
     api_client.init()
     text_list = ["写一个诗歌，关于冬天",
                  "晚上睡不着应该怎么办",

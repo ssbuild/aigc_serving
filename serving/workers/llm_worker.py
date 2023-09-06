@@ -14,12 +14,20 @@ from serving.model_handler.base import CompletionResult
 
 def get_worker_instance(model_name,config,group_name,worker_idx):
     model_name: str = model_name.lower()
-    if model_name.startswith("baichuan"):
+
+    if model_name.startswith("baichuan2"):
         if model_name.find('13b') != -1:
-            from serving.model_handler.baichuan2.infer import EngineAPI
+            from serving.model_handler.baichuan2_13b.infer import EngineAPI
             api_client = EngineAPI(config,group_name=group_name,worker_idx=worker_idx)
         else:
-            from serving.model_handler.baichuan.infer import EngineAPI
+            from serving.model_handler.baichuan2_7b.infer import EngineAPI
+            api_client = EngineAPI(config,group_name=group_name,worker_idx=worker_idx)
+    elif model_name.startswith("baichuan"):
+        if model_name.find('13b') != -1:
+            from serving.model_handler.baichuan_13b.infer import EngineAPI
+            api_client = EngineAPI(config,group_name=group_name,worker_idx=worker_idx)
+        else:
+            from serving.model_handler.baichuan_7b.infer import EngineAPI
             api_client = EngineAPI(config,group_name=group_name,worker_idx=worker_idx)
             
     elif model_name.startswith("chatglm2"):
