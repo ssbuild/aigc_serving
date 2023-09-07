@@ -164,9 +164,9 @@ class EngineAPI(EngineAPI_Base):
 
         messages = _build_message(query,history=history)
         default_kwargs = dict(eos_token_id=self.model.config.eos_token_id,
-                              pad_token_id=self.model.config.eos_token_id,
+                              pad_token_id=self.model.config.pad_token_id,
                               do_sample=True, top_k=5, top_p=0.85, temperature=0.3,
-                              repetition_penalty=1.1,
+                              repetition_penalty=1.05,
                               )
         default_kwargs.update(kwargs)
         postprocess_input_args(self.tokenizer,self.config,chunk,default_kwargs)
