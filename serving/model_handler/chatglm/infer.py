@@ -44,7 +44,7 @@ class EngineAPI(EngineAPI_Base):
             rope_args = None
 
         is_enbale_ptv2 = False
-        if getattr(config,"pre_seq_len",0) > 0:
+        if (getattr(config,"pre_seq_len",0) or 0) > 0:
             is_enbale_ptv2 = True
         if is_enbale_ptv2:
             model_name_or_path = model_args.model_name_or_path
