@@ -53,8 +53,9 @@ class EngineAPI(EngineAPI_Base):
         pl_model = MyTransformer(config=config, model_args=model_args, torch_dtype=torch.float16,rope_args=rope_args )
         if is_enbale_ptv2:
             model_args.model_name_or_path = model_name_or_path
+            assert os.path.isdir(model_name_or_path)
             # 加载微调权重
-            pl_model.load_sft_weight(model_name_or_path, strict=False)
+            pl_model.load_sft_weight(os.path.join(model_name_or_path, "pytorch_model.bin"), strict=False)
 
         model = pl_model.get_llm_model()
         model = model.eval()
