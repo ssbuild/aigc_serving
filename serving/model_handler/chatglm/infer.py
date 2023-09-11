@@ -44,8 +44,7 @@ class EngineAPI(EngineAPI_Base):
             rope_args = None
 
         is_enbale_ptv2 = False
-        quantization_bit = getattr(config,"quantization_bit",0)
-        if quantization_bit in [4,8]:
+        if getattr(config,"pre_seq_len",0) > 0:
             is_enbale_ptv2 = True
         if is_enbale_ptv2:
             model_name_or_path = model_args.model_name_or_path
