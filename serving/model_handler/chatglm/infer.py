@@ -42,12 +42,25 @@ class EngineAPI(EngineAPI_Base):
                                                  max_position_embeddings=config.max_sequence_length, alpha=self.ntk_scale)
         else:
             rope_args = None
+
+        is_enbale_ptv2 = False
+        quantization_bit = getattr(config,"quantization_bit",0)
+        if quantization_bit in [4,8]:
+            is_enbale_ptv2 = True
+        if is_enbale_ptv2:
+            model_name_or_path = model_args.model_name_or_path
+            model_args.model_name_or_path = None
+
         pl_model = MyTransformer(config=config, model_args=model_args, torch_dtype=torch.float16,rope_args=rope_args )
+        if is_enbale_ptv2:
+            model_args.model_name_or_path = model_name_or_path
+            # 加载微调权重
+            pl_model.load_sft_weight(model_name_or_path, strict=False)
 
         model = pl_model.get_llm_model()
         model = model.eval()
 
-        if not model.quantized:
+        if not is_enbale_ptv2 and not model.quantized:
             # 按需修改，目前只支持 4/8 bit 量化 ， 可以保存量化模型
             if self.auto_quantize:
                 model.half().quantize(4)
@@ -63,9 +76,9 @@ class EngineAPI(EngineAPI_Base):
             else:
                 model.cuda(device_id)
         return model,config,tokenizer
+    
 
-
-    def _load_lora_model(self,device_id=None):
+    def _load_model_lora(self,device_id=None):
         parser = HfArgumentParser((ModelArguments,))
         (model_args,) = parser.parse_dict(self.model_config_dict["model_config"], allow_extra_keys=True)
 

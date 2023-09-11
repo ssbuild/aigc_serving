@@ -10,6 +10,7 @@
 
 ## update information
 ```text
+    09-11 增加支持且仅支持 ptv2 for chatglm,chatglm2
     09-06 support baichuan2
     09-03 增加tiger , openbuddy 模板 ， test openbuddy-70b passed
     08-26 fix same group stream order
