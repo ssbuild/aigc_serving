@@ -49,7 +49,7 @@ docker build -f docker/Dockerfile -t aigc_serving ..
 ```
 ### docker run
 ```commandline
-docker run -it --runtime=nvidia --name aigc_serving aigc_serving:latest
+docker run -it --runtime=nvidia --name aigc_serving aigc_serving:latest /bin/bash
 ```
 
 ## 最新的安装包

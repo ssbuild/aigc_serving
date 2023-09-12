@@ -184,7 +184,7 @@ class EngineAPI(EngineAPI_Base):
         )
         default_kwargs.update(kwargs)
         postprocess_input_args(self.tokenizer,self.config,None,default_kwargs)
-        response, history = self.model.chat(self.tokenizer, query=input,  **kwargs)
+        response, history = self.model.chat(self.tokenizer, query=input, **default_kwargs)
         response = postprocess_chat_response(response, **kwargs)
         return CompletionResult(result={
             "response": response,

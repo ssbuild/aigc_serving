@@ -32,9 +32,9 @@ def remove_dir(path_dir):
         logger.warning("warning: {0}; path: {1}".format(path_dir, e.strerror))
 
 if __name__ == '__main__':
-    tmp_dir = './tmp'
-    remove_dir(tmp_dir)
+    tmp_dir = os.environ.get('ZEROMQ_SOCK_TMP_DIR', '/tmp/aigc_serving')
     os.environ['ZEROMQ_SOCK_TMP_DIR'] = tmp_dir
+    remove_dir(tmp_dir)
 
     bk_worker = WokerLoader()
     global_instance().set_mapper(bk_worker.queue)

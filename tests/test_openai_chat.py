@@ -22,6 +22,7 @@ data = {
     "stream": stream,
     "nchar": 1,# stream 字符
     "n": 1, # 返回 n 个choices
+    "max_tokens": 512,
     "stop": ["Observation:"]
 }
 
