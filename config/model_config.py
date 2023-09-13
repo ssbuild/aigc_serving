@@ -6,6 +6,7 @@
 # 模型键值 ， 必须以模型model_type开始 , 区分大小写
 model_config = {
     "qwen-7b-chat-int4": {
+        "alias": None, # 别用
         "enable": False,
         "work_mode": "deepspeed",  # one of deepspeed,accelerate,hf
         "workers": [
@@ -32,6 +33,7 @@ model_config = {
     },
 
     "chatglm2-6b-int4": {
+        "alias": ["gpt-3.5-turbo","gpt-4"], # 别用 str or list[str]
         "enable": False,
         "work_mode": "deepspeed",  # one of deepspeed,accelerate,hf
         "workers": [

@@ -5,6 +5,7 @@
 
 internlm_conf = {
     "internlm-chat-7b": {
+        "alias": None,  # 别用
         "enable": False,
         "work_mode": "deepspeed",  # one of deepspeed,accelerate,hf
         "workers": [

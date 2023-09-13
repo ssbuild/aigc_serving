@@ -5,6 +5,7 @@
 
 baichuan_config = {
     "baichuan-7B": {
+        "alias": None,  # 别用
         "enable": False,
         "work_mode": "deepspeed",  # one of deepspeed,accelerate,hf
         "workers": [
