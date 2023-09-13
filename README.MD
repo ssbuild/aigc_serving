@@ -93,7 +93,7 @@ bash stop.sh
  -  [openai/evals](https://github.com/openai/evals)
  -  [ssbuild/aigc_evals](https://github.com/ssbuild/aigc_evals) 
 
-## 推荐界面 ChatGPT-Next-Web
+## 推荐界面 ChatGPT-Next-Web 或者 dify 
 
 ![界面](assets/1.png)
 ![界面](assets/moss.png)
