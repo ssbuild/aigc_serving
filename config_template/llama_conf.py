@@ -5,6 +5,7 @@
 
 llama_conf = {
     "llama-7b-hf": {
+        "alias": None,  # 别用
         "enable": False,
         "work_mode": "deepspeed",  # one of deepspeed,accelerate,hf
         "workers": [

@@ -6,6 +6,7 @@
 moss_conf = {
 
     "moss-moon-003-sft-int4": {
+        "alias": None,  # 别用
         "enable": False,
         "work_mode": "deepspeed",  # one of deepspeed,accelerate,hf
         "workers": [

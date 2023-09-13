@@ -5,6 +5,7 @@
 
 openbuddy_conf = {
     "openbuddy-llama2-70b": {
+        "alias": None,  # 别用
         "enable": False,
         "work_mode": "accelerate",  # one of deepspeed,accelerate,hf
         "workers": [

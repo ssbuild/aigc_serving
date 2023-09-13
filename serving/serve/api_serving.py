@@ -6,6 +6,7 @@ import json
 import traceback
 import typing
 import uuid
+from functools import cached_property
 
 from fastapi import FastAPI, Depends
 from starlette.middleware.cors import CORSMiddleware
@@ -25,11 +26,41 @@ from serving.serve.api_check import check_requests, create_error_response, Error
 
 class Resource:
     def __init__(self):
-       self.valid_model_map = set([k for k, v in global_models_info_args.items() if v["enable"]])
+       self.valid_model_map = self._get_model_mapper
+       self.alias_map = self._get_alias_mapper
        self.lifespan = None
 
     def set_mapper(self,queue_mapper):
         self.queue_mapper = queue_mapper
+
+
+    @cached_property
+    def _get_alias_mapper(self):
+        models = [(k, v.get('alias', None)) for
+                  k, v in global_models_info_args.items() if v["enable"]]
+        alias_cards = {}
+        for m, alias in models:
+            sub_models = [m]
+            if alias is not None:
+                if isinstance(alias, list):
+                    sub_models.extend(alias)
+                else:
+                    sub_models.append(alias)
+            for name in sub_models:
+                alias_cards[name] = m
+        return alias_cards
+
+    @cached_property
+    def _get_model_mapper(self):
+        return {k:v for k, v in global_models_info_args.items() if v["enable"]}
+
+
+    def check_model(self,request):
+        if request.model not in self.alias_map:
+            msg = "{} Invalid model: model not in [".format(request.model) + ','.join(self.alias_map) + "]"
+            return create_error_response(ErrorCode.INVALID_MODEL, msg)
+        request.model = self.alias_map[request.model]
+        return None
 
 _g_instance = Resource()
 
@@ -50,24 +81,36 @@ app.add_middleware(  # 添加中间件
 
 
 
+
+
+
 @app.get("/")
 def read_root():
     return {"aigc_serving": "hello world"}
 
 @app.get("/v1/models", dependencies=[Depends(auth_api_key)])
 def list_models():
-    models = [(k,v['model_config'].get('lora',{}),v.get('auto_merge_lora_single',False)) for k, v in global_models_info_args.items() if v["enable"]]
+    models = [(k,v.get('alias',None),v['model_config'].get('lora',{}),v.get('auto_merge_lora_single',False)) for k, v in global_models_info_args.items() if v["enable"]]
     # models.sort()
     # TODO: return real model permission details
     model_cards = []
-    for m,lora_conf,auto_merge_lora_single in models:
+    for m,alias,lora_conf,auto_merge_lora_single in models:
         adapters = None
         if len(lora_conf) > 1 or (len(lora_conf) == 1 and not auto_merge_lora_single):
             adapters = list(lora_conf.keys())
 
-        model_cards.append(ModelCard(id=m, root=m,
-                                     permission=[ModelPermission()],
-                                     adapters=adapters))
+        sub_models = [m]
+        if alias is not None:
+            if isinstance(alias,list):
+                sub_models.extend(alias)
+            else:
+                sub_models.append(alias)
+
+        for name in sub_models:
+            model_cards.append(ModelCard(id=name,
+                                         root=m,
+                                         permission=[ModelPermission()],
+                                         adapters=adapters))
     return ModelList(data=model_cards)
 
 
@@ -82,10 +125,9 @@ def create_chat_completion(request: typing.Union[CompletionRequest,ChatCompletio
         error_check_ret = check_requests(request)
         if error_check_ret is not None:
             return error_check_ret
-
-        if request.model not in self.valid_model_map:
-            msg = "{} Invalid model: model not in [".format(request.model) + ','.join(self.valid_model_map) + "]"
-            return create_error_response(ErrorCode.INVALID_MODEL,msg)
+        error_check_ret = self.check_model(request)
+        if error_check_ret is not None:
+            return error_check_ret
 
         if request.stream:
             _openai_chat_stream_generate = _openai_chat_stream(request) if isinstance(request,ChatCompletionRequest) else _openai_legend_stream(request)
@@ -314,15 +356,14 @@ def create_embeddings(request: EmbeddingsRequest, model_name: str = None):
     self = global_instance()
     try:
         logger.info(request.json(indent=2, ensure_ascii=False))
-        error_check_ret = check_requests_embedding(request)
+        error_check_ret = check_requests(request)
+        if error_check_ret is not None:
+            return error_check_ret
+        error_check_ret = self.check_model(request)
         if error_check_ret is not None:
             return error_check_ret
 
-        if request.model not in self.valid_model_map:
-            msg = "{} Invalid model: model not in [".format(request.model) + ','.join(self.valid_model_map) + "]"
-            return create_error_response(ErrorCode.INVALID_MODEL, msg)
-
-        conf = global_models_info_args[request.model]
+        conf = self.valid_model_map[request.model]
         max_batch_size = getattr(conf,"max_batch_size",1)
 
         batches = request.build_data(max_batch_size)

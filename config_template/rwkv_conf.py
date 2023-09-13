@@ -7,6 +7,7 @@ rwkv_conf = {
 
     # 中英日语
     "rwkv-4-raven-3b-v12-Eng49%-Chn49%-Jpn1%-Other1%": {
+        "alias": None,  # 别用
         "enable": False,
         "work_mode": "deepspeed",  # one of deepspeed,accelerate,hf
         "workers": [
