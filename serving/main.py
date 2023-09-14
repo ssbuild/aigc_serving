@@ -6,6 +6,8 @@ import os
 import shutil
 import signal
 import sys
+import traceback
+
 root_dir = os.path.join(os.path.dirname(__file__),"..")
 root_dir = os.path.abspath(root_dir)
 sys.path.append(root_dir)
@@ -39,6 +41,7 @@ if __name__ == '__main__':
     try:
         uvicorn.Server(config).run()
     except Exception as e:
+        traceback.print_exc()
         print(e)
     # threading.main_thread().is_alive()
     # signal.pthread_kill(threading.main_thread().ident, signal.SIGTSTP)
