@@ -10,9 +10,12 @@ def load_lora_config(ckpt_dir):
     from deep_training.nlp.models.petl import PetlArguments,LoraConfig, AdaLoraConfig, IA3Config
     with open(os.path.join(ckpt_dir, 'adapter_config.json'), mode='r', encoding='utf-8') as f:
         jd = json.loads(f.read())
-    peft_type = jd.get('peft_type', None)
+    peft_type = jd.pop('peft_type', None)
     is_peft =False
     if peft_type is not None:
+        jd.pop('auto_mapping', None)
+        jd.pop('task_type',None)
+        jd.pop('revision',None)
         is_peft = True
         peft_type: str
         peft_type = peft_type.lower()
