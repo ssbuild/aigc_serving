@@ -10,6 +10,8 @@
 
 ## update information
 ```text
+    09-13 支持模型别名
+    09-11 增加支持且仅支持 ptv2 for chatglm,chatglm2
     09-06 support baichuan2
     09-03 增加tiger , openbuddy 模板 ， test openbuddy-70b passed
     08-26 fix same group stream order
@@ -48,7 +50,7 @@ docker build -f docker/Dockerfile -t aigc_serving ..
 ```
 ### docker run
 ```commandline
-docker run -it --runtime=nvidia --name aigc_serving aigc_serving:latest
+docker run -it --runtime=nvidia --name aigc_serving aigc_serving:latest /bin/bash
 ```
 
 ## 最新的安装包
@@ -91,7 +93,7 @@ bash stop.sh
  -  [openai/evals](https://github.com/openai/evals)
  -  [ssbuild/aigc_evals](https://github.com/ssbuild/aigc_evals) 
 
-## 推荐界面 ChatGPT-Next-Web
+## 推荐界面 ChatGPT-Next-Web 或者 dify 
 
 ![界面](assets/1.png)
 ![界面](assets/moss.png)

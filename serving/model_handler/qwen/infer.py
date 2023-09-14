@@ -72,7 +72,7 @@ class EngineAPI(EngineAPI_Base):
         return model,config,tokenizer
 
 
-    def _load_lora_model(self,device_id=None):
+    def _load_model_lora(self,device_id=None):
         parser = HfArgumentParser((ModelArguments,))
         (model_args,) = parser.parse_dict(self.model_config_dict["model_config"], allow_extra_keys=True)
 
@@ -105,7 +105,8 @@ class EngineAPI(EngineAPI_Base):
 
         for adapter_name, ckpt_dir in self.lora_conf.items():
             lora_args,ls_peft = load_lora_config(ckpt_dir)
-            pl_model.load_sft_weight(ckpt_dir, adapter_name=adapter_name, lora_config=lora_args,map_preprocess=default_peft_weight_preprocess)
+            pl_model.load_sft_weight(ckpt_dir, adapter_name=adapter_name, lora_config=lora_args,
+                                     map_preprocess=default_peft_weight_preprocess if ls_peft else None)
         self.lora_model = pl_model.backbone
         if len(self.lora_conf) == 1:
             if self.auto_merge_lora_single:

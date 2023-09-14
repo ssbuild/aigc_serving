@@ -102,7 +102,7 @@ class EngineAPI_Base(ABC):
     def init_model(self, device_id=None):
         self.model_config_dict['seed'] = None
         if self.muti_lora_num > 0:
-            call_method = self._load_lora_model
+            call_method = self._load_model_lora
         else:
             call_method = self._load_model
 

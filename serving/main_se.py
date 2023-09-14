@@ -7,6 +7,8 @@ import os
 import shutil
 import signal
 import sys
+import traceback
+
 root_dir = os.path.join(os.path.dirname(__file__),"..")
 root_dir = os.path.abspath(root_dir)
 sys.path.append(root_dir)
@@ -32,18 +34,20 @@ def remove_dir(path_dir):
         logger.warning("warning: {0}; path: {1}".format(path_dir, e.strerror))
 
 if __name__ == '__main__':
-    tmp_dir = './tmp'
-    remove_dir(tmp_dir)
+    tmp_dir = os.environ.get('ZEROMQ_SOCK_TMP_DIR', '/tmp/aigc_serving')
     os.environ['ZEROMQ_SOCK_TMP_DIR'] = tmp_dir
+    remove_dir(tmp_dir)
 
     bk_worker = WokerLoader()
-    global_instance().set_mapper(bk_worker.queue)
-    bk_worker.create()
-    config = uvicorn.Config(app, **global_serve_args,lifespan='off')
     try:
+        global_instance().set_mapper(bk_worker.queue)
+        bk_worker.create()
+        config = uvicorn.Config(app, **global_serve_args, lifespan='off')
         uvicorn.Server(config).run()
     except Exception as e:
+        traceback.print_exc()
         print(e)
-    # threading.main_thread().is_alive()
-    # signal.pthread_kill(threading.main_thread().ident, signal.SIGTSTP)
-    bk_worker.release()
+    finally:
+        # threading.main_thread().is_alive()
+        # signal.pthread_kill(threading.main_thread().ident, signal.SIGTSTP)
+        bk_worker.release()

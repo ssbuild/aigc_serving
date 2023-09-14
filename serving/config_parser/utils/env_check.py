@@ -23,9 +23,20 @@ def get_free_tcp_port():
 
 def check_config(global_models_info_args):
 
+    name_set = set()
     for model_name,model_config in global_models_info_args.items():
         if not model_config['enable']:
             continue
+        alias = model_config.get('alias')
+        if alias is not None:
+            if isinstance(alias,str):
+                alias = [alias]
+            assert isinstance(alias,list)
+            for name in alias:
+                assert name is not None and isinstance(name,str)
+                if name in name_set:
+                    raise ValueError("{} exists".format(name))
+                name_set.add(name)
 
         if model_config['work_mode'] != 'deepspeed':
             continue

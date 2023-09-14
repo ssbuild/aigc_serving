@@ -49,7 +49,7 @@ class EngineAPI(EngineAPI_Base):
                 model.cuda(device_id)
         return model,config,tokenizer
 
-    def _load_lora_model(self, device_id=None):
+    def _load_model_lora(self, device_id=None):
         parser = HfArgumentParser((ModelArguments,))
         (model_args,) = parser.parse_dict(self.model_config_dict["model_config"], allow_extra_keys=True)
 

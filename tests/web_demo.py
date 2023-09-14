@@ -84,6 +84,7 @@ def predict(input, chatbot, model, max_length, top_k, top_p, temperature, repeti
         "temperature": temperature,
         "frequency_penalty": repetition_penalty,
         "stream": stream,
+        "max_tokens": 512,
         "nchar": 1,# stream 字符
         "n": 1 # 返回 n 个choices
     }

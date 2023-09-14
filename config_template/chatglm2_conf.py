@@ -5,6 +5,7 @@
 chatglm2_conf = {
 
     "chatglm2-6b": {
+        "alias": None,  # 别用
         "enable": False,
         "work_mode": "deepspeed",  # one of deepspeed,accelerate,hf
         "workers": [

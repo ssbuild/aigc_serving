@@ -4,6 +4,7 @@
 
 opt_conf = {
     "opt-350m": {
+        "alias": None,  # 别用
         "enable": False,
         "work_mode": "deepspeed",  # one of deepspeed,accelerate,hf
         "workers": [

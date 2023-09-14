@@ -86,7 +86,7 @@ class EngineAPI(EngineAPI_Base):
                 model.cuda(device_id)
         return model, config, tokenizer
 
-    def _load_lora_model(self, device_id=None):
+    def _load_model_lora(self, device_id=None):
         register_transformer_config(XverseConfig)
         register_transformer_model(MyXverseForCausalLM, AutoModelForCausalLM)
         parser = HfArgumentParser((ModelArguments,))
