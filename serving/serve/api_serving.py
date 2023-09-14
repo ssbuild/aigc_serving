@@ -7,7 +7,6 @@ import traceback
 import typing
 import uuid
 from functools import cached_property
-
 from fastapi import FastAPI, Depends
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import StreamingResponse

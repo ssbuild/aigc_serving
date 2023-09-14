@@ -7,6 +7,8 @@ import os
 import shutil
 import signal
 import sys
+import traceback
+
 root_dir = os.path.join(os.path.dirname(__file__),"..")
 root_dir = os.path.abspath(root_dir)
 sys.path.append(root_dir)
@@ -37,13 +39,15 @@ if __name__ == '__main__':
     remove_dir(tmp_dir)
 
     bk_worker = WokerLoader()
-    global_instance().set_mapper(bk_worker.queue)
-    bk_worker.create()
-    config = uvicorn.Config(app, **global_serve_args,lifespan='off')
     try:
+        global_instance().set_mapper(bk_worker.queue)
+        bk_worker.create()
+        config = uvicorn.Config(app, **global_serve_args, lifespan='off')
         uvicorn.Server(config).run()
     except Exception as e:
+        traceback.print_exc()
         print(e)
-    # threading.main_thread().is_alive()
-    # signal.pthread_kill(threading.main_thread().ident, signal.SIGTSTP)
-    bk_worker.release()
+    finally:
+        # threading.main_thread().is_alive()
+        # signal.pthread_kill(threading.main_thread().ident, signal.SIGTSTP)
+        bk_worker.release()
