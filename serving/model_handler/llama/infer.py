@@ -24,7 +24,7 @@ from deep_training.nlp.models.rellama.modeling_llama import LlamaForCausalLM
 
 from serving.model_handler.base.data_define import WorkMode
 from serving.prompt.openbuddy import get_chat as get_chat_openbuddy
-from serving.prompt.tigger import get_chat as get_chat_tiger
+from serving.prompt.tiger import get_chat as get_chat_tiger
 
 
 class NN_DataHelper(DataHelper):pass
@@ -50,7 +50,7 @@ class EngineAPI(EngineAPI_Base):
         pl_model = MyTransformer(config=config, model_args=model_args, torch_dtype=config.torch_dtype, rope_args=rope_args)
         model = pl_model.get_llm_model()
         model = model.eval()
-        if hasattr(model,'quantize'):
+        if config.pretraining_tp<=1 and hasattr(model,'quantize'):
             if not model.quantized:
                 # 按需修改，目前只支持 4/8 bit 量化 ， 可以保存量化模型
                 if self.auto_quantize:
@@ -118,7 +118,7 @@ class EngineAPI(EngineAPI_Base):
                 self.lora_model.merge_and_unload()
                 self.lora_model.eval()
                 model = self.lora_model
-                if hasattr(model,'quantize') and self.auto_quantize:
+                if config.pretraining_tp<=1 and hasattr(model,'quantize') and self.auto_quantize:
                     model.half().quantize(4)
                 else:
                     model.half()
