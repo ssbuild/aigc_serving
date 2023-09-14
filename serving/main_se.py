@@ -7,6 +7,8 @@ import os
 import shutil
 import signal
 import sys
+import traceback
+
 root_dir = os.path.join(os.path.dirname(__file__),"..")
 root_dir = os.path.abspath(root_dir)
 sys.path.append(root_dir)
