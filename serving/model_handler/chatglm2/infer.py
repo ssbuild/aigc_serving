@@ -143,17 +143,18 @@ class EngineAPI(EngineAPI_Base):
                 self.lora_model.cuda(device_id)
         return self.lora_model, config, tokenizer
 
-
-    def chat_stream(self, query, history=None, **kwargs):
-        args_process = GenerateProcess(self,is_stream=True)
-        args_process.preprocess(kwargs)
-        chunk = args_process.chunk
-        if history is None:
-            history = []
-        default_kwargs = dict(history=history,
+    def get_default_gen_args(self):
+        default_kwargs = dict(
                               eos_token_id=self.model.config.eos_token_id,
                               do_sample=True, top_p=0.7, temperature=0.95,
                               )
+        return default_kwargs
+
+    def chat_stream(self, query, **kwargs):
+        args_process = GenerateProcess(self,is_stream=True)
+        args_process.preprocess(kwargs)
+        chunk = args_process.chunk
+        default_kwargs = self.get_default_gen_args()
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
 
@@ -175,13 +176,10 @@ class EngineAPI(EngineAPI_Base):
                 "num_token": args_process.get_num_tokens()
             }, complete=False)
 
-    def chat(self, query, history=None, **kwargs):
+    def chat(self, query, **kwargs):
         args_process = GenerateProcess(self)
         args_process.preprocess(kwargs)
-        default_kwargs = dict(history=history,
-            eos_token_id=self.model.config.eos_token_id,
-            do_sample=True, top_p=0.7, temperature=0.95,
-        )
+        default_kwargs = self.get_default_gen_args()
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
         response, history = self.model.chat(self.tokenizer, query=query,  **default_kwargs)

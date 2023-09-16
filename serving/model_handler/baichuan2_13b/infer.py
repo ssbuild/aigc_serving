@@ -134,19 +134,20 @@ class EngineAPI(EngineAPI_Base):
                 self.lora_model.cuda(device_id)
         return self.lora_model, config, tokenizer
 
-
-
-    def chat_stream(self, query, history=None, **kwargs):
-        args_process = GenerateProcess(self,is_stream=True)
-        args_process.preprocess(kwargs)
-        chunk = args_process.chunk
-
-        messages = _build_message(query,history=history)
+    def get_default_gen_args(self):
         default_kwargs = dict(eos_token_id=self.model.config.eos_token_id,
                               pad_token_id=self.model.config.pad_token_id,
                               do_sample=True, top_k=5, top_p=0.85, temperature=0.3,
                               repetition_penalty=1.05,
                               )
+        return default_kwargs
+
+    def chat_stream(self, query, history=None, **kwargs):
+        args_process = GenerateProcess(self,is_stream=True)
+        args_process.preprocess(kwargs)
+        chunk = args_process.chunk
+        messages = _build_message(query,history=history)
+        default_kwargs=self.get_default_gen_args()
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
         stopping_criteria = default_kwargs.pop('stopping_criteria', None)
@@ -179,12 +180,7 @@ class EngineAPI(EngineAPI_Base):
         args_process = GenerateProcess(self)
         args_process.preprocess(kwargs)
         messages = _build_message(query, history=history)
-
-        default_kwargs = dict(eos_token_id=self.model.config.eos_token_id,
-                              pad_token_id=self.model.config.eos_token_id,
-                              do_sample=True, top_k=5, top_p=0.85, temperature=0.3,
-                              repetition_penalty=1.1,
-                              )
+        default_kwargs = self.get_default_gen_args()
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
         stopping_criteria = default_kwargs.pop('stopping_criteria', None)
