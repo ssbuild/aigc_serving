@@ -197,6 +197,7 @@ class EngineAPI(EngineAPI_Base):
 
 
     def chat(self, query, history=None, **kwargs):
+        preprocess_input_args(self.tokenizer, self.config, kwargs)
         if history is None:
             history = []
 
@@ -221,7 +222,7 @@ class EngineAPI(EngineAPI_Base):
         postprocess_input_args(self.tokenizer,self.config,None,default_kwargs)
         response = Generate.generate(self.get_model(),
                                      tokenizer=self.tokenizer,
-                                     query=prompt, **kwargs)
+                                     query=prompt, **default_kwargs)
         response = postprocess_chat_response(response, **kwargs)
         history = history + [(query, response)]
         return CompletionResult(result={

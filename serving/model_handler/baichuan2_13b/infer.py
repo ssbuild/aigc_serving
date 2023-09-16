@@ -200,7 +200,6 @@ class EngineAPI(EngineAPI_Base):
 
     def chat(self, query, history=None, **kwargs):
         preprocess_input_args(self.tokenizer,self.config,kwargs)
-
         messages = _build_message(query, history=history)
 
         default_kwargs = dict(eos_token_id=self.model.config.eos_token_id,
