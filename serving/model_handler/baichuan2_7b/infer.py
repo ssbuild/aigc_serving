@@ -11,9 +11,9 @@ from deep_training.data_helper import ModelArguments, DataHelper
 from transformers import HfArgumentParser, BitsAndBytesConfig, GenerationConfig
 from aigc_zoo.model_zoo.baichuan.baichuan2_7b.llm_model import MyTransformer,BaichuanConfig,BaichuanTokenizer,\
     MyBaichuanForCausalLM,PetlArguments,PetlModel
-from serving.model_handler.base import EngineAPI_Base,CompletionResult,flat_input, LoraModelState, \
+from serving.model_handler.base import EngineAPI_Base,CompletionResult,LoraModelState, \
     load_lora_config,GenerateProcess,WorkMode
-
+from serving.prompt import *
 
 class NN_DataHelper(DataHelper):pass
 
@@ -169,8 +169,6 @@ class EngineAPI(EngineAPI_Base):
         args_process.postprocess(default_kwargs)
         stopping_criteria = default_kwargs.pop('stopping_criteria', None)
         generation_config = GenerationConfig(**default_kwargs)
-
-        response = None
         for response in self.get_model().chat(tokenizer=self.tokenizer,
                                               messages=messages,
                                               stream=True,
@@ -196,7 +194,7 @@ class EngineAPI(EngineAPI_Base):
 
 
     def chat(self, query, history=None, **kwargs):
-        args_process = GenerateProcess(self.tokenizer, self.config)
+        args_process = GenerateProcess(self)
         args_process.preprocess(kwargs)
 
         messages = _build_message(query, history=history)

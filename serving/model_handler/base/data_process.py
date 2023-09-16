@@ -157,11 +157,12 @@ class StopWordsCriteria(StoppingCriteria):
         return False
 
 class GenerateProcess:
-    def __init__(self,tokenizer: PreTrainedTokenizer,config: PretrainedConfig,is_stream=False):
-        self.tokenizer = tokenizer
-        self.config = config
+    def __init__(self,this_obj,is_stream=False):
+        self.tokenizer: typing.Optional[PreTrainedTokenizer] = this_obj.tokenizer
+        self.config: typing.Optional[PretrainedConfig] = this_obj.config
         self.is_stream = is_stream
         self.chunk: typing.Optional[ChunkData] = None
+        self.this_obj = this_obj
 
     def preprocess(self, args_dict: dict):
         if self.is_stream:
@@ -218,7 +219,7 @@ class GenerateProcess:
                 response = response[:pos]
         return response
 
-    def get_streamer(self,this_obj,skip_word_list):
+    def get_streamer(self,skip_word_list):
         def process_token_fn(text, stream_end,user_data: typing.Tuple):
             chunk: ChunkData
             chunk,this_obj = user_data
@@ -228,11 +229,11 @@ class GenerateProcess:
                 ret = CompletionResult(result={
                     "response": text,
                     # "history": history,
-                    "num_token": args_process.get_num_tokens()
+                    "num_token": self.get_num_tokens()
                 }, complete=False)
                 this_obj.push_response(ret)
 
-        streamer = GenTextStreamer(process_token_fn, (self.chunk,this_obj),
+        streamer = GenTextStreamer(process_token_fn, (self.chunk,self.this_obj),
                                    tokenizer=self.tokenizer, # noqa
                                    skip_word_list=flat_input(skip_word_list),
                                    skip_prompt=True)
@@ -242,6 +243,14 @@ class GenerateProcess:
         if self.chunk:
             return self.chunk.n_id
         return 0
+
+    def do_final_stream(self):
+        if self.chunk:
+            self.this_obj.push_response(CompletionResult(result={
+                "response": "",
+                # "history": history,
+                "num_token": self.get_num_tokens()
+            }, complete=True))
 
 def flat_input(ids: typing.Union[typing.List,int]):
     if isinstance(ids,int):

@@ -14,7 +14,7 @@ from aigc_zoo.model_zoo.baichuan.baichuan_7b.llm_model import MyTransformer,BaiC
 from aigc_zoo.generator_utils.generator_llm import Generate
 from serving.model_handler.base import EngineAPI_Base,CompletionResult, LoraModelState, load_lora_config,GenerateProcess,WorkMode
 from serving.prompt import get_chat_openbuddy,get_chat_tiger,get_chat_default
-
+from serving.prompt import *
 
 class NN_DataHelper(DataHelper):pass
 
@@ -126,7 +126,7 @@ class EngineAPI(EngineAPI_Base):
 
 
     def chat_stream(self, query, history=None, **kwargs):
-        args_process = GenerateProcess(self.tokenizer, self.config,is_stream=True)
+        args_process = GenerateProcess(self,is_stream=True)
         args_process.preprocess(kwargs)
         chunk = args_process.chunk
         prompt = get_chat_default(self.tokenizer, query, history)
@@ -152,9 +152,6 @@ class EngineAPI(EngineAPI_Base):
                 outputs.append(token.item())
                 yield self.tokenizer.decode(outputs, skip_special_tokens=True)
 
-
-
-        response = None
         for response in stream_generator():
             chunk.step(response)
             if chunk.can_output():
@@ -177,7 +174,7 @@ class EngineAPI(EngineAPI_Base):
 
 
     def chat(self, query, history=None, **kwargs):
-        args_process = GenerateProcess(self.tokenizer, self.config)
+        args_process = GenerateProcess(self)
         args_process.preprocess(kwargs)
         prompt = get_chat_default(self.tokenizer, query, history)
         default_kwargs = dict(
@@ -196,7 +193,7 @@ class EngineAPI(EngineAPI_Base):
         })
 
     def generate(self,query,**kwargs):
-        args_process = GenerateProcess(self.tokenizer, self.config)
+        args_process = GenerateProcess(self)
         default_kwargs = dict(
             eos_token_id=self.model.config.eos_token_id,
             pad_token_id=self.model.config.eos_token_id,
