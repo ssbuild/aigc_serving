@@ -16,7 +16,7 @@ from transformers import AutoModelForCausalLM
 from deep_training.utils.hf import register_transformer_model, register_transformer_config  # noqa
 # from deep_training.nlp.models.xverse.modeling_xverse import XverseForCausalLM, XverseConfig
 from aigc_zoo.model_zoo.xverse.llm_model import MyTransformer,MyXverseForCausalLM, XverseConfig,PetlArguments,PetlModel,AutoConfig
-
+from serving.prompt import *
 
 
 
@@ -152,12 +152,10 @@ class EngineAPI(EngineAPI_Base):
     def chat_stream(self, query, history=None, **kwargs):
         args_process = GenerateProcess(self.tokenizer, self.config,is_stream=True)
         args_process.preprocess(kwargs)
-        chunk = args_process.chunk
         default_kwargs = {
             "pad_token_id": self.config.pad_token_id,
             "bos_token_id": self.config.bos_token_id,
             "eos_token_id": self.config.eos_token_id,
-            "max_new_tokens": 512,
             "temperature": 0.5,
             "top_k": 30,
             "top_p": 0.85,
@@ -195,7 +193,6 @@ class EngineAPI(EngineAPI_Base):
             "pad_token_id": self.config.pad_token_id,
             "bos_token_id": self.config.bos_token_id,
             "eos_token_id": self.config.eos_token_id,
-            "max_new_tokens": 512,
             "temperature": 0.5,
             "top_k": 30,
             "top_p": 0.85,

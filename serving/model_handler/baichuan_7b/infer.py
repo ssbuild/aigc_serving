@@ -14,7 +14,7 @@ from aigc_zoo.model_zoo.baichuan.baichuan_7b.llm_model import MyTransformer,BaiC
 from aigc_zoo.generator_utils.generator_llm import Generate
 from serving.model_handler.base import EngineAPI_Base,CompletionResult, LoraModelState, load_lora_config,GenerateProcess,WorkMode
 from serving.prompt import get_chat_openbuddy,get_chat_tiger,get_chat_default
-
+from serving.prompt import *
 
 class NN_DataHelper(DataHelper):pass
 
@@ -152,9 +152,6 @@ class EngineAPI(EngineAPI_Base):
                 outputs.append(token.item())
                 yield self.tokenizer.decode(outputs, skip_special_tokens=True)
 
-
-
-        response = None
         for response in stream_generator():
             chunk.step(response)
             if chunk.can_output():

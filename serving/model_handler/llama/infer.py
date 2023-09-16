@@ -17,6 +17,7 @@ from aigc_zoo.model_zoo.llm.llm_model import MyTransformer,PetlArguments,PetlMod
 from aigc_zoo.generator_utils.generator_llm import Generate
 from serving.model_handler.base import EngineAPI_Base,CompletionResult, LoraModelState, load_lora_config, GenerateProcess,WorkMode,ChunkData
 from serving.prompt import get_chat_openbuddy,get_chat_tiger,get_chat_default
+from serving.prompt import *
 
 class NN_DataHelper(DataHelper):pass
 

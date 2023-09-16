@@ -11,9 +11,9 @@ from deep_training.data_helper import ModelArguments, DataHelper
 from transformers import HfArgumentParser
 from aigc_zoo.model_zoo.llm.llm_model import MyTransformer,PetlArguments,PetlModel,AutoConfig
 from aigc_zoo.generator_utils.generator_llm import Generate
-from serving.model_handler.base import EngineAPI_Base, CompletionResult, flat_input, LoraModelState, load_lora_config, \
+from serving.model_handler.base import EngineAPI_Base, CompletionResult,LoraModelState, load_lora_config, \
     GenerateProcess, WorkMode
-from serving.prompt import get_chat_openbuddy,get_chat_tiger,get_chat_default
+from serving.prompt import *
 
 
 class NN_DataHelper(DataHelper):pass

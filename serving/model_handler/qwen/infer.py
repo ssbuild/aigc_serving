@@ -11,7 +11,7 @@ from transformers import HfArgumentParser, BitsAndBytesConfig
 from aigc_zoo.model_zoo.qwen.llm_model import MyTransformer, QWenTokenizer, PetlArguments, \
     setup_model_profile, QWenConfig
 from serving.model_handler.base import EngineAPI_Base,CompletionResult,LoraModelState, load_lora_config, GenerateProcess,WorkMode
-
+from serving.prompt import *
 
 
 class NN_DataHelper(DataHelper):pass
@@ -129,12 +129,10 @@ class EngineAPI(EngineAPI_Base):
     def chat_stream(self, query, history=None, **kwargs):
         args_process = GenerateProcess(self.tokenizer, self.config,is_stream=True)
         args_process.preprocess(kwargs)
-        chunk = args_process.chunk
         default_kwargs = {
             "history": history,
             "chat_format": "chatml",
             "eos_token_id": 151643,
-            "max_new_tokens": 512,
             "pad_token_id": 151643,
             "do_sample": True,
             "top_k": 0,
@@ -162,7 +160,6 @@ class EngineAPI(EngineAPI_Base):
             "history": history,
             "chat_format": "chatml",
             "eos_token_id": 151643,
-            "max_new_tokens": 512,
             "pad_token_id": 151643,
             "do_sample": True,
             "top_k": 0,
@@ -185,8 +182,7 @@ class EngineAPI(EngineAPI_Base):
         )
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
-        #response, history = self.model.chat(self.tokenizer, query=input,  **kwargs)
-        output = self.model.chat(self.tokenizer, query=input, **default_kwargs)
+        output = self.model.chat(self.tokenizer, query=query, **default_kwargs)
         output_scores = default_kwargs.get('output_scores', False)
         if output_scores:
             return output

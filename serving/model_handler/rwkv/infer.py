@@ -13,7 +13,7 @@ from aigc_zoo.model_zoo.rwkv4.llm_model import MyTransformer, RwkvConfig, \
     set_model_profile,PetlArguments,PetlModel
 from aigc_zoo.utils.rwkv4_generate import Generate
 from serving.model_handler.base import EngineAPI_Base,CompletionResult,LoraModelState, load_lora_config, GenerateProcess,WorkMode
-from serving.prompt import get_chat_openbuddy,get_chat_tiger,get_chat_default
+from serving.prompt import *
 
 
 class NN_DataHelper(DataHelper):pass
@@ -144,10 +144,9 @@ class EngineAPI(EngineAPI_Base):
                                      tokenizer=self.tokenizer,
                                      query=prompt, **default_kwargs)
         response = args_process.postprocess_response(response, **kwargs)
-        # history = history + [(query, response)]
         return CompletionResult(result={
             "response": response,
-            #"history": history
+            #"history": history + [(query, response)]
         })
 
 
@@ -162,7 +161,7 @@ class EngineAPI(EngineAPI_Base):
         args_process.postprocess(default_kwargs)
         response = Generate.generate(self.get_model(),
                                      tokenizer=self.tokenizer,
-                                     query=input,**default_kwargs)
+                                     query=query,**default_kwargs)
         return response
 
     def embedding(self, query, **kwargs):

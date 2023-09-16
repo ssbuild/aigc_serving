@@ -12,7 +12,7 @@ from transformers import HfArgumentParser
 from aigc_zoo.model_zoo.chatglm.llm_model import MyTransformer, ChatGLMTokenizer, PetlArguments, setup_model_profile, \
     ChatGLMConfig,PetlModel
 from serving.model_handler.base import EngineAPI_Base,CompletionResult,LoraModelState, load_lora_config, GenerateProcess,WorkMode
-
+from serving.prompt import *
 
 class NN_DataHelper(DataHelper):pass
 
@@ -151,8 +151,6 @@ class EngineAPI(EngineAPI_Base):
                               )
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
-
-        response = None
         for response, history in self.model.stream_chat(self.tokenizer, query=query, **kwargs):
             chunk.step(response)
             if chunk.can_output():
@@ -181,7 +179,7 @@ class EngineAPI(EngineAPI_Base):
         )
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
-        response, history = self.model.chat(self.tokenizer, query=input, **default_kwargs)
+        response, history = self.model.chat(self.tokenizer, query=query, **default_kwargs)
         response = args_process.postprocess_response(response, **kwargs)
         return CompletionResult(result={
             "response": response,
@@ -196,7 +194,7 @@ class EngineAPI(EngineAPI_Base):
         )
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
-        output = self.model.generate(self.tokenizer, query=input, **default_kwargs)
+        output,_ = self.model.chat(self.tokenizer, query=query, **default_kwargs)
         output_scores = default_kwargs.get('output_scores', False)
         if output_scores:
             return output

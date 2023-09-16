@@ -14,7 +14,7 @@ from aigc_zoo.model_zoo.internlm.llm_model import MyTransformer,InternLMConfig,I
     InternLMForCausalLM,PetlArguments,PetlModel
 from serving.model_handler.base import EngineAPI_Base, CompletionResult,LoraModelState, load_lora_config, \
     GenerateProcess, WorkMode
-
+from serving.prompt import *
 
 class NN_DataHelper(DataHelper):pass
 
@@ -124,36 +124,11 @@ class EngineAPI(EngineAPI_Base):
                 self.lora_model.cuda(device_id)
         return self.lora_model, config, tokenizer
 
-    @torch.no_grad()
-    def _generate(self,  query: str,do_sample=True, top_p=0.7, temperature=0.95, logits_processor=None, **kwargs):
-        gen_kwargs = {"do_sample": do_sample, "top_p": top_p,  "eos_token_id": [2, 103028],
-                      "repetition_penalty" : 1.01,
-                      "temperature": temperature, "logits_processor": logits_processor, **kwargs}
-        output_scores = gen_kwargs.get('output_scores', False)
-        if output_scores:
-            gen_kwargs['return_dict_in_generate'] = True
-        # prompt = "Human：" + query + "\nAssistant："
-        # 自行加模板
-        prompt = query
-        inputs = self.tokenizer([prompt], return_tensors="pt")
-        inputs = inputs.to(self.model.device)
-        outputs = self.model.generate(**inputs, **gen_kwargs)
-        if output_scores:
-            score = outputs.scores[0]
-            return score
-        outputs = outputs.tolist()[0][len(inputs["input_ids"][0]):]
-        response = self.tokenizer.decode(outputs)
-        return response
 
     def chat_stream(self, query, history=None, **kwargs):
         args_process = GenerateProcess(self.tokenizer, self.config,is_stream=True)
         args_process.preprocess(kwargs)
-        chunk = args_process.chunk
-        if history is None:
-            history = []
-
         default_kwargs = dict(history=history, eos_token_id=[2, 103028],
-                            max_new_tokens = 1024,
                             do_sample = True,
                             temperature = 0.8,
                             top_p = 0.8,
@@ -180,7 +155,6 @@ class EngineAPI(EngineAPI_Base):
             history = []
 
         default_kwargs = dict(history=history,eos_token_id=[2, 103028],
-                              max_new_tokens=1024,
                               do_sample=True,
                               temperature=0.8,
                               top_p=0.8,
@@ -197,7 +171,6 @@ class EngineAPI(EngineAPI_Base):
     def generate(self,query,**kwargs):
         args_process = GenerateProcess(self.tokenizer, self.config)
         default_kwargs = dict(eos_token_id = [2, 103028],
-                              max_new_tokens=1024,
                               do_sample=True,
                               temperature=0.8,
                               top_p=0.8,
@@ -205,7 +178,7 @@ class EngineAPI(EngineAPI_Base):
 
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
-        output = self.model.chat(self.tokenizer, query=input, **default_kwargs)
+        output,_ = self.model.chat(self.tokenizer, query=query, **default_kwargs)
         output_scores = default_kwargs.get('output_scores', False)
         if output_scores:
             return output

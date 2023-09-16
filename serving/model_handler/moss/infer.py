@@ -13,7 +13,7 @@ from aigc_zoo.model_zoo.moss.llm_model import MyTransformer,MossConfig,MossToken
 from aigc_zoo.generator_utils.generator_moss import Generate
 from serving.model_handler.base import EngineAPI_Base, CompletionResult, CompletionResult, LoraModelState, \
     load_lora_config, GenerateProcess, WorkMode
-
+from serving.prompt import *
 
 
 class NN_DataHelper(DataHelper):pass
@@ -120,7 +120,6 @@ class EngineAPI(EngineAPI_Base):
     def chat_stream(self, query, history=None, **kwargs):
         args_process = GenerateProcess(self.tokenizer, self.config,is_stream=True)
         args_process.preprocess(kwargs)
-        chunk = args_process.chunk
         prompt = query
         default_kwargs = dict(
             eos_token_id=self.config.eos_token_id,
