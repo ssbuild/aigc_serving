@@ -11,10 +11,8 @@ from deep_training.data_helper import ModelArguments, DataHelper
 from transformers import HfArgumentParser, BitsAndBytesConfig, GenerationConfig
 from aigc_zoo.model_zoo.baichuan.baichuan2_7b.llm_model import MyTransformer,BaichuanConfig,BaichuanTokenizer,\
     MyBaichuanForCausalLM,PetlArguments,PetlModel
-from serving.model_handler.base import EngineAPI_Base, flat_input, LoraModelState, load_lora_config
-from serving.config_parser.main import global_models_info_args
-from serving.model_handler.base import CompletionResult,ChunkData,GenerateProcess
-from serving.model_handler.base.data_define import WorkMode
+from serving.model_handler.base import EngineAPI_Base,CompletionResult,flat_input, LoraModelState, \
+    load_lora_config,GenerateProcess,WorkMode
 
 
 class NN_DataHelper(DataHelper):pass
@@ -234,17 +232,3 @@ class EngineAPI(EngineAPI_Base):
         return CompletionResult(result={
             "response": embedding,
         })
-
-if __name__ == '__main__':
-    api_client = EngineAPI(global_models_info_args['Baichuan-13B-Chat'])
-    api_client.init()
-    text_list = ["写一个诗歌，关于冬天",
-                 "晚上睡不着应该怎么办",
-                 "从南京到上海的路线",
-                 "登鹳雀楼->王之涣\n夜雨寄北->",
-                 "Hamlet->Shakespeare\nOne Hundred Years of Solitude->",
-                 ]
-    for input in text_list:
-        response = api_client.generate(input)
-        print('input', input)
-        print('output', response)

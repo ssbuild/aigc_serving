@@ -11,10 +11,7 @@ from deep_training.nlp.layers.rope_scale.patch import RotaryNtkScaledArguments
 from transformers import HfArgumentParser
 from aigc_zoo.model_zoo.chatglm.llm_model import MyTransformer, ChatGLMTokenizer, PetlArguments, setup_model_profile, \
     ChatGLMConfig,PetlModel
-from serving.model_handler.base import EngineAPI_Base, flat_input, LoraModelState, load_lora_config, GenerateProcess
-from serving.config_parser.main import global_models_info_args
-from serving.model_handler.base import CompletionResult,ChunkData
-from serving.model_handler.base.data_define import WorkMode
+from serving.model_handler.base import EngineAPI_Base,CompletionResult,flat_input, LoraModelState, load_lora_config, GenerateProcess,WorkMode
 
 
 class NN_DataHelper(DataHelper):pass
@@ -199,7 +196,6 @@ class EngineAPI(EngineAPI_Base):
         )
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
-        # response, history = self.model.chat(self.tokenizer, query=input,  **kwargs)
         output = self.model.generate(self.tokenizer, query=input, **default_kwargs)
         output_scores = default_kwargs.get('output_scores', False)
         if output_scores:
@@ -218,17 +214,3 @@ class EngineAPI(EngineAPI_Base):
         return CompletionResult(result={
             "response": embedding,
         })
-
-if __name__ == '__main__':
-    api_client = EngineAPI(global_models_info_args['chatglm-6b-int4'])
-    api_client.init()
-    text_list = [
-        "写一个诗歌，关于冬天",
-        "晚上睡不着应该怎么办",
-    ]
-    for input in text_list:
-        response = api_client.generate(input)
-        print("input", input)
-        print("response", response)
-
-

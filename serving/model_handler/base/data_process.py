@@ -5,10 +5,11 @@ import typing
 
 import numpy as np
 import torch
+from aigc_zoo.utils.streamgenerator import GenTextStreamer
 from transformers import PreTrainedTokenizer, LogitsProcessorList, LogitsProcessor, PretrainedConfig, StoppingCriteria, \
     StoppingCriteriaList
 
-from serving.model_handler.base.data_define import ChunkData
+from serving.model_handler.base.data_define import ChunkData, CompletionResult
 from serving.model_handler.base.kmp import KMP
 
 
@@ -216,6 +217,26 @@ class GenerateProcess:
                 pos = min(pos)
                 response = response[:pos]
         return response
+
+    def get_streamer(self,this_obj,skip_word_list):
+        def process_token_fn(text, stream_end,user_data: typing.Tuple):
+            chunk: ChunkData
+            chunk,this_obj = user_data
+            chunk.step(text, is_append=True)
+            if chunk.can_output() or stream_end:
+                text = chunk.step_text()
+                ret = CompletionResult(result={
+                    "response": text,
+                    # "history": history,
+                    "num_token": chunk.n_id
+                }, complete=False)
+                this_obj.push_response(ret)
+
+        streamer = GenTextStreamer(process_token_fn, (self.chunk,this_obj),
+                                   tokenizer=self.tokenizer, # noqa
+                                   skip_word_list=flat_input(skip_word_list),
+                                   skip_prompt=True)
+        return streamer
 
 def flat_input(ids: typing.Union[typing.List,int]):
     if isinstance(ids,int):

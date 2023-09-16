@@ -8,14 +8,15 @@ import torch
 from torch.nn import functional as F
 from deep_training.trainer.pl.modelweighter import default_peft_weight_preprocess
 from aigc_zoo.utils.streamgenerator import GenTextStreamer
-from deep_training.data_helper import ModelArguments,  DataHelper
+from deep_training.data_helper import ModelArguments, DataHelper
 from transformers import HfArgumentParser
 from aigc_zoo.model_zoo.moss.llm_model import MyTransformer,MossConfig,MossTokenizer,PetlArguments,PetlModel
 from aigc_zoo.generator_utils.generator_moss import Generate
-from serving.model_handler.base import EngineAPI_Base, flat_input, CompletionResult, LoraModelState, ChunkData, \
-    load_lora_config, GenerateProcess
+from serving.model_handler.base import EngineAPI_Base, CompletionResult, flat_input, CompletionResult, LoraModelState, \
+    ChunkData, \
+    load_lora_config, GenerateProcess, WorkMode
 from serving.config_parser.main import global_models_info_args
-from serving.model_handler.base.data_define import WorkMode
+
 
 
 class NN_DataHelper(DataHelper):pass
@@ -129,19 +130,8 @@ class EngineAPI(EngineAPI_Base):
             pad_token_id=self.config.eos_token_id,)
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
-        def process_token_fn(text, stream_end, chunk: ChunkData):
-            chunk.step(text, is_append=True)
-            if chunk.can_output() or stream_end:
-                text = chunk.step_text()
-                ret = CompletionResult(result={
-                    "response": text,
-                    #"history": history,
-                    "num_token": chunk.n_id
-                }, complete=False)
-                self.push_response(ret)
-
-        skip_word_list = default_kwargs.get('eos_token_id',None) or [self.tokenizer.eos_token_id]
-        streamer = GenTextStreamer(process_token_fn,chunk,tokenizer=self.tokenizer,skip_word_list=flat_input(skip_word_list),skip_prompt=True)
+        skip_word_list = default_kwargs.get('eos_token_id', None) or [self.tokenizer.eos_token_id]
+        streamer = args_process.get_streamer(self, skip_word_list)
         self.gen_core.chat(query=prompt,streamer=streamer,  **default_kwargs)
 
         ret = CompletionResult(result={
@@ -196,14 +186,3 @@ class EngineAPI(EngineAPI_Base):
         return CompletionResult(result={
             "response": embedding,
         })
-
-if __name__ == '__main__':
-    api_client = EngineAPI(global_models_info_args['moss-moon-003-sft-int4'])
-    api_client.init()
-    text_list = ["写一个诗歌，关于冬天",
-                 "<|Human|>: 如果一个女性想要发展信息技术行业，她应该做些什么？<eoh>\n<|MOSS|>:",
-                 ]
-    for input in text_list:
-        response = api_client.generate(input)
-        print('input', input)
-        print('output', response)
