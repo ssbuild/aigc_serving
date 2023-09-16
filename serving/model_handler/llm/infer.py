@@ -11,11 +11,10 @@ from deep_training.data_helper import ModelArguments,  DataHelper
 from transformers import HfArgumentParser
 from aigc_zoo.model_zoo.llm.llm_model import MyTransformer,PetlArguments,PetlModel,AutoConfig
 from aigc_zoo.utils.llm_generate import Generate
-from serving.model_handler.base import EngineAPI_Base, flat_input, LoraModelState, load_lora_config, \
-    postprocess_chat_response
+from serving.model_handler.base import EngineAPI_Base, flat_input, LoraModelState, load_lora_config,GenerateProcess
 from serving.config_parser.main import global_models_info_args
 from aigc_zoo.utils.streamgenerator import GenTextStreamer
-from serving.model_handler.base import CompletionResult,ChunkData,preprocess_input_args,postprocess_input_args
+from serving.model_handler.base import CompletionResult,ChunkData
 from serving.model_handler.base.data_define import WorkMode
 
 
@@ -103,9 +102,10 @@ class EngineAPI(EngineAPI_Base):
                 self.lora_model.cuda(device_id)
         return self.lora_model, config, tokenizer
 
-    def chat_stream(self, query, nchar=1,gtype='total', history=None, **kwargs):
-        chunk = ChunkData(nchar=nchar, stop=kwargs.get('stop', None), mode=gtype)
-        preprocess_input_args(self.tokenizer,self.config,kwargs)
+    def chat_stream(self, query, history=None, **kwargs):
+        args_process = GenerateProcess(self.tokenizer, self.config,is_stream=True)
+        args_process.preprocess(kwargs)
+        chunk = args_process.chunk
 
         if history is None:
             history = []
@@ -121,7 +121,7 @@ class EngineAPI(EngineAPI_Base):
             do_sample=True, top_p=0.7, temperature=0.95,
         )
         default_kwargs.update(kwargs)
-        postprocess_input_args(self.tokenizer,self.config,chunk,default_kwargs)
+        args_process.postprocess(default_kwargs)
 
         def process_token_fn(text, stream_end, chunk: ChunkData):
             chunk.step(text, is_append=True)
@@ -148,8 +148,8 @@ class EngineAPI(EngineAPI_Base):
 
 
     def chat(self, query, history=None, **kwargs):
-        preprocess_input_args(self.tokenizer,self.config,kwargs)
-
+        args_process = GenerateProcess(self.tokenizer, self.config)
+        args_process.preprocess(kwargs)
         if history is None:
             history = []
         prompt = ""
@@ -164,12 +164,12 @@ class EngineAPI(EngineAPI_Base):
             do_sample=True, top_p=0.7, temperature=0.95,
         )
         default_kwargs.update(kwargs)
-        postprocess_input_args(self.tokenizer,self.config,None,default_kwargs)
+        args_process.postprocess(default_kwargs)
         response = Generate.generate(self.get_model(),
                                      tokenizer=self.tokenizer,
-                                     query=prompt, **kwargs)
-        response = postprocess_chat_response(response, **kwargs)
-        history = history + [(query, response)]
+                                     query=prompt, **default_kwargs)
+        response = args_process.postprocess_response(response, **kwargs)
+        # history = history + [(query, response)]
         return CompletionResult(result={
             "response": response,
             #"history": history
@@ -177,13 +177,14 @@ class EngineAPI(EngineAPI_Base):
 
 
     def generate(self,input,**kwargs):
+        args_process = GenerateProcess(self.tokenizer, self.config)
         default_kwargs = dict(
             eos_token_id=self.config.eos_token_id,
             pad_token_id=self.config.eos_token_id,
             do_sample=True, top_p=0.7, temperature=0.95,
         )
         default_kwargs.update(kwargs)
-        postprocess_input_args(self.tokenizer,self.config,None,default_kwargs)
+        args_process.postprocess(default_kwargs)
         response = Generate.generate(self.get_model(),
                                      tokenizer=self.tokenizer,
                                      query=input,**kwargs)

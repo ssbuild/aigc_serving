@@ -8,6 +8,7 @@ import torch
 from transformers import PreTrainedTokenizer, LogitsProcessorList, LogitsProcessor, PretrainedConfig, StoppingCriteria, \
     StoppingCriteriaList
 
+from serving.model_handler.base.data_define import ChunkData
 from serving.model_handler.base.kmp import KMP
 
 
@@ -154,54 +155,67 @@ class StopWordsCriteria(StoppingCriteria):
             del ids
         return False
 
+class GenerateProcess:
+    def __init__(self,tokenizer: PreTrainedTokenizer,config: PretrainedConfig,is_stream=False):
+        self.tokenizer = tokenizer
+        self.config = config
+        self.is_stream = is_stream
+        self.chunk: typing.Optional[ChunkData] = None
 
-def preprocess_input_args(tokenizer: PreTrainedTokenizer,config: PretrainedConfig,args_dict: dict):
-    return args_dict
-
-
-def postprocess_input_args(tokenizer: PreTrainedTokenizer,config: PretrainedConfig,chunk,args_dict):
-    stop = args_dict.pop('stop',None)
-    if stop is None:
+    def preprocess(self, args_dict: dict):
+        if self.is_stream:
+            nchar = args_dict.pop('nchar',1)
+            gtype = args_dict.pop('gtype',"total")
+            self.chunk = ChunkData(nchar=nchar, stop=args_dict.get('stop', None), mode=gtype)
         return args_dict
 
-    stop_words_ids = None
-    if isinstance(stop,list):
-        stop_words_ids = []
-        for s in stop:
-            if s is not None:
-                token_ids = tokenizer.encode(s,add_special_tokens=False)
-                stop_words_ids.append(token_ids)
+    def postprocess(self, args_dict):
+        stop = args_dict.pop('stop',None)
+        if stop is None:
+            return args_dict
 
-    elif isinstance(stop,str):
-        stop_words_ids = [tokenizer.encode(stop,add_special_tokens=False)]
+        stop_words_ids = None
+        if isinstance(stop,list):
+            stop_words_ids = []
+            for s in stop:
+                if s is not None:
+                    token_ids = self.tokenizer.encode(s,add_special_tokens=False)
+                    stop_words_ids.append(token_ids)
 
-    if stop_words_ids:
-        # if config.model_type.lower() == 'qwen':
-        #     args_dict["stop_words_ids"] = stop_words_ids
-        # else:
-        stopping_criteria = args_dict.pop("stopping_criteria", None)
-        if stopping_criteria is None:
-            stopping_criteria = StoppingCriteriaList()
-        stop_words_criteria= StopWordsCriteria(
-            stop_words_ids=stop_words_ids,
-            eos_token_id=tokenizer.eos_token_id,
-            chunk=chunk,
-        )
-        stopping_criteria.append(stop_words_criteria)
+        elif isinstance(stop,str):
+            stop_words_ids = [self.tokenizer.encode(stop,add_special_tokens=False)]
 
-        if len(stopping_criteria):
-            args_dict["stopping_criteria"] = stopping_criteria
-    return args_dict
+        if stop_words_ids:
+            # if config.model_type.lower() == 'qwen':
+            #     args_dict["stop_words_ids"] = stop_words_ids
+            # else:
+            stopping_criteria = args_dict.pop("stopping_criteria", None)
+            if stopping_criteria is None:
+                stopping_criteria = StoppingCriteriaList()
+            stop_words_criteria= StopWordsCriteria(
+                stop_words_ids=stop_words_ids,
+                eos_token_id=self.tokenizer.eos_token_id,
+                chunk=self.chunk,
+            )
+            stopping_criteria.append(stop_words_criteria)
 
-def postprocess_chat_response(response,**kwargs):
-    stops = kwargs.get('stop',None)
-    if stops is not None:
-        pos = [response.find(stop) for stop in stops if isinstance(stop,str)]
-        pos = [_ for _ in pos if _ != -1]
-        if pos:
-            pos = min(pos)
-            response = response[:pos]
-    return response
+            if len(stopping_criteria):
+                args_dict["stopping_criteria"] = stopping_criteria
+        return args_dict
+
+    def postprocess_response(self, response, **kwargs):
+        stops = kwargs.get('stop',None)
+        if stops is None:
+            if isinstance(self.tokenizer.eos_token,str):
+                stops = [self.tokenizer.eos_token]
+
+        if stops is not None:
+            pos = [response.find(stop) for stop in stops if isinstance(stop,str)]
+            pos = [_ for _ in pos if _ != -1]
+            if pos:
+                pos = min(pos)
+                response = response[:pos]
+        return response
 
 def flat_input(ids: typing.Union[typing.List,int]):
     if isinstance(ids,int):

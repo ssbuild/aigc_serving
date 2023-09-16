@@ -13,7 +13,7 @@ import torch.multiprocessing as mp
 import multiprocessing
 import threading
 from serving.model_handler.base.data_define import WorkMode, LoraModelState
-from serving.model_handler.base.data_process import preprocess_input_args,flat_input # noqa
+from serving.model_handler.base.data_process import flat_input # noqa
 from serving.model_handler.base.data_define import CompletionResult # noqa
 
 logging.basicConfig(level=logging.INFO)
@@ -112,10 +112,10 @@ class EngineAPI_Base(ABC):
         return self.model_ds or self.model_accelerate or self.model
 
 
-    def chat_stream(self,query,nchar=1,gtype='total',**kwargs):
+    def chat_stream(self, query, history=None, **kwargs):
         raise NotImplemented
 
-    def chat(self,input,**kwargs):
+    def chat(self, query, history=None, **kwargs):
         raise NotImplemented
 
     def generate(self,input,**kwargs):
