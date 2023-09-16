@@ -11,10 +11,8 @@ from deep_training.nlp.layers.rope_scale.patch import RotaryNtkScaledArguments
 from transformers import HfArgumentParser
 from aigc_zoo.model_zoo.chatglm2.llm_model import MyTransformer, ChatGLMTokenizer, PetlArguments, \
     setup_model_profile, ChatGLMConfig
-from serving.model_handler.base import EngineAPI_Base, flat_input, LoraModelState, load_lora_config, GenerateProcess
-from serving.config_parser.main import global_models_info_args
-from serving.model_handler.base import CompletionResult,ChunkData
-from serving.model_handler.base.data_define import WorkMode
+from serving.model_handler.base import EngineAPI_Base,CompletionResult,flat_input, LoraModelState, load_lora_config, GenerateProcess,WorkMode
+
 
 
 class NN_DataHelper(DataHelper):pass

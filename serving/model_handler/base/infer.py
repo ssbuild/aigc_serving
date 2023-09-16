@@ -12,9 +12,8 @@ import torch.distributed as dist
 import torch.multiprocessing as mp
 import multiprocessing
 import threading
-from serving.model_handler.base.data_define import WorkMode, LoraModelState
 from serving.model_handler.base.data_process import flat_input # noqa
-from serving.model_handler.base.data_define import CompletionResult # noqa
+from serving.model_handler.base.data_define import CompletionResult, LoraModelState, WorkMode  # noqa
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()

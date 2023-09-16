@@ -13,11 +13,8 @@ from deep_training.nlp.layers.rope_scale.patch import RotaryNtkScaledArguments
 from transformers import HfArgumentParser, BitsAndBytesConfig
 from aigc_zoo.model_zoo.internlm.llm_model import MyTransformer,InternLMConfig,InternLMTokenizer,\
     InternLMForCausalLM,PetlArguments,PetlModel
-from aigc_zoo.utils.llm_generate import Generate
-from serving.model_handler.base import EngineAPI_Base, flat_input, LoraModelState, load_lora_config, GenerateProcess
-from serving.config_parser.main import global_models_info_args
-from serving.model_handler.base import CompletionResult,ChunkData
-from serving.model_handler.base.data_define import WorkMode
+from serving.model_handler.base import EngineAPI_Base, CompletionResult, flat_input, LoraModelState, load_lora_config, \
+    GenerateProcess, WorkMode, ChunkData
 
 
 class NN_DataHelper(DataHelper):pass
@@ -165,22 +162,9 @@ class EngineAPI(EngineAPI_Base):
 
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
-
-
-        def process_token_fn(text, stream_end, chunk: ChunkData):
-            chunk.step(text,is_append=True)
-            if chunk.can_output() or stream_end :
-                text = chunk.step_text()
-                ret = CompletionResult(result={
-                        "response": text,
-                        #"history": history,
-                        "num_token": chunk.n_id
-                    }, complete=False)
-                self.push_response(ret)
-
         skip_word_list = [self.tokenizer.eos_token_id,2, 103028]
-        streamer = GenTextStreamer(process_token_fn, chunk, tokenizer=self.tokenizer,skip_word_list=flat_input(skip_word_list),skip_prompt=True)
-        _ = self.get_model().chat( tokenizer=self.tokenizer, streamer=streamer, query=query, **default_kwargs)
+        streamer = args_process.get_streamer(self, skip_word_list)
+        self.get_model().chat( tokenizer=self.tokenizer, streamer=streamer, query=query, **default_kwargs)
         ret = CompletionResult(result={
             "response": "",
             #"history": history,
@@ -240,17 +224,3 @@ class EngineAPI(EngineAPI_Base):
         return CompletionResult(result={
             "response": embedding,
         })
-
-if __name__ == '__main__':
-    api_client = EngineAPI(global_models_info_args['internlm-chat-7b'])
-    api_client.init()
-    text_list = ["写一个诗歌，关于冬天",
-                 "晚上睡不着应该怎么办",
-                 "从南京到上海的路线",
-                 "登鹳雀楼->王之涣\n夜雨寄北->",
-                 "Hamlet->Shakespeare\nOne Hundred Years of Solitude->",
-                 ]
-    for input in text_list:
-        response = api_client.generate(input)
-        print('input', input)
-        print('output', response)

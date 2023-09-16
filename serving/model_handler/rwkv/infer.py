@@ -8,15 +8,13 @@ import torch
 from torch.nn import functional as F
 from deep_training.trainer.pl.modelweighter import default_peft_weight_preprocess
 from aigc_zoo.utils.streamgenerator import GenTextStreamer
-from deep_training.data_helper import ModelArguments,  DataHelper
+from deep_training.data_helper import ModelArguments, DataHelper
 from transformers import HfArgumentParser
 from aigc_zoo.model_zoo.rwkv4.llm_model import MyTransformer, RwkvConfig, \
     set_model_profile,PetlArguments,PetlModel
 from aigc_zoo.utils.rwkv4_generate import Generate
-from serving.model_handler.base import EngineAPI_Base, flat_input, LoraModelState, load_lora_config, GenerateProcess
-from serving.config_parser.main import global_models_info_args
-from serving.model_handler.base import CompletionResult,ChunkData
-from serving.model_handler.base.data_define import WorkMode
+from serving.model_handler.base import EngineAPI_Base,CompletionResult,flat_input, LoraModelState, load_lora_config, GenerateProcess,ChunkData,WorkMode
+
 
 
 class NN_DataHelper(DataHelper):pass
@@ -130,20 +128,9 @@ class EngineAPI(EngineAPI_Base):
         )
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
-        def process_token_fn(text, stream_end, chunk: ChunkData):
-            chunk.step(text, is_append=True)
-            if chunk.can_output() or stream_end:
-                text = chunk.step_text()
-                ret = CompletionResult(result={
-                    "response": text,
-                    #"history": history,
-                    "num_token": chunk.n_id
-                }, complete=False)
-                self.push_response(ret)
-
-        skip_word_list = default_kwargs.get('eos_token_id',None) or [self.tokenizer.eos_token_id]
-        streamer = GenTextStreamer(process_token_fn,chunk,tokenizer=self.tokenizer,skip_word_list=flat_input(skip_word_list),skip_prompt=True)
-        _ = Generate.generate(self.get_model(),tokenizer=self.tokenizer,streamer=streamer, query=prompt, **default_kwargs)
+        skip_word_list = default_kwargs.get('eos_token_id', None) or [self.tokenizer.eos_token_id]
+        streamer = args_process.get_streamer(self, skip_word_list)
+        Generate.generate(self.get_model(),tokenizer=self.tokenizer,streamer=streamer, query=prompt, **default_kwargs)
         ret = CompletionResult(result={
             "response": "",
             #"history": history,
@@ -206,15 +193,3 @@ class EngineAPI(EngineAPI_Base):
         return CompletionResult(result={
             "response": embedding,
         })
-
-if __name__ == '__main__':
-    api_client = EngineAPI(global_models_info_args['rwkv-4-raven-3b-v12-Eng49%-Chn49%-Jpn1%-Other1%'])
-    api_client.init()
-    text_list = [
-        "你是谁?",
-        "你会干什么?",
-    ]
-    for input in text_list:
-        response = api_client.generate(input)
-        print('input', input)
-        print('output', response)

@@ -8,20 +8,18 @@ import os
 import torch
 from torch.nn import functional as F
 from deep_training.trainer.pl.modelweighter import default_peft_weight_preprocess
-from deep_training.data_helper import ModelArguments,  DataHelper
+from deep_training.data_helper import ModelArguments, DataHelper
 from deep_training.nlp.layers.rope_scale.patch import RotaryNtkScaledArguments
-from transformers import HfArgumentParser
-from aigc_zoo.model_zoo.llm.llm_model import MyTransformer,PetlArguments,PetlModel,AutoConfig
-from aigc_zoo.generator_utils.generator_llm import Generate
-from serving.model_handler.base import EngineAPI_Base, flat_input, LoraModelState, load_lora_config, GenerateProcess
-from serving.config_parser.main import global_models_info_args
-from aigc_zoo.utils.streamgenerator import GenTextStreamer
-from serving.model_handler.base import CompletionResult,ChunkData
-from transformers import AutoModelForCausalLM
+from transformers import HfArgumentParser,AutoModelForCausalLM
 from deep_training.utils.hf import register_transformer_model, register_transformer_config  # noqa
 from deep_training.nlp.models.rellama.modeling_llama import LlamaForCausalLM
+from aigc_zoo.model_zoo.llm.llm_model import MyTransformer,PetlArguments,PetlModel,AutoConfig
+from aigc_zoo.generator_utils.generator_llm import Generate
+from serving.model_handler.base import EngineAPI_Base,CompletionResult,flat_input, LoraModelState, load_lora_config, GenerateProcess,WorkMode,ChunkData
+from aigc_zoo.utils.streamgenerator import GenTextStreamer
 
-from serving.model_handler.base.data_define import WorkMode
+
+
 from serving.prompt.openbuddy import get_chat as get_chat_openbuddy
 from serving.prompt.tiger import get_chat as get_chat_tiger
 
@@ -172,21 +170,8 @@ class EngineAPI(EngineAPI_Base):
         )
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
-
-
-        def process_token_fn(text, stream_end, chunk: ChunkData):
-            chunk.step(text, is_append=True)
-            if chunk.can_output() or stream_end:
-                text = chunk.step_text()
-                ret = CompletionResult(result={
-                    "response": text,
-                    #"history": history,
-                    "num_token": chunk.n_id
-                }, complete=False)
-                self.push_response(ret)
-
-        skip_word_list = default_kwargs.get('eos_token_id',None) or [self.tokenizer.eos_token_id]
-        streamer = GenTextStreamer(process_token_fn,chunk,tokenizer=self.tokenizer,skip_word_list=flat_input(skip_word_list),skip_prompt=True)
+        skip_word_list = default_kwargs.get('eos_token_id', None) or [self.tokenizer.eos_token_id]
+        streamer = args_process.get_streamer(self, skip_word_list)
         inputs = self.gen_core.build_tokens(prompt)
         self.gen_core.model.generate(**inputs,streamer=streamer, **default_kwargs)
         ret = CompletionResult(result={
@@ -257,15 +242,3 @@ class EngineAPI(EngineAPI_Base):
         return CompletionResult(result={
             "response": embedding,
         })
-
-# if __name__ == '__main__':
-#     api_client = EngineAPI(global_models_info_args['bloom-560m'])
-#     api_client.init()
-#     text_list = ["写一个诗歌，关于冬天",
-#                  "晚上睡不着应该怎么办",
-#                  "从南京到上海的路线",
-#                  ]
-#     for input in text_list:
-#         response = api_client.generate(input)
-#         print('input', input)
-#         print('output', response)
