@@ -1,6 +1,8 @@
 #FROM nvcr.io/nvidia/pytorch:22.12-py3
-#FROM xbuild/cuda:11.8.0-cudnn870-devel-ubuntu20.04
-FROM xbuild/cuda:11.8.0-cudnn870-devel-ubuntu22.04
+#FROM xbuild/cuda:11.8.0-cudnn870-cudnn8-devel-ubuntu22.04
+FROM xbuild/cuda:11.8.0-cudnn870-cudnn8-devel-ubuntu22.04
+#FROM xbuild/cuda:11.8.0-cudnn8-devel-ubuntu20.04
+#FROM xbuild/cuda:11.8.0-cudnn8-devel-ubuntu22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update -y && apt-get install -y --no-install-recommends python3.10 python3.10-distutils curl git vim &&  \

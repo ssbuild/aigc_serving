@@ -7,18 +7,13 @@ import os
 import torch
 from torch.nn import functional as F
 from deep_training.trainer.pl.modelweighter import default_peft_weight_preprocess
-from aigc_zoo.utils.streamgenerator import GenTextStreamer
 from deep_training.data_helper import ModelArguments, DataHelper
 from deep_training.nlp.layers.rope_scale.patch import RotaryNtkScaledArguments
 from transformers import HfArgumentParser, BitsAndBytesConfig
 from aigc_zoo.model_zoo.internlm.llm_model import MyTransformer,InternLMConfig,InternLMTokenizer,\
     InternLMForCausalLM,PetlArguments,PetlModel
-from aigc_zoo.utils.llm_generate import Generate
-from serving.model_handler.base import EngineAPI_Base, flat_input, LoraModelState, load_lora_config, \
-    postprocess_chat_response
-from serving.config_parser.main import global_models_info_args
-from serving.model_handler.base import CompletionResult,ChunkData,preprocess_input_args,postprocess_input_args
-from serving.model_handler.base.data_define import WorkMode
+from serving.model_handler.base import EngineAPI_Base, CompletionResult,LoraModelState, load_lora_config, \
+    GenerateProcess, WorkMode
 
 
 class NN_DataHelper(DataHelper):pass
@@ -150,9 +145,10 @@ class EngineAPI(EngineAPI_Base):
         response = self.tokenizer.decode(outputs)
         return response
 
-    def chat_stream(self, query, nchar=1,gtype='total', history=None, **kwargs):
-        chunk = ChunkData(nchar=nchar, stop=kwargs.get('stop', None), mode=gtype)
-        preprocess_input_args(self.tokenizer,self.config,kwargs)
+    def chat_stream(self, query, history=None, **kwargs):
+        args_process = GenerateProcess(self.tokenizer, self.config,is_stream=True)
+        args_process.preprocess(kwargs)
+        chunk = args_process.chunk
         if history is None:
             history = []
 
@@ -164,34 +160,22 @@ class EngineAPI(EngineAPI_Base):
                             repetition_penalty=1.01,)
 
         default_kwargs.update(kwargs)
-        postprocess_input_args(self.tokenizer,self.config,chunk,default_kwargs)
-
-
-        def process_token_fn(text, stream_end, chunk: ChunkData):
-            chunk.step(text,is_append=True)
-            if chunk.can_output() or stream_end :
-                text = chunk.step_text()
-                ret = CompletionResult(result={
-                        "response": text,
-                        #"history": history,
-                        "num_token": chunk.n_id
-                    }, complete=False)
-                self.push_response(ret)
-
+        args_process.postprocess(default_kwargs)
         skip_word_list = [self.tokenizer.eos_token_id,2, 103028]
-        streamer = GenTextStreamer(process_token_fn, chunk, tokenizer=self.tokenizer,skip_word_list=flat_input(skip_word_list),skip_prompt=True)
-        _ = self.get_model().chat( tokenizer=self.tokenizer, streamer=streamer, query=query, **default_kwargs)
+        streamer = args_process.get_streamer(self, skip_word_list)
+        self.get_model().chat( tokenizer=self.tokenizer, streamer=streamer, query=query, **default_kwargs)
         ret = CompletionResult(result={
             "response": "",
             #"history": history,
-            "num_token": chunk.n_id
+            "num_token": args_process.get_num_tokens()
         }, complete=True)
         self.push_response(ret)
         return None
 
 
     def chat(self, query,history=None, **kwargs):
-        preprocess_input_args(self.tokenizer,self.config,kwargs)
+        args_process = GenerateProcess(self.tokenizer, self.config)
+        args_process.preprocess(kwargs)
         if history is None:
             history = []
 
@@ -202,15 +186,16 @@ class EngineAPI(EngineAPI_Base):
                               top_p=0.8,
                               repetition_penalty=1.01, )
         default_kwargs.update(kwargs)
-        postprocess_input_args(self.tokenizer,self.config,None,default_kwargs)
+        args_process.postprocess(default_kwargs)
         response, history = self.model.chat(self.tokenizer, query=query, **default_kwargs)
-        response = postprocess_chat_response(response, **kwargs)
+        response = args_process.postprocess_response(response, **kwargs)
         return CompletionResult(result={
             "response": response,
             #"history": history
         })
 
-    def generate(self,input,**kwargs):
+    def generate(self,query,**kwargs):
+        args_process = GenerateProcess(self.tokenizer, self.config)
         default_kwargs = dict(eos_token_id = [2, 103028],
                               max_new_tokens=1024,
                               do_sample=True,
@@ -219,7 +204,7 @@ class EngineAPI(EngineAPI_Base):
                               repetition_penalty=1.01, )
 
         default_kwargs.update(kwargs)
-        postprocess_input_args(self.tokenizer,self.config,None,default_kwargs)
+        args_process.postprocess(default_kwargs)
         output = self.model.chat(self.tokenizer, query=input, **default_kwargs)
         output_scores = default_kwargs.get('output_scores', False)
         if output_scores:
@@ -238,17 +223,3 @@ class EngineAPI(EngineAPI_Base):
         return CompletionResult(result={
             "response": embedding,
         })
-
-if __name__ == '__main__':
-    api_client = EngineAPI(global_models_info_args['internlm-chat-7b'])
-    api_client.init()
-    text_list = ["写一个诗歌，关于冬天",
-                 "晚上睡不着应该怎么办",
-                 "从南京到上海的路线",
-                 "登鹳雀楼->王之涣\n夜雨寄北->",
-                 "Hamlet->Shakespeare\nOne Hundred Years of Solitude->",
-                 ]
-    for input in text_list:
-        response = api_client.generate(input)
-        print('input', input)
-        print('output', response)

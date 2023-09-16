@@ -11,12 +11,8 @@ from deep_training.data_helper import ModelArguments, DataHelper
 from transformers import HfArgumentParser, BitsAndBytesConfig, GenerationConfig
 from aigc_zoo.model_zoo.baichuan.baichuan2_13b.llm_model import MyTransformer,BaichuanConfig,BaichuanTokenizer,\
     MyBaichuanForCausalLM,PetlArguments,PetlModel
-from aigc_zoo.utils.llm_generate import Generate
-from serving.model_handler.base import EngineAPI_Base, flat_input, LoraModelState, load_lora_config, \
-    postprocess_chat_response
-from serving.config_parser.main import global_models_info_args
-from serving.model_handler.base import CompletionResult,ChunkData,preprocess_input_args,postprocess_input_args
-from serving.model_handler.base.data_define import WorkMode
+from serving.model_handler.base import EngineAPI_Base,CompletionResult, CompletionResult,LoraModelState, load_lora_config, GenerateProcess,WorkMode
+
 
 
 class NN_DataHelper(DataHelper):pass
@@ -138,29 +134,12 @@ class EngineAPI(EngineAPI_Base):
                 self.lora_model.cuda(device_id)
         return self.lora_model, config, tokenizer
 
-    @torch.no_grad()
-    def _generate(self,  query: str,do_sample=True, top_p=0.7, temperature=0.95, logits_processor=None, **kwargs):
-        gen_kwargs = {"do_sample": do_sample, "top_p": top_p,
-                      "temperature": temperature, "logits_processor": logits_processor, **kwargs}
-        output_scores = gen_kwargs.get('output_scores', False)
-        if output_scores:
-            gen_kwargs['return_dict_in_generate'] = True
-        # prompt = "Human：" + query + "\nAssistant："
-        # 自行加模板
-        prompt = query
-        inputs = self.tokenizer([prompt], return_tensors="pt")
-        inputs = inputs.to(self.model.device)
-        outputs = self.model.generate(**inputs, **gen_kwargs)
-        if output_scores:
-            score = outputs.scores[0]
-            return score
-        outputs = outputs.tolist()[0][len(inputs["input_ids"][0]):]
-        response = self.tokenizer.decode(outputs)
-        return response
 
-    def chat_stream(self,  query, nchar=1,gtype='total', history=None,**kwargs):
-        chunk = ChunkData(nchar=nchar, stop=kwargs.get('stop', None), mode=gtype)
-        preprocess_input_args(self.tokenizer,self.config,kwargs)
+
+    def chat_stream(self, query, history=None, **kwargs):
+        args_process = GenerateProcess(self.tokenizer, self.config,is_stream=True)
+        args_process.preprocess(kwargs)
+        chunk = args_process.chunk
 
         messages = _build_message(query,history=history)
         default_kwargs = dict(eos_token_id=self.model.config.eos_token_id,
@@ -169,7 +148,7 @@ class EngineAPI(EngineAPI_Base):
                               repetition_penalty=1.05,
                               )
         default_kwargs.update(kwargs)
-        postprocess_input_args(self.tokenizer,self.config,chunk,default_kwargs)
+        args_process.postprocess(default_kwargs)
         stopping_criteria = default_kwargs.pop('stopping_criteria', None)
         generation_config = GenerationConfig(**default_kwargs)
 
@@ -185,22 +164,22 @@ class EngineAPI(EngineAPI_Base):
                 yield CompletionResult(result={
                     "response": text,
                     #"history": history,
-                    "num_token": chunk.n_id
+                    "num_token": args_process.get_num_tokens()
                 }, complete=False)
 
-        history = history + [(query, response)]
+        # history = history + [(query, response)]
         text = chunk.final_text()
         if text is not None:
             yield CompletionResult(result={
                 "response": text,
                 #"history": history,
-                "num_token": chunk.n_id
+                "num_token": args_process.get_num_tokens()
             }, complete=False)
 
 
     def chat(self, query, history=None, **kwargs):
-        preprocess_input_args(self.tokenizer,self.config,kwargs)
-
+        args_process = GenerateProcess(self.tokenizer, self.config)
+        args_process.preprocess(kwargs)
         messages = _build_message(query, history=history)
 
         default_kwargs = dict(eos_token_id=self.model.config.eos_token_id,
@@ -209,34 +188,21 @@ class EngineAPI(EngineAPI_Base):
                               repetition_penalty=1.1,
                               )
         default_kwargs.update(kwargs)
-        postprocess_input_args(self.tokenizer,self.config,None,default_kwargs)
+        args_process.postprocess(default_kwargs)
         stopping_criteria = default_kwargs.pop('stopping_criteria', None)
         generation_config = GenerationConfig(**default_kwargs)
         response = self.get_model().chat(tokenizer=self.tokenizer,
                                          messages=messages,
                                          generation_config=generation_config,
                                          stopping_criteria=stopping_criteria)
-        response = postprocess_chat_response(response, **kwargs)
-        history = history + [(query, response)]
+        response = args_process.postprocess_response(response, **kwargs)
+        # history = history + [(query, response)]
         return CompletionResult(result={
             "response": response,
             #"history": history
         })
 
 
-
-    def generate(self,input,**kwargs):
-        default_kwargs = dict(eos_token_id=self.model.config.eos_token_id,
-            pad_token_id=self.model.config.eos_token_id,
-            do_sample=True, top_k=5,top_p=0.85, temperature=0.3,
-            repetition_penalty=1.1,
-        )
-        default_kwargs.update(kwargs)
-        postprocess_input_args(self.tokenizer,self.config,None,default_kwargs)
-        response = Generate.generate(self.get_model(),
-                                     tokenizer=self.tokenizer,
-                                     query=input,**default_kwargs)
-        return response
 
     def embedding(self, query, **kwargs):
         model = self.get_model()
@@ -249,17 +215,3 @@ class EngineAPI(EngineAPI_Base):
         return CompletionResult(result={
             "response": embedding,
         })
-
-if __name__ == '__main__':
-    api_client = EngineAPI(global_models_info_args['Baichuan-13B-Chat'])
-    api_client.init()
-    text_list = ["写一个诗歌，关于冬天",
-                 "晚上睡不着应该怎么办",
-                 "从南京到上海的路线",
-                 "登鹳雀楼->王之涣\n夜雨寄北->",
-                 "Hamlet->Shakespeare\nOne Hundred Years of Solitude->",
-                 ]
-    for input in text_list:
-        response = api_client.generate(input)
-        print('input', input)
-        print('output', response)

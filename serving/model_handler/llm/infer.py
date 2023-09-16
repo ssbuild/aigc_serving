@@ -7,16 +7,13 @@ import os
 import torch
 from torch.nn import functional as F
 from deep_training.trainer.pl.modelweighter import default_peft_weight_preprocess
-from deep_training.data_helper import ModelArguments,  DataHelper
+from deep_training.data_helper import ModelArguments, DataHelper
 from transformers import HfArgumentParser
 from aigc_zoo.model_zoo.llm.llm_model import MyTransformer,PetlArguments,PetlModel,AutoConfig
-from aigc_zoo.utils.llm_generate import Generate
-from serving.model_handler.base import EngineAPI_Base, flat_input, LoraModelState, load_lora_config, \
-    postprocess_chat_response
-from serving.config_parser.main import global_models_info_args
-from aigc_zoo.utils.streamgenerator import GenTextStreamer
-from serving.model_handler.base import CompletionResult,ChunkData,preprocess_input_args,postprocess_input_args
-from serving.model_handler.base.data_define import WorkMode
+from aigc_zoo.generator_utils.generator_llm import Generate
+from serving.model_handler.base import EngineAPI_Base, CompletionResult, flat_input, LoraModelState, load_lora_config, \
+    GenerateProcess, WorkMode
+from serving.prompt import get_chat_openbuddy,get_chat_tiger,get_chat_default
 
 
 class NN_DataHelper(DataHelper):pass
@@ -35,7 +32,6 @@ class EngineAPI(EngineAPI_Base):
 
         pl_model = MyTransformer(config=config, model_args=model_args, torch_dtype=config.torch_dtype, )
         model = pl_model.get_llm_model()
-
         model.eval().half()
 
         if self.work_mode != WorkMode.ACCELERATE:
@@ -43,6 +39,7 @@ class EngineAPI(EngineAPI_Base):
                 model.cuda()
             else:
                 model.cuda(device_id)
+        self.gen_core = Generate(model, tokenizer)
         return model, config, tokenizer
 
     def _load_model_lora(self, device_id=None):
@@ -101,93 +98,52 @@ class EngineAPI(EngineAPI_Base):
                 self.lora_model.cuda()
             else:
                 self.lora_model.cuda(device_id)
+        self.gen_core = Generate(self.lora_model, tokenizer)
         return self.lora_model, config, tokenizer
 
-    def chat_stream(self, query, nchar=1,gtype='total', history=None, **kwargs):
-        chunk = ChunkData(nchar=nchar, stop=kwargs.get('stop', None), mode=gtype)
-        preprocess_input_args(self.tokenizer,self.config,kwargs)
-
-        if history is None:
-            history = []
-        prompt = ""
-        for q, a in history:
-            prompt += q
-            prompt += a
-        prompt += query
-
+    def chat_stream(self, query, history=None, **kwargs):
+        args_process = GenerateProcess(self.tokenizer, self.config,is_stream=True)
+        args_process.preprocess(kwargs)
+        prompt = get_chat_default(self.tokenizer, query, history)
         default_kwargs = dict(
             eos_token_id=self.config.eos_token_id,
             pad_token_id=self.config.eos_token_id,
             do_sample=True, top_p=0.7, temperature=0.95,
         )
         default_kwargs.update(kwargs)
-        postprocess_input_args(self.tokenizer,self.config,chunk,default_kwargs)
-
-        def process_token_fn(text, stream_end, chunk: ChunkData):
-            chunk.step(text, is_append=True)
-            if chunk.can_output() or stream_end:
-                text = chunk.step_text()
-                ret = CompletionResult(result={
-                    "response": text,
-                    #"history": history,
-                    "num_token": chunk.n_id
-                }, complete=False)
-                self.push_response(ret)
-
-        skip_word_list = default_kwargs.get('eos_token_id',None) or [self.tokenizer.eos_token_id]
-        streamer = GenTextStreamer(process_token_fn,chunk,tokenizer=self.tokenizer,skip_word_list=flat_input(skip_word_list),skip_prompt=True)
-        _ = Generate.generate(self.get_model(),tokenizer=self.tokenizer,streamer=streamer, query=prompt, **default_kwargs)
-
+        args_process.postprocess(default_kwargs)
+        skip_word_list = default_kwargs.get('eos_token_id', None) or [self.tokenizer.eos_token_id]
+        streamer = args_process.get_streamer(self, skip_word_list)
+        self.gen_core.model.generate(**self.gen_core.build_tokens(prompt),streamer=streamer,  **default_kwargs)
         ret = CompletionResult(result={
             "response": "",
             #"history": history,
-            "num_token": chunk.n_id
+            "num_token": args_process.get_num_tokens()
         }, complete=True)
         self.push_response(ret)
         return None
 
 
     def chat(self, query, history=None, **kwargs):
-        preprocess_input_args(self.tokenizer,self.config,kwargs)
-
-        if history is None:
-            history = []
-        prompt = ""
-        for q, a in history:
-            prompt += q
-            prompt += a
-        prompt += query
-
+        args_process = GenerateProcess(self.tokenizer, self.config)
+        args_process.preprocess(kwargs)
+        prompt = get_chat_default(self.tokenizer, query, history)
         default_kwargs = dict(
             eos_token_id=self.config.eos_token_id,
             pad_token_id=self.config.eos_token_id,
             do_sample=True, top_p=0.7, temperature=0.95,
         )
         default_kwargs.update(kwargs)
-        postprocess_input_args(self.tokenizer,self.config,None,default_kwargs)
-        response = Generate.generate(self.get_model(),
-                                     tokenizer=self.tokenizer,
-                                     query=prompt, **kwargs)
-        response = postprocess_chat_response(response, **kwargs)
-        history = history + [(query, response)]
+        args_process.postprocess(default_kwargs)
+        response =  self.gen_core.generate(query=prompt, **default_kwargs)
+        response = args_process.postprocess_response(response, **kwargs)
+        # history = history + [(query, response)]
         return CompletionResult(result={
             "response": response,
             #"history": history
         })
 
 
-    def generate(self,input,**kwargs):
-        default_kwargs = dict(
-            eos_token_id=self.config.eos_token_id,
-            pad_token_id=self.config.eos_token_id,
-            do_sample=True, top_p=0.7, temperature=0.95,
-        )
-        default_kwargs.update(kwargs)
-        postprocess_input_args(self.tokenizer,self.config,None,default_kwargs)
-        response = Generate.generate(self.get_model(),
-                                     tokenizer=self.tokenizer,
-                                     query=input,**kwargs)
-        return response
 
     def embedding(self, query, **kwargs):
         model = self.get_model()
@@ -200,15 +156,3 @@ class EngineAPI(EngineAPI_Base):
         return CompletionResult(result={
             "response": embedding,
         })
-
-if __name__ == '__main__':
-    api_client = EngineAPI(global_models_info_args['bloom-560m'])
-    api_client.init()
-    text_list = ["写一个诗歌，关于冬天",
-                 "晚上睡不着应该怎么办",
-                 "从南京到上海的路线",
-                 ]
-    for input in text_list:
-        response = api_client.generate(input)
-        print('input', input)
-        print('output', response)
