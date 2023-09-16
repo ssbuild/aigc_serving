@@ -13,7 +13,6 @@ from transformers import HfArgumentParser, BitsAndBytesConfig, GenerationConfig
 from aigc_zoo.model_zoo.baichuan.baichuan_7b.llm_model import MyTransformer,BaiChuanConfig,BaiChuanTokenizer,PetlArguments,PetlModel
 from aigc_zoo.generator_utils.generator_llm import Generate
 from serving.model_handler.base import EngineAPI_Base,CompletionResult, LoraModelState, load_lora_config,GenerateProcess,WorkMode
-from serving.prompt import get_chat_openbuddy,get_chat_tiger,get_chat_default
 from serving.prompt import *
 
 class NN_DataHelper(DataHelper):pass
@@ -123,24 +122,24 @@ class EngineAPI(EngineAPI_Base):
         self.gen_core = Generate(self.lora_model, tokenizer)
         return self.lora_model, config, tokenizer
 
-
+    def get_default_gen_args(self):
+        default_kwargs = dict(eos_token_id=self.model.config.eos_token_id,
+                              pad_token_id=self.model.config.eos_token_id,
+                              do_sample=True, top_k=5, top_p=0.85, temperature=0.3,
+                              repetition_penalty=1.1,
+                              )
+        return default_kwargs
 
     def chat_stream(self, query, history=None, **kwargs):
         args_process = GenerateProcess(self,is_stream=True)
         args_process.preprocess(kwargs)
         chunk = args_process.chunk
         prompt = get_chat_default(self.tokenizer, query, history)
-        default_kwargs = dict(eos_token_id=self.model.config.eos_token_id,
-                              pad_token_id=self.model.config.eos_token_id,
-                              do_sample=True, top_k=5, top_p=0.85, temperature=0.3,
-                              repetition_penalty=1.1,
-                              )
+        default_kwargs= self.get_default_gen_args()
         default_kwargs.update(kwargs)
-        args_process.postprocess(default_kwargs)
-        generation_config = GenerationConfig(**default_kwargs)
+        generation_config = GenerationConfig(**args_process.postprocess(default_kwargs))
 
         inputs = self.gen_core.build_tokens(prompt)
-
         from transformers_stream_generator.main import NewGenerationMixin, StreamGenerationConfig
         self.__class__.generate = NewGenerationMixin.generate
         self.__class__.sample_stream = NewGenerationMixin.sample_stream
@@ -177,14 +176,9 @@ class EngineAPI(EngineAPI_Base):
         args_process = GenerateProcess(self)
         args_process.preprocess(kwargs)
         prompt = get_chat_default(self.tokenizer, query, history)
-        default_kwargs = dict(
-            eos_token_id=self.model.config.eos_token_id,
-            pad_token_id=self.model.config.eos_token_id,
-            do_sample=True, top_p=0.7, temperature=0.95,
-        )
+        default_kwargs = self.get_default_gen_args()
         default_kwargs.update(kwargs)
-        args_process.postprocess(default_kwargs)
-        response = self.gen_core.generate(query=prompt, **default_kwargs)
+        response = self.gen_core.generate(query=prompt, **args_process.postprocess(default_kwargs))
         response = args_process.postprocess_response(response, **kwargs)
         # history = history + [(query, response)]
         return CompletionResult(result={
@@ -194,11 +188,7 @@ class EngineAPI(EngineAPI_Base):
 
     def generate(self,query,**kwargs):
         args_process = GenerateProcess(self)
-        default_kwargs = dict(
-            eos_token_id=self.model.config.eos_token_id,
-            pad_token_id=self.model.config.eos_token_id,
-            do_sample=True, top_p=0.7, temperature=0.95,
-        )
+        default_kwargs = self.get_default_gen_args()
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
         response = self.gen_core.generate(query=query, **kwargs)

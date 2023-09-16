@@ -116,14 +116,19 @@ class EngineAPI(EngineAPI_Base):
         self.gen_core = Generate(self.lora_model, tokenizer)
         return self.lora_model, config, tokenizer
 
+    def get_default_gen_args(self):
+        default_kwargs = dict(
+            eos_token_id=self.config.eos_token_id,
+            pad_token_id=self.config.eos_token_id,
+            do_sample=True,
+        )
+        return default_kwargs
 
     def chat_stream(self, query, history=None, **kwargs):
         args_process = GenerateProcess(self,is_stream=True)
         args_process.preprocess(kwargs)
         prompt = query
-        default_kwargs = dict(
-            eos_token_id=self.config.eos_token_id,
-            pad_token_id=self.config.eos_token_id,)
+        default_kwargs = self.get_default_gen_args()
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
         skip_word_list = default_kwargs.get('eos_token_id', None) or [self.tokenizer.eos_token_id]
@@ -137,11 +142,7 @@ class EngineAPI(EngineAPI_Base):
         args_process = GenerateProcess(self)
         args_process.preprocess(kwargs)
         prompt = query
-        default_kwargs = dict(
-            eos_token_id=self.model.config.eos_token_id,
-            pad_token_id=self.model.config.eos_token_id,
-            do_sample=True,
-        )
+        default_kwargs = self.get_default_gen_args()
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
         response,history = self.gen_core.chat(prompt,history=history, **default_kwargs)
@@ -154,11 +155,7 @@ class EngineAPI(EngineAPI_Base):
 
     def generate(self,query,**kwargs):
         args_process = GenerateProcess(self)
-        default_kwargs = dict(
-            eos_token_id=self.model.config.eos_token_id,
-            pad_token_id=self.model.config.eos_token_id,
-            do_sample=True, top_p=0.7, temperature=0.95,
-        )
+        default_kwargs = self.get_default_gen_args()
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
         response = self.model.generate(input, **kwargs)

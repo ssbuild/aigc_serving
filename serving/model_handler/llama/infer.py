@@ -16,7 +16,6 @@ from deep_training.nlp.models.rellama.modeling_llama import LlamaForCausalLM
 from aigc_zoo.model_zoo.llm.llm_model import MyTransformer,PetlArguments,PetlModel,AutoConfig
 from aigc_zoo.generator_utils.generator_llm import Generate
 from serving.model_handler.base import EngineAPI_Base,CompletionResult, LoraModelState, load_lora_config, GenerateProcess,WorkMode,ChunkData
-from serving.prompt import get_chat_openbuddy,get_chat_tiger,get_chat_default
 from serving.prompt import *
 
 class NN_DataHelper(DataHelper):pass
@@ -138,6 +137,15 @@ class EngineAPI(EngineAPI_Base):
     def is_tigger(self):
         return 'tiger' in self.model_config_dict["model_config"]["model_name_or_path"].lower()
 
+    def get_default_gen_args(self):
+        default_kwargs = dict(
+            bos_token_id=self.config.bos_token_id,
+            eos_token_id=self.config.eos_token_id,
+            pad_token_id=self.config.eos_token_id,
+            do_sample=True,
+        )
+        return default_kwargs
+
     def chat_stream(self, query, history=None, **kwargs):
         args_process = GenerateProcess(self,is_stream=True)
         args_process.preprocess(kwargs)
@@ -147,13 +155,7 @@ class EngineAPI(EngineAPI_Base):
             prompt = get_chat_tiger(self.tokenizer,query, history)
         else:
             prompt = get_chat_default(self.tokenizer, query, history)
-
-        default_kwargs = dict(
-            bos_token_id=self.config.bos_token_id,
-            eos_token_id=self.config.eos_token_id,
-            pad_token_id=self.config.eos_token_id,
-            do_sample=True,
-        )
+        default_kwargs = self.get_default_gen_args()
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
         skip_word_list = default_kwargs.get('eos_token_id', None) or [self.tokenizer.eos_token_id]
@@ -168,22 +170,13 @@ class EngineAPI(EngineAPI_Base):
     def chat(self, query, history=None, **kwargs):
         args_process = GenerateProcess(self)
         args_process.preprocess(kwargs)
-        if history is None:
-            history = []
-
         if self.is_openbuddy:
             prompt = get_chat_openbuddy(self.tokenizer,query, history)
         elif self.is_tigger:
             prompt = get_chat_tiger(self.tokenizer,query, history)
         else:
             prompt = get_chat_default(self.tokenizer, query, history)
-
-        default_kwargs = dict(
-            bos_token_id=self.config.bos_token_id,
-            eos_token_id=self.config.eos_token_id,
-            pad_token_id=self.config.eos_token_id,
-            do_sample=True,
-        )
+        default_kwargs = self.get_default_gen_args()
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
         response = self.gen_core.generate(query=prompt, **default_kwargs)
@@ -196,11 +189,7 @@ class EngineAPI(EngineAPI_Base):
 
     def generate(self,query,**kwargs):
         args_process = GenerateProcess(self)
-        default_kwargs = dict(
-            eos_token_id=self.config.eos_token_id,
-            pad_token_id=self.config.eos_token_id,
-            do_sample=True, top_p=0.7, temperature=0.95,
-        )
+        default_kwargs = self.get_default_gen_args()
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
         response = self.gen_core.generate(query=query, **default_kwargs)

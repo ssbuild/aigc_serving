@@ -149,9 +149,7 @@ class EngineAPI(EngineAPI_Base):
                 self.lora_model.cuda(device_id)
         return self.lora_model, config, tokenizer
 
-    def chat_stream(self, query, history=None, **kwargs):
-        args_process = GenerateProcess(self,is_stream=True)
-        args_process.preprocess(kwargs)
+    def get_default_gen_args(self):
         default_kwargs = {
             "pad_token_id": self.config.pad_token_id,
             "bos_token_id": self.config.bos_token_id,
@@ -162,6 +160,12 @@ class EngineAPI(EngineAPI_Base):
             "repetition_penalty": 1.1,
             "do_sample": True,
         }
+        return default_kwargs
+
+    def chat_stream(self, query, history=None, **kwargs):
+        args_process = GenerateProcess(self,is_stream=True)
+        args_process.preprocess(kwargs)
+        default_kwargs = self.get_default_gen_args()
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
 
@@ -182,18 +186,7 @@ class EngineAPI(EngineAPI_Base):
     def chat(self, query, history=None, **kwargs):
         args_process = GenerateProcess(self)
         args_process.preprocess(kwargs)
-        if history is None:
-            history = []
-        default_kwargs = {
-            "pad_token_id": self.config.pad_token_id,
-            "bos_token_id": self.config.bos_token_id,
-            "eos_token_id": self.config.eos_token_id,
-            "temperature": 0.5,
-            "top_k": 30,
-            "top_p": 0.85,
-            "repetition_penalty": 1.1,
-            "do_sample": True,
-        }
+        default_kwargs = self.get_default_gen_args()
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
         stopping_criteria = default_kwargs.pop('stopping_criteria', None)

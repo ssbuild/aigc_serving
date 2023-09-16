@@ -125,12 +125,8 @@ class EngineAPI(EngineAPI_Base):
             self.lora_model.cuda(device_id)
         return self.lora_model, config, tokenizer
 
-
-    def chat_stream(self, query, history=None, **kwargs):
-        args_process = GenerateProcess(self,is_stream=True)
-        args_process.preprocess(kwargs)
+    def get_default_gen_args(self):
         default_kwargs = {
-            "history": history,
             "chat_format": "chatml",
             "eos_token_id": 151643,
             "pad_token_id": 151643,
@@ -138,6 +134,12 @@ class EngineAPI(EngineAPI_Base):
             "top_k": 0,
             "top_p": 0.5,
         }
+        return default_kwargs
+
+    def chat_stream(self, query, **kwargs):
+        args_process = GenerateProcess(self,is_stream=True)
+        args_process.preprocess(kwargs)
+        default_kwargs = self.get_default_gen_args()
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
         skip_word_list = [self.tokenizer.im_end_id, self.tokenizer.im_start_id, self.tokenizer.eos_token_id or 151643]
@@ -149,18 +151,10 @@ class EngineAPI(EngineAPI_Base):
 
 
 
-    def chat(self, query, history=None, **kwargs):
+    def chat(self, query, **kwargs):
         args_process = GenerateProcess(self)
         args_process.preprocess(kwargs)
-        default_kwargs = {
-            "history": history,
-            "chat_format": "chatml",
-            "eos_token_id": 151643,
-            "pad_token_id": 151643,
-            "do_sample": True,
-            "top_k": 0,
-            "top_p": 0.5,
-        }
+        default_kwargs = self.get_default_gen_args()
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
         response, history = self.model.chat(self.tokenizer, query=query,  **default_kwargs)
@@ -172,10 +166,7 @@ class EngineAPI(EngineAPI_Base):
 
     def generate(self,query,**kwargs):
         args_process = GenerateProcess(self)
-        default_kwargs = dict(
-            eos_token_id=self.model.config.eos_token_id,
-            do_sample=True, top_p=0.7, temperature=0.95,
-        )
+        default_kwargs = self.get_default_gen_args()
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
         output = self.model.chat(self.tokenizer, query=query, **default_kwargs)
