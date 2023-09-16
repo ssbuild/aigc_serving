@@ -11,8 +11,7 @@ from deep_training.data_helper import ModelArguments, DataHelper
 from deep_training.nlp.layers.rope_scale.patch import RotaryNtkScaledArguments
 from transformers import HfArgumentParser, GenerationConfig
 from aigc_zoo.utils.xverse_generate import Generate
-from serving.model_handler.base import EngineAPI_Base,CompletionResult,flat_input, LoraModelState, load_lora_config, GenerateProcess,ChunkData,WorkMode
-from aigc_zoo.utils.streamgenerator import GenTextStreamer
+from serving.model_handler.base import EngineAPI_Base,CompletionResult,LoraModelState, load_lora_config, GenerateProcess,WorkMode
 from transformers import AutoModelForCausalLM
 from deep_training.utils.hf import register_transformer_model, register_transformer_config  # noqa
 # from deep_training.nlp.models.xverse.modeling_xverse import XverseForCausalLM, XverseConfig
@@ -181,7 +180,7 @@ class EngineAPI(EngineAPI_Base):
         ret = CompletionResult(result={
             "response": "",
             #"history": history,
-            "num_token": chunk.n_id
+            "num_token": args_process.get_num_tokens()
         }, complete=True)
         self.push_response(ret)
         return None
@@ -219,7 +218,7 @@ class EngineAPI(EngineAPI_Base):
         })
 
 
-    def generate(self,input,**kwargs):
+    def generate(self,query,**kwargs):
         args_process = GenerateProcess(self.tokenizer, self.config)
         default_kwargs = dict(
             eos_token_id=self.config.eos_token_id,

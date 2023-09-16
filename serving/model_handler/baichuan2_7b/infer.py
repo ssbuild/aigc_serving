@@ -182,7 +182,7 @@ class EngineAPI(EngineAPI_Base):
                 yield CompletionResult(result={
                     "response": text,
                     #"history": history,
-                    "num_token": chunk.n_id
+                    "num_token": args_process.get_num_tokens()
                 }, complete=False)
 
         # history = history + [(query, response)]
@@ -191,7 +191,7 @@ class EngineAPI(EngineAPI_Base):
             yield CompletionResult(result={
                 "response": text,
                 #"history": history,
-                "num_token": chunk.n_id
+                "num_token": args_process.get_num_tokens()
             }, complete=False)
 
 

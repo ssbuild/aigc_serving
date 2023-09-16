@@ -13,7 +13,7 @@ from transformers import HfArgumentParser, BitsAndBytesConfig, GenerationConfig
 from aigc_zoo.model_zoo.baichuan.baichuan_7b.llm_model import MyTransformer,BaiChuanConfig,BaiChuanTokenizer,PetlArguments,PetlModel
 from aigc_zoo.generator_utils.generator_llm import Generate
 from serving.model_handler.base import EngineAPI_Base,CompletionResult, LoraModelState, load_lora_config,GenerateProcess,WorkMode
-
+from serving.prompt import get_chat_openbuddy,get_chat_tiger,get_chat_default
 
 
 class NN_DataHelper(DataHelper):pass
@@ -129,14 +129,7 @@ class EngineAPI(EngineAPI_Base):
         args_process = GenerateProcess(self.tokenizer, self.config,is_stream=True)
         args_process.preprocess(kwargs)
         chunk = args_process.chunk
-        if history is None:
-            history = []
-        prompt = ""
-        for q, a in history:
-            prompt += q
-            prompt += a
-        prompt += query
-
+        prompt = get_chat_default(self.tokenizer, query, history)
         default_kwargs = dict(eos_token_id=self.model.config.eos_token_id,
                               pad_token_id=self.model.config.eos_token_id,
                               do_sample=True, top_k=5, top_p=0.85, temperature=0.3,
@@ -146,7 +139,6 @@ class EngineAPI(EngineAPI_Base):
         args_process.postprocess(default_kwargs)
         generation_config = GenerationConfig(**default_kwargs)
 
-        prompt = query
         inputs = self.gen_core.build_tokens(prompt)
 
         from transformers_stream_generator.main import NewGenerationMixin, StreamGenerationConfig
@@ -170,7 +162,7 @@ class EngineAPI(EngineAPI_Base):
                 yield CompletionResult(result={
                     "response": text,
                     #"history": history,
-                    "num_token": chunk.n_id
+                    "num_token": args_process.get_num_tokens()
                 }, complete=False)
 
         # history = history + [(query, response)]
@@ -179,7 +171,7 @@ class EngineAPI(EngineAPI_Base):
             yield CompletionResult(result={
                 "response": text,
                 #"history": history,
-                "num_token": chunk.n_id
+                "num_token": args_process.get_num_tokens()
             },complete=False)
 
 
@@ -187,14 +179,7 @@ class EngineAPI(EngineAPI_Base):
     def chat(self, query, history=None, **kwargs):
         args_process = GenerateProcess(self.tokenizer, self.config)
         args_process.preprocess(kwargs)
-        if history is None:
-            history = []
-        prompt = ""
-        for q, a in history:
-            prompt += q
-            prompt += a
-        prompt += query
-
+        prompt = get_chat_default(self.tokenizer, query, history)
         default_kwargs = dict(
             eos_token_id=self.model.config.eos_token_id,
             pad_token_id=self.model.config.eos_token_id,
@@ -202,7 +187,7 @@ class EngineAPI(EngineAPI_Base):
         )
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
-        response = self.gen_core.generate(query=prompt, **kwargs)
+        response = self.gen_core.generate(query=prompt, **default_kwargs)
         response = args_process.postprocess_response(response, **kwargs)
         # history = history + [(query, response)]
         return CompletionResult(result={
@@ -210,7 +195,7 @@ class EngineAPI(EngineAPI_Base):
             #"history": history
         })
 
-    def generate(self,input,**kwargs):
+    def generate(self,query,**kwargs):
         args_process = GenerateProcess(self.tokenizer, self.config)
         default_kwargs = dict(
             eos_token_id=self.model.config.eos_token_id,
@@ -219,9 +204,7 @@ class EngineAPI(EngineAPI_Base):
         )
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
-        response = Generate.generate(self.get_model(),
-                                     tokenizer=self.tokenizer,
-                                     query=input,**default_kwargs)
+        response = self.gen_core.generate(query=query, **kwargs)
         return response
 
     def embedding(self, query, **kwargs):

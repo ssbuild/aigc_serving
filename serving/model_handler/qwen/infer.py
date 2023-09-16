@@ -6,12 +6,11 @@ import os
 import torch
 from torch.nn import functional as F
 from deep_training.trainer.pl.modelweighter import default_peft_weight_preprocess
-from aigc_zoo.utils.streamgenerator import GenTextStreamer
 from deep_training.data_helper import ModelArguments,DataHelper
 from transformers import HfArgumentParser, BitsAndBytesConfig
 from aigc_zoo.model_zoo.qwen.llm_model import MyTransformer, QWenTokenizer, PetlArguments, \
     setup_model_profile, QWenConfig
-from serving.model_handler.base import EngineAPI_Base,CompletionResult,flat_input, LoraModelState, load_lora_config, GenerateProcess,ChunkData,WorkMode
+from serving.model_handler.base import EngineAPI_Base,CompletionResult,LoraModelState, load_lora_config, GenerateProcess,WorkMode
 
 
 
@@ -150,7 +149,7 @@ class EngineAPI(EngineAPI_Base):
         self.push_response(CompletionResult(result={
             "response": "",
             #"history": history,
-            "num_token": chunk.n_id
+            "num_token": args_process.get_num_tokens()
         }, complete=True))
         return None
 
@@ -178,9 +177,9 @@ class EngineAPI(EngineAPI_Base):
             #"history": history
         })
 
-    def generate(self,input,**kwargs):
+    def generate(self,query,**kwargs):
         args_process = GenerateProcess(self.tokenizer, self.config)
-        default_kwargs = dict(history=[], 
+        default_kwargs = dict(
             eos_token_id=self.model.config.eos_token_id,
             do_sample=True, top_p=0.7, temperature=0.95,
         )

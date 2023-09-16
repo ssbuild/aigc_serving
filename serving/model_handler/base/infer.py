@@ -117,7 +117,7 @@ class EngineAPI_Base(ABC):
     def chat(self, query, history=None, **kwargs):
         raise NotImplemented
 
-    def generate(self,input,**kwargs):
+    def generate(self,query,**kwargs):
         raise NotImplemented
 
     def worker_ds(self,rank):

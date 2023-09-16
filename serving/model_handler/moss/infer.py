@@ -7,15 +7,12 @@ import os
 import torch
 from torch.nn import functional as F
 from deep_training.trainer.pl.modelweighter import default_peft_weight_preprocess
-from aigc_zoo.utils.streamgenerator import GenTextStreamer
 from deep_training.data_helper import ModelArguments, DataHelper
 from transformers import HfArgumentParser
 from aigc_zoo.model_zoo.moss.llm_model import MyTransformer,MossConfig,MossTokenizer,PetlArguments,PetlModel
 from aigc_zoo.generator_utils.generator_moss import Generate
-from serving.model_handler.base import EngineAPI_Base, CompletionResult, flat_input, CompletionResult, LoraModelState, \
-    ChunkData, \
+from serving.model_handler.base import EngineAPI_Base, CompletionResult, CompletionResult, LoraModelState, \
     load_lora_config, GenerateProcess, WorkMode
-from serving.config_parser.main import global_models_info_args
 
 
 
@@ -133,11 +130,10 @@ class EngineAPI(EngineAPI_Base):
         skip_word_list = default_kwargs.get('eos_token_id', None) or [self.tokenizer.eos_token_id]
         streamer = args_process.get_streamer(self, skip_word_list)
         self.gen_core.chat(query=prompt,streamer=streamer,  **default_kwargs)
-
         ret = CompletionResult(result={
             "response": "",
             #"history": history,
-            "num_token": chunk.n_id
+            "num_token": args_process.get_num_tokens()
         }, complete=True)
         self.push_response(ret)
         return None
@@ -156,14 +152,13 @@ class EngineAPI(EngineAPI_Base):
         args_process.postprocess(default_kwargs)
         response,history = self.gen_core.chat(prompt,history=history, **default_kwargs)
         response = args_process.postprocess_response(response, **kwargs)
-        # history = history + [(query, response)]
         return CompletionResult(result={
             "response": response,
-            #"history": history
+            #"history": history + [(query, response)]
         })
 
 
-    def generate(self,input,**kwargs):
+    def generate(self,query,**kwargs):
         args_process = GenerateProcess(self.tokenizer, self.config)
         default_kwargs = dict(
             eos_token_id=self.model.config.eos_token_id,

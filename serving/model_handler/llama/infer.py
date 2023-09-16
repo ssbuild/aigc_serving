@@ -15,14 +15,8 @@ from deep_training.utils.hf import register_transformer_model, register_transfor
 from deep_training.nlp.models.rellama.modeling_llama import LlamaForCausalLM
 from aigc_zoo.model_zoo.llm.llm_model import MyTransformer,PetlArguments,PetlModel,AutoConfig
 from aigc_zoo.generator_utils.generator_llm import Generate
-from serving.model_handler.base import EngineAPI_Base,CompletionResult,flat_input, LoraModelState, load_lora_config, GenerateProcess,WorkMode,ChunkData
-from aigc_zoo.utils.streamgenerator import GenTextStreamer
-
-
-
-from serving.prompt.openbuddy import get_chat as get_chat_openbuddy
-from serving.prompt.tiger import get_chat as get_chat_tiger
-
+from serving.model_handler.base import EngineAPI_Base,CompletionResult, LoraModelState, load_lora_config, GenerateProcess,WorkMode,ChunkData
+from serving.prompt import get_chat_openbuddy,get_chat_tiger,get_chat_default
 
 class NN_DataHelper(DataHelper):pass
 
@@ -146,21 +140,12 @@ class EngineAPI(EngineAPI_Base):
     def chat_stream(self, query, history=None, **kwargs):
         args_process = GenerateProcess(self.tokenizer, self.config,is_stream=True)
         args_process.preprocess(kwargs)
-        chunk = args_process.chunk
-
-        if history is None:
-            history = []
-
         if self.is_openbuddy:
             prompt = get_chat_openbuddy(self.tokenizer,query,history)
         elif self.is_tigger:
             prompt = get_chat_tiger(self.tokenizer,query, history)
         else:
-            prompt = ""
-            for q, a in history:
-                prompt += q
-                prompt += a
-            prompt += query
+            prompt = get_chat_default(self.tokenizer, query, history)
 
         default_kwargs = dict(
             bos_token_id=self.config.bos_token_id,
@@ -177,7 +162,7 @@ class EngineAPI(EngineAPI_Base):
         ret = CompletionResult(result={
             "response": "",
             #"history": history,
-            "num_token": chunk.n_id
+            "num_token": args_process.get_num_tokens()
         }, complete=True)
         self.push_response(ret)
         return None
@@ -195,11 +180,7 @@ class EngineAPI(EngineAPI_Base):
         elif self.is_tigger:
             prompt = get_chat_tiger(self.tokenizer,query, history)
         else:
-            prompt = ""
-            for q, a in history:
-                prompt += q
-                prompt += a
-            prompt += query
+            prompt = get_chat_default(self.tokenizer, query, history)
 
         default_kwargs = dict(
             bos_token_id=self.config.bos_token_id,
@@ -217,7 +198,7 @@ class EngineAPI(EngineAPI_Base):
         })
 
 
-    def generate(self,input,**kwargs):
+    def generate(self,query,**kwargs):
         args_process = GenerateProcess(self.tokenizer, self.config)
         default_kwargs = dict(
             eos_token_id=self.config.eos_token_id,
@@ -226,9 +207,7 @@ class EngineAPI(EngineAPI_Base):
         )
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
-        response = Generate.generate(self.get_model(),
-                                     tokenizer=self.tokenizer,
-                                     query=input,**kwargs)
+        response = self.gen_core.generate(query=query, **default_kwargs)
         return response
 
     def embedding(self, query, **kwargs):

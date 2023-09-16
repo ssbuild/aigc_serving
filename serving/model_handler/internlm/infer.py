@@ -7,14 +7,13 @@ import os
 import torch
 from torch.nn import functional as F
 from deep_training.trainer.pl.modelweighter import default_peft_weight_preprocess
-from aigc_zoo.utils.streamgenerator import GenTextStreamer
 from deep_training.data_helper import ModelArguments, DataHelper
 from deep_training.nlp.layers.rope_scale.patch import RotaryNtkScaledArguments
 from transformers import HfArgumentParser, BitsAndBytesConfig
 from aigc_zoo.model_zoo.internlm.llm_model import MyTransformer,InternLMConfig,InternLMTokenizer,\
     InternLMForCausalLM,PetlArguments,PetlModel
-from serving.model_handler.base import EngineAPI_Base, CompletionResult, flat_input, LoraModelState, load_lora_config, \
-    GenerateProcess, WorkMode, ChunkData
+from serving.model_handler.base import EngineAPI_Base, CompletionResult,LoraModelState, load_lora_config, \
+    GenerateProcess, WorkMode
 
 
 class NN_DataHelper(DataHelper):pass
@@ -168,7 +167,7 @@ class EngineAPI(EngineAPI_Base):
         ret = CompletionResult(result={
             "response": "",
             #"history": history,
-            "num_token": chunk.n_id
+            "num_token": args_process.get_num_tokens()
         }, complete=True)
         self.push_response(ret)
         return None
@@ -195,7 +194,7 @@ class EngineAPI(EngineAPI_Base):
             #"history": history
         })
 
-    def generate(self,input,**kwargs):
+    def generate(self,query,**kwargs):
         args_process = GenerateProcess(self.tokenizer, self.config)
         default_kwargs = dict(eos_token_id = [2, 103028],
                               max_new_tokens=1024,
