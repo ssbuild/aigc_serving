@@ -12,8 +12,8 @@ from transformers import HfArgumentParser
 from aigc_zoo.model_zoo.llm.llm_model import MyTransformer,PetlArguments,PetlModel,AutoConfig
 from aigc_zoo.generator_utils.generator_llm import Generate
 from serving.model_handler.base import EngineAPI_Base, CompletionResult, flat_input, LoraModelState, load_lora_config, \
-    GenerateProcess, ChunkData, WorkMode
-
+    GenerateProcess, WorkMode
+from serving.prompt import get_chat_openbuddy,get_chat_tiger,get_chat_default
 
 
 class NN_DataHelper(DataHelper):pass
@@ -104,16 +104,7 @@ class EngineAPI(EngineAPI_Base):
     def chat_stream(self, query, history=None, **kwargs):
         args_process = GenerateProcess(self.tokenizer, self.config,is_stream=True)
         args_process.preprocess(kwargs)
-        chunk = args_process.chunk
-
-        if history is None:
-            history = []
-        prompt = ""
-        for q, a in history:
-            prompt += q
-            prompt += a
-        prompt += query
-
+        prompt = get_chat_default(self.tokenizer, query, history)
         default_kwargs = dict(
             eos_token_id=self.config.eos_token_id,
             pad_token_id=self.config.eos_token_id,
@@ -127,7 +118,7 @@ class EngineAPI(EngineAPI_Base):
         ret = CompletionResult(result={
             "response": "",
             #"history": history,
-            "num_token": chunk.n_id
+            "num_token": args_process.get_num_tokens()
         }, complete=True)
         self.push_response(ret)
         return None
@@ -136,14 +127,7 @@ class EngineAPI(EngineAPI_Base):
     def chat(self, query, history=None, **kwargs):
         args_process = GenerateProcess(self.tokenizer, self.config)
         args_process.preprocess(kwargs)
-        if history is None:
-            history = []
-        prompt = ""
-        for q, a in history:
-            prompt += q
-            prompt += a
-        prompt += query
-
+        prompt = get_chat_default(self.tokenizer, query, history)
         default_kwargs = dict(
             eos_token_id=self.config.eos_token_id,
             pad_token_id=self.config.eos_token_id,
@@ -151,9 +135,7 @@ class EngineAPI(EngineAPI_Base):
         )
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
-        response =  self.gen_core.generate(self.get_model(),
-                                     tokenizer=self.tokenizer,
-                                     query=prompt, **default_kwargs)
+        response =  self.gen_core.generate(query=prompt, **default_kwargs)
         response = args_process.postprocess_response(response, **kwargs)
         # history = history + [(query, response)]
         return CompletionResult(result={

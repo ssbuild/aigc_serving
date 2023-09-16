@@ -7,14 +7,13 @@ import os
 import torch
 from torch.nn import functional as F
 from deep_training.trainer.pl.modelweighter import default_peft_weight_preprocess
-from aigc_zoo.utils.streamgenerator import GenTextStreamer
 from deep_training.data_helper import ModelArguments, DataHelper
 from transformers import HfArgumentParser
 from aigc_zoo.model_zoo.rwkv4.llm_model import MyTransformer, RwkvConfig, \
     set_model_profile,PetlArguments,PetlModel
 from aigc_zoo.utils.rwkv4_generate import Generate
-from serving.model_handler.base import EngineAPI_Base,CompletionResult,flat_input, LoraModelState, load_lora_config, GenerateProcess,ChunkData,WorkMode
-
+from serving.model_handler.base import EngineAPI_Base,CompletionResult,LoraModelState, load_lora_config, GenerateProcess,WorkMode
+from serving.prompt import get_chat_openbuddy,get_chat_tiger,get_chat_default
 
 
 class NN_DataHelper(DataHelper):pass
@@ -111,16 +110,7 @@ class EngineAPI(EngineAPI_Base):
     def chat_stream(self, query, history=None, **kwargs):
         args_process = GenerateProcess(self.tokenizer, self.config,is_stream=True)
         args_process.preprocess(kwargs)
-        chunk = args_process.chunk
-
-        if history is None:
-            history = []
-        prompt = ""
-        for q, a in history:
-            prompt += q
-            prompt += a
-        prompt += query
-
+        prompt = get_chat_default(self.tokenizer, query, history)
         default_kwargs = dict(
             eos_token_id=self.model.config.eos_token_id,
             pad_token_id=self.model.config.eos_token_id,
@@ -134,7 +124,7 @@ class EngineAPI(EngineAPI_Base):
         ret = CompletionResult(result={
             "response": "",
             #"history": history,
-            "num_token": chunk.n_id
+            "num_token": args_process.get_num_tokens()
         }, complete=True)
         self.push_response(ret)
         return None
@@ -142,14 +132,7 @@ class EngineAPI(EngineAPI_Base):
     def chat(self, query, history=None, **kwargs):
         args_process = GenerateProcess(self.tokenizer, self.config)
         args_process.preprocess(kwargs)
-        if history is None:
-            history = []
-        prompt = ""
-        for q, a in history:
-            prompt += q
-            prompt += a
-        prompt += query
-
+        prompt = get_chat_default(self.tokenizer, query, history)
         default_kwargs = dict(
             eos_token_id=self.model.config.eos_token_id,
             pad_token_id=self.model.config.eos_token_id,
@@ -168,7 +151,7 @@ class EngineAPI(EngineAPI_Base):
         })
 
 
-    def generate(self,input,**kwargs):
+    def generate(self,query,**kwargs):
         args_process = GenerateProcess(self.tokenizer, self.config)
         default_kwargs = dict(
             eos_token_id=self.model.config.eos_token_id,

@@ -11,7 +11,7 @@ from deep_training.nlp.layers.rope_scale.patch import RotaryNtkScaledArguments
 from transformers import HfArgumentParser
 from aigc_zoo.model_zoo.chatglm2.llm_model import MyTransformer, ChatGLMTokenizer, PetlArguments, \
     setup_model_profile, ChatGLMConfig
-from serving.model_handler.base import EngineAPI_Base,CompletionResult,flat_input, LoraModelState, load_lora_config, GenerateProcess,WorkMode
+from serving.model_handler.base import EngineAPI_Base,CompletionResult,LoraModelState, load_lora_config, GenerateProcess,WorkMode
 
 
 
@@ -166,22 +166,21 @@ class EngineAPI(EngineAPI_Base):
                 yield CompletionResult(result={
                     "response": text,
                     #"history": history,
-                    "num_token": chunk.n_id
+                    "num_token": args_process.get_num_tokens()
                 }, complete=False)
 
-        # history = history + [(query, response)]
         text = chunk.final_text()
         if text is not None:
             yield CompletionResult(result={
                 "response": text,
-                #"history": history,
-                "num_token": chunk.n_id
+                #"history": history + [(query, response)],
+                "num_token": args_process.get_num_tokens()
             }, complete=False)
 
     def chat(self, query, history=None, **kwargs):
         args_process = GenerateProcess(self.tokenizer, self.config)
         args_process.preprocess(kwargs)
-        default_kwargs = dict(history=[],
+        default_kwargs = dict(history=history,
             eos_token_id=self.model.config.eos_token_id,
             do_sample=True, top_p=0.7, temperature=0.95,
         )
@@ -194,9 +193,9 @@ class EngineAPI(EngineAPI_Base):
             #"history": history
         })
 
-    def generate(self,input,**kwargs):
+    def generate(self,query,**kwargs):
         args_process = GenerateProcess(self.tokenizer, self.config)
-        default_kwargs = dict(history=[], 
+        default_kwargs = dict(
             eos_token_id=self.model.config.eos_token_id,
             do_sample=True, top_p=0.7, temperature=0.95,
         )

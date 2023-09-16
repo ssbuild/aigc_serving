@@ -228,7 +228,7 @@ class GenerateProcess:
                 ret = CompletionResult(result={
                     "response": text,
                     # "history": history,
-                    "num_token": chunk.n_id
+                    "num_token": args_process.get_num_tokens()
                 }, complete=False)
                 this_obj.push_response(ret)
 
@@ -237,6 +237,11 @@ class GenerateProcess:
                                    skip_word_list=flat_input(skip_word_list),
                                    skip_prompt=True)
         return streamer
+
+    def get_num_tokens(self):
+        if self.chunk:
+            return self.chunk.n_id
+        return 0
 
 def flat_input(ids: typing.Union[typing.List,int]):
     if isinstance(ids,int):
