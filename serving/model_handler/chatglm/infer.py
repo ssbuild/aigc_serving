@@ -11,10 +11,9 @@ from deep_training.nlp.layers.rope_scale.patch import RotaryNtkScaledArguments
 from transformers import HfArgumentParser
 from aigc_zoo.model_zoo.chatglm.llm_model import MyTransformer, ChatGLMTokenizer, PetlArguments, setup_model_profile, \
     ChatGLMConfig,PetlModel
-from serving.model_handler.base import EngineAPI_Base, flat_input, LoraModelState, load_lora_config, \
-    postprocess_chat_response
+from serving.model_handler.base import EngineAPI_Base, flat_input, LoraModelState, load_lora_config, GenerateProcess
 from serving.config_parser.main import global_models_info_args
-from serving.model_handler.base import CompletionResult,ChunkData,preprocess_input_args,postprocess_input_args
+from serving.model_handler.base import CompletionResult,ChunkData
 from serving.model_handler.base.data_define import WorkMode
 
 
@@ -145,17 +144,16 @@ class EngineAPI(EngineAPI_Base):
 
 
 
-    def chat_stream(self,query, nchar=1,gtype='total', history=None,**kwargs):
-        chunk = ChunkData(nchar=nchar, stop=kwargs.get('stop', None), mode=gtype)
-        preprocess_input_args(self.tokenizer,self.config,kwargs)
-        if history is None:
-            history = []
+    def chat_stream(self, query, history=None, **kwargs):
+        args_process = GenerateProcess(self.tokenizer, self.config,is_stream=True)
+        args_process.preprocess(kwargs)
+        chunk = args_process.chunk
         default_kwargs = dict(history=history,
                               eos_token_id=self.model.config.eos_token_id,
                               do_sample=True, top_p=0.7, temperature=0.95,
                               )
         default_kwargs.update(kwargs)
-        postprocess_input_args(self.tokenizer,self.config,chunk,default_kwargs)
+        args_process.postprocess(default_kwargs)
 
         response = None
         for response, history in self.model.stream_chat(self.tokenizer, query=query, **kwargs):
@@ -168,7 +166,7 @@ class EngineAPI(EngineAPI_Base):
                     "num_token": chunk.n_id
                 }, complete=False)
 
-        history = history + [(query, response)]
+        # history = history + [(query, response)]
         text = chunk.final_text()
         if text is not None:
             yield CompletionResult(result={
@@ -177,30 +175,32 @@ class EngineAPI(EngineAPI_Base):
                 "num_token": chunk.n_id
             }, complete=False)
 
-    def chat(self,input,**kwargs):
-        preprocess_input_args(self.tokenizer,self.config,kwargs)
-        default_kwargs = dict(history=[],
+    def chat(self,query, history=None,**kwargs):
+        args_process = GenerateProcess(self.tokenizer, self.config)
+        args_process.preprocess(kwargs)
+        default_kwargs = dict(history=history,
             eos_token_id=self.model.config.eos_token_id,
             do_sample=True, top_p=0.7, temperature=0.95,
         )
         default_kwargs.update(kwargs)
-        postprocess_input_args(self.tokenizer,self.config,None,default_kwargs)
+        args_process.postprocess(default_kwargs)
         response, history = self.model.chat(self.tokenizer, query=input, **default_kwargs)
-        response = postprocess_chat_response(response, **kwargs)
+        response = args_process.postprocess_response(response, **kwargs)
         return CompletionResult(result={
             "response": response,
             #"history": history
         })
 
     def generate(self,input,**kwargs):
+        args_process = GenerateProcess(self.tokenizer, self.config)
         default_kwargs = dict(history=[], 
             eos_token_id=self.model.config.eos_token_id,
             do_sample=True, top_p=0.7, temperature=0.95,
         )
         default_kwargs.update(kwargs)
-        postprocess_input_args(self.tokenizer,self.config,None,default_kwargs)
+        args_process.postprocess(default_kwargs)
         # response, history = self.model.chat(self.tokenizer, query=input,  **kwargs)
-        output = self.model.chat(self.tokenizer, query=input, **default_kwargs)
+        output = self.model.generate(self.tokenizer, query=input, **default_kwargs)
         output_scores = default_kwargs.get('output_scores', False)
         if output_scores:
             return output

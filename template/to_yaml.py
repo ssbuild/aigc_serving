@@ -1,19 +1,19 @@
 # -*- coding: utf-8 -*-
 # @Author  : ssbuild
 # @Time    : 2023/8/21 9:34
-from config_template.baichuan_conf import baichuan_config
-from config_template.baichuan2_conf import baichuan2_config
-from config_template.bloom_conf import bloom_conf
-from config_template.chatglm_conf import chatglm_conf
-from config_template.chatglm2_conf import chatglm2_conf
-from config_template.internlm_conf import internlm_conf
-from config_template.llama_conf import llama_conf
-from config_template.moss_conf import moss_conf
-from config_template.opt_conf import opt_conf
-from config_template.rwkv_conf import rwkv_conf
-from config_template.qwen_conf import qwen_conf
-from config_template.tiger_conf import tiger_conf
-from config_template.xverse_conf import xverse_conf
+from template.baichuan_conf import baichuan_config
+from template.baichuan2_conf import baichuan2_config
+from template.bloom_conf import bloom_conf
+from template.chatglm_conf import chatglm_conf
+from template.chatglm2_conf import chatglm2_conf
+from template.internlm_conf import internlm_conf
+from template.llama_conf import llama_conf
+from template.moss_conf import moss_conf
+from template.opt_conf import opt_conf
+from template.rwkv_conf import rwkv_conf
+from template.qwen_conf import qwen_conf
+from template.tiger_conf import tiger_conf
+from template.xverse_conf import xverse_conf
 
 import yaml
 
