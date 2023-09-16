@@ -194,7 +194,7 @@ class EngineAPI(EngineAPI_Base):
 
 
     def chat(self, query, history=None, **kwargs):
-        args_process = GenerateProcess(self.tokenizer, self.config)
+        args_process = GenerateProcess(self)
         args_process.preprocess(kwargs)
 
         messages = _build_message(query, history=history)

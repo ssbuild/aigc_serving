@@ -127,7 +127,7 @@ class EngineAPI(EngineAPI_Base):
 
 
     def chat_stream(self, query, history=None, **kwargs):
-        args_process = GenerateProcess(self.tokenizer, self.config,is_stream=True)
+        args_process = GenerateProcess(self,is_stream=True)
         args_process.preprocess(kwargs)
         default_kwargs = {
             "history": history,
@@ -142,19 +142,15 @@ class EngineAPI(EngineAPI_Base):
         args_process.postprocess(default_kwargs)
         skip_word_list = [self.tokenizer.im_end_id, self.tokenizer.im_start_id, self.tokenizer.eos_token_id or 151643]
         skip_word_list += default_kwargs.get('stop_words_ids', [])
-        streamer = args_process.get_streamer(self,skip_word_list)
+        streamer = args_process.get_streamer(skip_word_list)
         self.get_model().chat(tokenizer=self.tokenizer, streamer=streamer, query=query, **default_kwargs)
-        self.push_response(CompletionResult(result={
-            "response": "",
-            #"history": history,
-            "num_token": args_process.get_num_tokens()
-        }, complete=True))
+        args_process.do_final_stream()
         return None
 
 
 
     def chat(self, query, history=None, **kwargs):
-        args_process = GenerateProcess(self.tokenizer, self.config)
+        args_process = GenerateProcess(self)
         args_process.preprocess(kwargs)
         default_kwargs = {
             "history": history,
@@ -175,7 +171,7 @@ class EngineAPI(EngineAPI_Base):
         })
 
     def generate(self,query,**kwargs):
-        args_process = GenerateProcess(self.tokenizer, self.config)
+        args_process = GenerateProcess(self)
         default_kwargs = dict(
             eos_token_id=self.model.config.eos_token_id,
             do_sample=True, top_p=0.7, temperature=0.95,

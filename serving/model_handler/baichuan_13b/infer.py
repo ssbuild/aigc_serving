@@ -136,7 +136,7 @@ class EngineAPI(EngineAPI_Base):
 
 
     def chat_stream(self, query, history=None, **kwargs):
-        args_process = GenerateProcess(self.tokenizer, self.config,is_stream=True)
+        args_process = GenerateProcess(self,is_stream=True)
         args_process.preprocess(kwargs)
         chunk = args_process.chunk
 
@@ -174,7 +174,7 @@ class EngineAPI(EngineAPI_Base):
 
 
     def chat(self, query, history=None, **kwargs):
-        args_process = GenerateProcess(self.tokenizer, self.config)
+        args_process = GenerateProcess(self)
         args_process.preprocess(kwargs)
         messages = _build_message(query, history=history)
         default_kwargs = dict(eos_token_id=self.model.config.eos_token_id,

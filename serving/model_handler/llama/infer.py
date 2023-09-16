@@ -139,7 +139,7 @@ class EngineAPI(EngineAPI_Base):
         return 'tiger' in self.model_config_dict["model_config"]["model_name_or_path"].lower()
 
     def chat_stream(self, query, history=None, **kwargs):
-        args_process = GenerateProcess(self.tokenizer, self.config,is_stream=True)
+        args_process = GenerateProcess(self,is_stream=True)
         args_process.preprocess(kwargs)
         if self.is_openbuddy:
             prompt = get_chat_openbuddy(self.tokenizer,query,history)
@@ -157,21 +157,16 @@ class EngineAPI(EngineAPI_Base):
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
         skip_word_list = default_kwargs.get('eos_token_id', None) or [self.tokenizer.eos_token_id]
-        streamer = args_process.get_streamer(self, skip_word_list)
+        streamer = args_process.get_streamer(skip_word_list)
         inputs = self.gen_core.build_tokens(prompt)
         self.gen_core.model.generate(**inputs,streamer=streamer, **default_kwargs)
-        ret = CompletionResult(result={
-            "response": "",
-            #"history": history,
-            "num_token": args_process.get_num_tokens()
-        }, complete=True)
-        self.push_response(ret)
+        args_process.do_final_stream()
         return None
 
 
 
     def chat(self, query, history=None, **kwargs):
-        args_process = GenerateProcess(self.tokenizer, self.config)
+        args_process = GenerateProcess(self)
         args_process.preprocess(kwargs)
         if history is None:
             history = []
@@ -200,7 +195,7 @@ class EngineAPI(EngineAPI_Base):
 
 
     def generate(self,query,**kwargs):
-        args_process = GenerateProcess(self.tokenizer, self.config)
+        args_process = GenerateProcess(self)
         default_kwargs = dict(
             eos_token_id=self.config.eos_token_id,
             pad_token_id=self.config.eos_token_id,

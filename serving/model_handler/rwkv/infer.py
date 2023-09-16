@@ -108,7 +108,7 @@ class EngineAPI(EngineAPI_Base):
         return self.lora_model, config, tokenizer
 
     def chat_stream(self, query, history=None, **kwargs):
-        args_process = GenerateProcess(self.tokenizer, self.config,is_stream=True)
+        args_process = GenerateProcess(self,is_stream=True)
         args_process.preprocess(kwargs)
         prompt = get_chat_default(self.tokenizer, query, history)
         default_kwargs = dict(
@@ -119,18 +119,13 @@ class EngineAPI(EngineAPI_Base):
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
         skip_word_list = default_kwargs.get('eos_token_id', None) or [self.tokenizer.eos_token_id]
-        streamer = args_process.get_streamer(self, skip_word_list)
+        streamer = args_process.get_streamer(skip_word_list)
         Generate.generate(self.get_model(),tokenizer=self.tokenizer,streamer=streamer, query=prompt, **default_kwargs)
-        ret = CompletionResult(result={
-            "response": "",
-            #"history": history,
-            "num_token": args_process.get_num_tokens()
-        }, complete=True)
-        self.push_response(ret)
+        args_process.do_final_stream()
         return None
 
     def chat(self, query, history=None, **kwargs):
-        args_process = GenerateProcess(self.tokenizer, self.config)
+        args_process = GenerateProcess(self)
         args_process.preprocess(kwargs)
         prompt = get_chat_default(self.tokenizer, query, history)
         default_kwargs = dict(
@@ -151,7 +146,7 @@ class EngineAPI(EngineAPI_Base):
 
 
     def generate(self,query,**kwargs):
-        args_process = GenerateProcess(self.tokenizer, self.config)
+        args_process = GenerateProcess(self)
         default_kwargs = dict(
             eos_token_id=self.model.config.eos_token_id,
             pad_token_id=self.model.config.eos_token_id,
