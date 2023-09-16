@@ -13,7 +13,7 @@ from aigc_zoo.model_zoo.moss.llm_model import MyTransformer,MossConfig,MossToken
 from aigc_zoo.generator_utils.generator_moss import Generate
 from serving.model_handler.base import EngineAPI_Base, CompletionResult, CompletionResult, LoraModelState, \
     load_lora_config, GenerateProcess, WorkMode
-
+from serving.prompt import *
 
 
 class NN_DataHelper(DataHelper):pass
@@ -116,38 +116,33 @@ class EngineAPI(EngineAPI_Base):
         self.gen_core = Generate(self.lora_model, tokenizer)
         return self.lora_model, config, tokenizer
 
-
-    def chat_stream(self, query, history=None, **kwargs):
-        args_process = GenerateProcess(self.tokenizer, self.config,is_stream=True)
-        args_process.preprocess(kwargs)
-        chunk = args_process.chunk
-        prompt = query
+    def get_default_gen_args(self):
         default_kwargs = dict(
             eos_token_id=self.config.eos_token_id,
-            pad_token_id=self.config.eos_token_id,)
+            pad_token_id=self.config.eos_token_id,
+            do_sample=True,
+        )
+        return default_kwargs
+
+    def chat_stream(self, query, history=None, **kwargs):
+        args_process = GenerateProcess(self,is_stream=True)
+        args_process.preprocess(kwargs)
+        prompt = query
+        default_kwargs = self.get_default_gen_args()
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
         skip_word_list = default_kwargs.get('eos_token_id', None) or [self.tokenizer.eos_token_id]
-        streamer = args_process.get_streamer(self, skip_word_list)
+        streamer = args_process.get_streamer(skip_word_list)
         self.gen_core.chat(query=prompt,streamer=streamer,  **default_kwargs)
-        ret = CompletionResult(result={
-            "response": "",
-            #"history": history,
-            "num_token": args_process.get_num_tokens()
-        }, complete=True)
-        self.push_response(ret)
+        args_process.do_final_stream()
         return None
 
 
     def chat(self, query, history=None, **kwargs):
-        args_process = GenerateProcess(self.tokenizer, self.config)
+        args_process = GenerateProcess(self)
         args_process.preprocess(kwargs)
         prompt = query
-        default_kwargs = dict(
-            eos_token_id=self.model.config.eos_token_id,
-            pad_token_id=self.model.config.eos_token_id,
-            do_sample=True,
-        )
+        default_kwargs = self.get_default_gen_args()
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
         response,history = self.gen_core.chat(prompt,history=history, **default_kwargs)
@@ -159,12 +154,8 @@ class EngineAPI(EngineAPI_Base):
 
 
     def generate(self,query,**kwargs):
-        args_process = GenerateProcess(self.tokenizer, self.config)
-        default_kwargs = dict(
-            eos_token_id=self.model.config.eos_token_id,
-            pad_token_id=self.model.config.eos_token_id,
-            do_sample=True, top_p=0.7, temperature=0.95,
-        )
+        args_process = GenerateProcess(self)
+        default_kwargs = self.get_default_gen_args()
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
         response = self.model.generate(input, **kwargs)

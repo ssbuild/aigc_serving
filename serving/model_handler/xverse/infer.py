@@ -16,7 +16,7 @@ from transformers import AutoModelForCausalLM
 from deep_training.utils.hf import register_transformer_model, register_transformer_config  # noqa
 # from deep_training.nlp.models.xverse.modeling_xverse import XverseForCausalLM, XverseConfig
 from aigc_zoo.model_zoo.xverse.llm_model import MyTransformer,MyXverseForCausalLM, XverseConfig,PetlArguments,PetlModel,AutoConfig
-
+from serving.prompt import *
 
 
 
@@ -149,21 +149,23 @@ class EngineAPI(EngineAPI_Base):
                 self.lora_model.cuda(device_id)
         return self.lora_model, config, tokenizer
 
-    def chat_stream(self, query, history=None, **kwargs):
-        args_process = GenerateProcess(self.tokenizer, self.config,is_stream=True)
-        args_process.preprocess(kwargs)
-        chunk = args_process.chunk
+    def get_default_gen_args(self):
         default_kwargs = {
             "pad_token_id": self.config.pad_token_id,
             "bos_token_id": self.config.bos_token_id,
             "eos_token_id": self.config.eos_token_id,
-            "max_new_tokens": 512,
             "temperature": 0.5,
             "top_k": 30,
             "top_p": 0.85,
             "repetition_penalty": 1.1,
             "do_sample": True,
         }
+        return default_kwargs
+
+    def chat_stream(self, query, history=None, **kwargs):
+        args_process = GenerateProcess(self,is_stream=True)
+        args_process.preprocess(kwargs)
+        default_kwargs = self.get_default_gen_args()
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
 
@@ -172,36 +174,19 @@ class EngineAPI(EngineAPI_Base):
         messages = build_messages(query, history)
 
         skip_word_list = default_kwargs.get('eos_token_id', None) or [self.tokenizer.eos_token_id]
-        streamer = args_process.get_streamer(self,skip_word_list)
+        streamer = args_process.get_streamer(skip_word_list)
         self.get_model().chat(tokenizer=self.tokenizer,messages=messages,
                                   generation_config=generation_config,
                                   streamer=streamer,
                                   stopping_criteria=stopping_criteria)
-        ret = CompletionResult(result={
-            "response": "",
-            #"history": history,
-            "num_token": args_process.get_num_tokens()
-        }, complete=True)
-        self.push_response(ret)
+        args_process.do_final_stream()
         return None
 
 
     def chat(self, query, history=None, **kwargs):
-        args_process = GenerateProcess(self.tokenizer, self.config)
+        args_process = GenerateProcess(self)
         args_process.preprocess(kwargs)
-        if history is None:
-            history = []
-        default_kwargs = {
-            "pad_token_id": self.config.pad_token_id,
-            "bos_token_id": self.config.bos_token_id,
-            "eos_token_id": self.config.eos_token_id,
-            "max_new_tokens": 512,
-            "temperature": 0.5,
-            "top_k": 30,
-            "top_p": 0.85,
-            "repetition_penalty": 1.1,
-            "do_sample": True,
-        }
+        default_kwargs = self.get_default_gen_args()
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
         stopping_criteria = default_kwargs.pop('stopping_criteria', None)
@@ -219,7 +204,7 @@ class EngineAPI(EngineAPI_Base):
 
 
     def generate(self,query,**kwargs):
-        args_process = GenerateProcess(self.tokenizer, self.config)
+        args_process = GenerateProcess(self)
         default_kwargs = dict(
             eos_token_id=self.config.eos_token_id,
             pad_token_id=self.config.eos_token_id,

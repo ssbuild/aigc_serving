@@ -13,7 +13,7 @@ from aigc_zoo.model_zoo.rwkv4.llm_model import MyTransformer, RwkvConfig, \
     set_model_profile,PetlArguments,PetlModel
 from aigc_zoo.utils.rwkv4_generate import Generate
 from serving.model_handler.base import EngineAPI_Base,CompletionResult,LoraModelState, load_lora_config, GenerateProcess,WorkMode
-from serving.prompt import get_chat_openbuddy,get_chat_tiger,get_chat_default
+from serving.prompt import *
 
 
 class NN_DataHelper(DataHelper):pass
@@ -107,62 +107,53 @@ class EngineAPI(EngineAPI_Base):
                 self.lora_model.cuda(device_id)
         return self.lora_model, config, tokenizer
 
-    def chat_stream(self, query, history=None, **kwargs):
-        args_process = GenerateProcess(self.tokenizer, self.config,is_stream=True)
-        args_process.preprocess(kwargs)
-        prompt = get_chat_default(self.tokenizer, query, history)
+    def get_default_gen_args(self):
         default_kwargs = dict(
             eos_token_id=self.model.config.eos_token_id,
             pad_token_id=self.model.config.eos_token_id,
             do_sample=True, top_p=0.7, temperature=0.95,
         )
+        return default_kwargs
+
+
+    def chat_stream(self, query, history=None, **kwargs):
+        args_process = GenerateProcess(self,is_stream=True)
+        args_process.preprocess(kwargs)
+        prompt = get_chat_default(self.tokenizer, query, history)
+        default_kwargs = self.get_default_gen_args()
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
         skip_word_list = default_kwargs.get('eos_token_id', None) or [self.tokenizer.eos_token_id]
-        streamer = args_process.get_streamer(self, skip_word_list)
+        streamer = args_process.get_streamer(skip_word_list)
         Generate.generate(self.get_model(),tokenizer=self.tokenizer,streamer=streamer, query=prompt, **default_kwargs)
-        ret = CompletionResult(result={
-            "response": "",
-            #"history": history,
-            "num_token": args_process.get_num_tokens()
-        }, complete=True)
-        self.push_response(ret)
+        args_process.do_final_stream()
         return None
 
     def chat(self, query, history=None, **kwargs):
-        args_process = GenerateProcess(self.tokenizer, self.config)
+        args_process = GenerateProcess(self)
         args_process.preprocess(kwargs)
         prompt = get_chat_default(self.tokenizer, query, history)
-        default_kwargs = dict(
-            eos_token_id=self.model.config.eos_token_id,
-            pad_token_id=self.model.config.eos_token_id,
-            do_sample=True, top_p=0.7, temperature=0.95,
-        )
+        default_kwargs = self.get_default_gen_args()
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
         response = Generate.generate(self.get_model(),
                                      tokenizer=self.tokenizer,
                                      query=prompt, **default_kwargs)
         response = args_process.postprocess_response(response, **kwargs)
-        # history = history + [(query, response)]
         return CompletionResult(result={
             "response": response,
-            #"history": history
+            #"history": history + [(query, response)]
         })
 
 
     def generate(self,query,**kwargs):
-        args_process = GenerateProcess(self.tokenizer, self.config)
-        default_kwargs = dict(
-            eos_token_id=self.model.config.eos_token_id,
-            pad_token_id=self.model.config.eos_token_id,
-            do_sample=True, top_p=0.7, temperature=0.95,
-        )
+        args_process = GenerateProcess(self)
+        default_kwargs = self.get_default_gen_args()
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
         response = Generate.generate(self.get_model(),
                                      tokenizer=self.tokenizer,
-                                     query=input,**default_kwargs)
+                                     query=query,**default_kwargs)
         return response
 
     def embedding(self, query, **kwargs):

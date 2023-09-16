@@ -11,8 +11,8 @@ from deep_training.data_helper import ModelArguments, DataHelper
 from transformers import HfArgumentParser, BitsAndBytesConfig, GenerationConfig
 from aigc_zoo.model_zoo.baichuan.baichuan_13b.llm_model import MyTransformer,BaichuanConfig,BaichuanTokenizer,\
     MyBaichuanForCausalLM,PetlArguments,PetlModel
-from serving.model_handler.base import EngineAPI_Base,CompletionResult,flat_input, LoraModelState, load_lora_config, GenerateProcess,WorkMode
-
+from serving.model_handler.base import EngineAPI_Base,CompletionResult,LoraModelState, load_lora_config, GenerateProcess,WorkMode
+from serving.prompt import *
 
 
 class NN_DataHelper(DataHelper):pass
@@ -134,43 +134,24 @@ class EngineAPI(EngineAPI_Base):
                 self.lora_model.cuda(device_id)
         return self.lora_model, config, tokenizer
 
-    @torch.no_grad()
-    def _generate(self,  query: str,do_sample=True, top_p=0.7, temperature=0.95, logits_processor=None, **kwargs):
-        gen_kwargs = {"do_sample": do_sample, "top_p": top_p,
-                      "temperature": temperature, "logits_processor": logits_processor, **kwargs}
-        output_scores = gen_kwargs.get('output_scores', False)
-        if output_scores:
-            gen_kwargs['return_dict_in_generate'] = True
-        # prompt = "Human：" + query + "\nAssistant："
-        # 自行加模板
-        prompt = query
-        inputs = self.tokenizer([prompt], return_tensors="pt")
-        inputs = inputs.to(self.model.device)
-        outputs = self.model.generate(**inputs, **gen_kwargs)
-        if output_scores:
-            score = outputs.scores[0]
-            return score
-        outputs = outputs.tolist()[0][len(inputs["input_ids"][0]):]
-        response = self.tokenizer.decode(outputs)
-        return response
-
-    def chat_stream(self, query, history=None, **kwargs):
-        args_process = GenerateProcess(self.tokenizer, self.config,is_stream=True)
-        args_process.preprocess(kwargs)
-        chunk = args_process.chunk
-
-        messages = _build_message(query,history=history)
+    def get_default_gen_args(self):
         default_kwargs = dict(eos_token_id=self.model.config.eos_token_id,
                               pad_token_id=self.model.config.eos_token_id,
                               do_sample=True, top_k=5, top_p=0.85, temperature=0.3,
                               repetition_penalty=1.1,
                               )
+        return default_kwargs
+
+    def chat_stream(self, query, history=None, **kwargs):
+        args_process = GenerateProcess(self,is_stream=True)
+        args_process.preprocess(kwargs)
+        chunk = args_process.chunk
+        messages = _build_message(query,history=history)
+        default_kwargs = self.get_default_gen_args()
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
         stopping_criteria = default_kwargs.pop('stopping_criteria', None)
         generation_config = GenerationConfig(**default_kwargs)
-
-        response = None
         for response in self.get_model().chat(tokenizer=self.tokenizer,
                                               messages=messages,
                                               stream=True,
@@ -185,25 +166,20 @@ class EngineAPI(EngineAPI_Base):
                     "num_token": args_process.get_num_tokens()
                 }, complete=False)
 
-        # history = history + [(query, response)]
         text = chunk.final_text()
         if text is not None:
             yield CompletionResult(result={
                 "response": text,
-                #"history": history,
+                #"history": history + [(query, response)],
                 "num_token": args_process.get_num_tokens()
             }, complete=False)
 
 
     def chat(self, query, history=None, **kwargs):
-        args_process = GenerateProcess(self.tokenizer, self.config)
+        args_process = GenerateProcess(self)
         args_process.preprocess(kwargs)
         messages = _build_message(query, history=history)
-        default_kwargs = dict(eos_token_id=self.model.config.eos_token_id,
-                              pad_token_id=self.model.config.eos_token_id,
-                              do_sample=True, top_k=5, top_p=0.85, temperature=0.3,
-                              repetition_penalty=1.1,
-                              )
+        default_kwargs = self.get_default_gen_args()
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
         stopping_criteria = default_kwargs.pop('stopping_criteria', None)
