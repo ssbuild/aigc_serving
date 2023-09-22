@@ -36,7 +36,9 @@ class EngineAPI(EngineAPI_Base):
         model = pl_model.get_llm_model()
 
         model.requires_grad_(False)
-        model.eval().half()
+        model = model.eval()
+        if not self.is_config_quarted(config):
+            model.half()
 
         if self.work_mode != WorkMode.ACCELERATE:
             if device_id is None:
@@ -84,21 +86,22 @@ class EngineAPI(EngineAPI_Base):
             pl_model.load_sft_weight(ckpt_dir, adapter_name=adapter_name,
                                      lora_config=lora_args,
                                      map_preprocess=default_peft_weight_preprocess if ls_peft else None)
-        self.lora_model = pl_model.backbone
-        if len(self.lora_conf) == 1:
-            if self.auto_merge_lora_single:
-                self.lora_state = LoraModelState.MERGE_AND_LOCKED
-                self.lora_model.merge_and_unload()
-                self.lora_model.eval()
-                model = self.lora_model
-                if hasattr(model, 'quantize') and self.auto_quantize:
-                    model.half().quantize(4)
+        self.lora_model = pl_model.backbone.eval()
+        self.lora_state = LoraModelState.NONE
+        if not self.is_config_quarted(config):
+            if len(self.lora_conf) == 1:
+                if self.auto_merge_lora_single:
+                    self.lora_state = LoraModelState.MERGE_AND_LOCKED
+                    self.lora_model.merge_and_unload()
+                    model = self.lora_model
+                    if hasattr(model, 'quantize') and self.auto_quantize:
+                        model.half().quantize(4)
+                    else:
+                        model.half()
                 else:
-                    model.half()
+                    self.lora_model = self.lora_model.half()
             else:
-                self.lora_model = self.lora_model.half().eval()
-        else:
-            self.lora_model = self.lora_model.half().eval()
+                self.lora_model = self.lora_model.half()
 
         if self.work_mode != WorkMode.ACCELERATE:
             if device_id is None:

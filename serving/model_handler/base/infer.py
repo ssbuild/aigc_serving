@@ -14,6 +14,7 @@ import multiprocessing
 import threading
 from serving.model_handler.base.data_process import flat_input # noqa
 from serving.model_handler.base.data_define import CompletionResult, LoraModelState, WorkMode  # noqa
+from serving.model_handler.base.utils import is_quantization_bnb
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
@@ -52,6 +53,10 @@ class EngineAPI_Base(ABC):
 
     def __del__(self):
         self._release()
+
+
+    def is_config_quarted(self,config):
+        return is_quantization_bnb(config)
 
     def _release(self):
         if self.work_mode == WorkMode.STANDORD_HF:
