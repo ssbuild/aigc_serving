@@ -15,7 +15,7 @@ def test_se_project(src_dir='/home/aigc_serving', dst_dir='/home/aigc_serving_se
                                     'README.MD',
                                     'script',
                                     '.idea', 'setup.py','code_crypto',
-                                    'docs','docker','config_template','assets')
+                                    'docs','docker','template','assets')
 
     # package_name
     # 如果是pypi包，package_name 需要设置包名,否则可以设置None
