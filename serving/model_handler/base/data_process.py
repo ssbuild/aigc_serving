@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # @Author  : ssbuild
 # @Time    : 2023/8/8 16:55
-import typing
+from typing import Iterable, List, Optional, Callable, Tuple, Union
 
 import numpy as np
 import torch
@@ -25,9 +25,9 @@ class StopWordsLogitsProcessor(LogitsProcessor):
             The id of the `end-of-sequence` token.
     """
 
-    def __init__(self, stop_words_ids: typing.Iterable[typing.Iterable[int]], eos_token_id: int):
+    def __init__(self, stop_words_ids: Iterable[Iterable[int]], eos_token_id: int):
 
-        if not isinstance(stop_words_ids, typing.List) or len(stop_words_ids) == 0:
+        if not isinstance(stop_words_ids, List) or len(stop_words_ids) == 0:
             raise ValueError(
                 f"`stop_words_ids` has to be a non-emtpy list, but is {stop_words_ids}."
             )
@@ -68,7 +68,7 @@ class StopWordsLogitsProcessor(LogitsProcessor):
                 scores[i, self.eos_token_id] = float(2**15)
         return scores
 
-    def _tokens_match(self, prev_tokens: torch.LongTensor, tokens: typing.List[int]) -> bool:
+    def _tokens_match(self, prev_tokens: torch.LongTensor, tokens: List[int]) -> bool:
         if len(tokens) == 0:
             # if bad word tokens is just one token always ban it
             return True
@@ -81,7 +81,7 @@ class StopWordsLogitsProcessor(LogitsProcessor):
         else:
             return False
 
-    def _calc_stopped_samples(self, prev_input_ids: typing.Iterable[int]) -> typing.Iterable[int]:
+    def _calc_stopped_samples(self, prev_input_ids: Iterable[int]) -> Iterable[int]:
         stopped_samples = []
         for prev_input_ids_slice in prev_input_ids:
             match = False
@@ -95,9 +95,9 @@ class StopWordsLogitsProcessor(LogitsProcessor):
 
 
 class StopWordsCriteria(StoppingCriteria):
-    def __init__(self, stop_words_ids: typing.Iterable[typing.Iterable[int]], eos_token_id: int,chunk=None):
+    def __init__(self, stop_words_ids: Iterable[Iterable[int]], eos_token_id: int,chunk=None):
 
-        if not isinstance(stop_words_ids, typing.List) or len(stop_words_ids) == 0:
+        if not isinstance(stop_words_ids, List) or len(stop_words_ids) == 0:
             raise ValueError(
                 f"`stop_words_ids` has to be a non-emtpy list, but is {stop_words_ids}."
             )
@@ -158,10 +158,10 @@ class StopWordsCriteria(StoppingCriteria):
 
 class GenerateProcess:
     def __init__(self,this_obj,is_stream=False):
-        self.tokenizer: typing.Optional[PreTrainedTokenizer] = this_obj.tokenizer
-        self.config: typing.Optional[PretrainedConfig] = this_obj.config
+        self.tokenizer: Optional[PreTrainedTokenizer] = this_obj.tokenizer
+        self.config: Optional[PretrainedConfig] = this_obj.config
         self.is_stream = is_stream
-        self.chunk: typing.Optional[ChunkData] = None
+        self.chunk: Optional[ChunkData] = None
         self.this_obj = this_obj
 
     def preprocess(self, args_dict: dict):
@@ -219,13 +219,15 @@ class GenerateProcess:
                 response = response[:pos]
         return response
 
-    def get_streamer(self,skip_word_list):
-        def process_token_fn(text, stream_end,user_data: typing.Tuple):
+    def get_streamer(self,skip_word_list,text_filter_fn=Optional[Callable]):
+        def process_token_fn(text, stream_end,user_data: Tuple):
             chunk: ChunkData
             chunk,this_obj = user_data
             chunk.step(text, is_append=True)
             if chunk.can_output() or stream_end:
                 text = chunk.step_text()
+                if text_filter_fn:
+                    text = text_filter_fn(text)
                 ret = CompletionResult(result={
                     "response": text,
                     # "history": history,
@@ -252,7 +254,7 @@ class GenerateProcess:
                 "num_token": self.get_num_tokens()
             }, complete=True))
 
-def flat_input(ids: typing.Union[typing.List,int]):
+def flat_input(ids: Union[List,int]):
     if isinstance(ids,int):
         return [ids]
     ids_ = []
