@@ -95,7 +95,7 @@ bash stop.sh
  -  [ssbuild/aigc_evals](https://github.com/ssbuild/aigc_evals) 
 
 ## 推荐界面 ChatGPT-Next-Web 或者 dify 
-
+![界面](assets/t5.png)
 ![界面](assets/1.png)
 ![界面](assets/moss.png)
 ![界面](assets/xverse.png)
