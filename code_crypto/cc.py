@@ -30,6 +30,7 @@ def test_se_project(src_dir='/home/aigc_serving', dst_dir='/home/aigc_serving_se
                     'serving/openai_api/*',
                     'serving/openai_api/*/*',
                     'serving/openai_api/*/*/*',
+                    'serving/prompt/*',
                     'serving/react/*',
                     'serving/react/*/*',
                     'serving/react/*/*/*',

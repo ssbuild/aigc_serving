@@ -10,6 +10,7 @@
 
 ## update information
 ```text
+    10-11 support t5
     09-13 支持模型别名
     09-11 增加支持且仅支持 ptv2 for chatglm,chatglm2
     09-06 support baichuan2

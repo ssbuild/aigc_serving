@@ -14,34 +14,39 @@ from serving.model_handler.base import CompletionResult
 
 def get_worker_instance(model_name,config,group_name,worker_idx):
     model_name: str = model_name.lower()
+    model_type = config["model_config"]["model_type"].lower()
 
-    if model_name.startswith("baichuan2"):
-        if model_name.find('13b') != -1:
-            from serving.model_handler.baichuan2_13b.infer import EngineAPI
+    api_client = None
+    if model_type == "baichuan":
+        if model_name.startswith("baichuan2"):
+            if model_name.find('13b') != -1:
+                from serving.model_handler.baichuan2_13b.infer import EngineAPI
+                api_client = EngineAPI(config,group_name=group_name,worker_idx=worker_idx)
+            else:
+                from serving.model_handler.baichuan2_7b.infer import EngineAPI
+                api_client = EngineAPI(config,group_name=group_name,worker_idx=worker_idx)
+        elif model_name.startswith("baichuan"):
+            if model_name.find('13b') != -1:
+                from serving.model_handler.baichuan_13b.infer import EngineAPI
+                api_client = EngineAPI(config,group_name=group_name,worker_idx=worker_idx)
+            else:
+                from serving.model_handler.baichuan_7b.infer import EngineAPI
+                api_client = EngineAPI(config,group_name=group_name,worker_idx=worker_idx)
+    elif model_type == "chatglm" or model_type == "chatglm2":
+        if model_name.startswith("chatglm2"):
+            from serving.model_handler.chatglm2.infer import EngineAPI
             api_client = EngineAPI(config,group_name=group_name,worker_idx=worker_idx)
-        else:
-            from serving.model_handler.baichuan2_7b.infer import EngineAPI
-            api_client = EngineAPI(config,group_name=group_name,worker_idx=worker_idx)
-    elif model_name.startswith("baichuan"):
-        if model_name.find('13b') != -1:
-            from serving.model_handler.baichuan_13b.infer import EngineAPI
-            api_client = EngineAPI(config,group_name=group_name,worker_idx=worker_idx)
-        else:
-            from serving.model_handler.baichuan_7b.infer import EngineAPI
-            api_client = EngineAPI(config,group_name=group_name,worker_idx=worker_idx)
-            
-    elif model_name.startswith("chatglm2"):
-        from serving.model_handler.chatglm2.infer import EngineAPI
-        api_client = EngineAPI(config,group_name=group_name,worker_idx=worker_idx)
-        
-    elif model_name.startswith("chatglm"):
-        from serving.model_handler.chatglm.infer import EngineAPI
-        api_client = EngineAPI(config,group_name=group_name,worker_idx=worker_idx)
 
-    elif model_name.startswith("xverse"):
-        from serving.model_handler.xverse.infer import EngineAPI
+        elif model_name.startswith("chatglm"):
+            from serving.model_handler.chatglm.infer import EngineAPI
+            api_client = EngineAPI(config,group_name=group_name,worker_idx=worker_idx)
+    elif model_type == "t5":
+        from serving.model_handler.t5.infer import EngineAPI
         api_client = EngineAPI(config, group_name=group_name, worker_idx=worker_idx)
 
+    elif model_type == "xverse":
+        from serving.model_handler.xverse.infer import EngineAPI
+        api_client = EngineAPI(config, group_name=group_name, worker_idx=worker_idx)
     elif model_name.startswith("tiger") or model_name.startswith("llama"):
         from serving.model_handler.llama.infer import EngineAPI
         api_client = EngineAPI(config, group_name=group_name, worker_idx=worker_idx)
@@ -65,8 +70,9 @@ def get_worker_instance(model_name,config,group_name,worker_idx):
     elif model_name.startswith("qwen"):
         from serving.model_handler.qwen.infer import EngineAPI
         api_client = EngineAPI(config, group_name=group_name, worker_idx=worker_idx)
-    else:
-        raise ValueError('not support yet')
+
+    if not api_client:
+        raise ValueError(f'******* {model_name} {model_type} not support yet *********')
     return api_client
 
 class My_worker(ZMQ_process_worker):
