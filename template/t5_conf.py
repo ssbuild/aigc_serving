@@ -6,7 +6,7 @@ t5_conf = {
     "ChatYuan-large-v2": {
         "alias": None,  # 别用
         "enable": False,
-        "work_mode": "deepspeed",  # one of deepspeed,accelerate,hf
+        "work_mode": "deepspeed",  # one of deepspeed,accelerate,hf    单卡建议使用 hf
         "workers": [
             {
                 "device_id": [0]  # 默认启动一个worker , 使用第一块显卡
@@ -33,7 +33,7 @@ t5_conf = {
     "ChatYuan-large-v1": {
         "alias": None,  # 别用
         "enable": False,
-        "work_mode": "deepspeed",  # one of deepspeed,accelerate,hf
+        "work_mode": "deepspeed",  # one of deepspeed,accelerate,hf    单卡建议使用 hf
         "workers": [
             {
                 "device_id": [0]  # 默认启动一个worker , 使用第一块显卡

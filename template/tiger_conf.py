@@ -7,7 +7,7 @@ tiger_conf = {
     "tigerbot-13b-chat": {
         "alias": None,  # 别用
         "enable": False,
-        "work_mode": "deepspeed",  # one of deepspeed,accelerate,hf
+        "work_mode": "deepspeed",  # one of deepspeed,accelerate,hf    单卡建议使用 hf
         "workers": [
             {
                 "device_id": [0]  # 默认启动一个worker , 使用第一块显卡
@@ -35,7 +35,7 @@ tiger_conf = {
     "tigerbot-70b-chat": {
         "alias": None,  # 别用
         "enable": False,
-        "work_mode": "accelerate",  # one of deepspeed,accelerate,hf
+        "work_mode": "accelerate",  # one of deepspeed,accelerate,hf    单卡建议使用 hf
         "workers": [
             {
                 "device_id": [0, 1, 2, 3]  # 默认启动一个worker , 使用第一块显卡
@@ -65,7 +65,7 @@ tiger_conf = {
 
     "tigerbot-13b-chat-int4": {
         "enable": False,
-        "work_mode": "deepspeed",  # one of deepspeed,accelerate,hf
+        "work_mode": "deepspeed",  # one of deepspeed,accelerate,hf    单卡建议使用 hf
         "workers": [
             {
                 "device_id": [0]  # 默认启动一个worker , 使用第一块显卡

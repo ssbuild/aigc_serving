@@ -45,7 +45,7 @@ def check_config(global_models_info_args):
         for worker in workers:
             worker['deepspeed'] = {}
             conf = worker['deepspeed']
-            if len(worker['device_id']) > 1:
+            if len(worker['device_id']) >= 1:
                 port = get_free_tcp_port()
                 conf["MASTER_ADDR"] = "127.0.0.1"
                 conf["MASTER_PORT"] = str(port)

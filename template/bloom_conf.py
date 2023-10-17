@@ -8,7 +8,7 @@ bloom_conf = {
     "bloom-560m": {
         "alias": None,  # 别用
         "enable": False,
-        "work_mode": "deepspeed",  # one of deepspeed,accelerate,hf
+        "work_mode": "deepspeed",  # one of deepspeed,accelerate,hf    单卡建议使用 hf
         "workers": [
             {
                 "device_id": [0]  # 默认启动一个worker , 使用第一块显卡
@@ -33,7 +33,7 @@ bloom_conf = {
     },
     "bloom-1b7": {
         "enable": False,
-        "work_mode": "deepspeed",  # one of deepspeed,accelerate,hf
+        "work_mode": "deepspeed",  # one of deepspeed,accelerate,hf    单卡建议使用 hf
         "workers": [
             {
                 "device_id": [0]  # 默认启动一个worker , 使用第一块显卡

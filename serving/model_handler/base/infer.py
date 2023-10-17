@@ -81,7 +81,7 @@ class EngineAPI_Base(ABC):
     def init(self):
         skip_init = False
         self._init_data()
-        if self.world_size > 1 and self.muti_lora_num <= 1:
+        if self.world_size >= 1 and self.muti_lora_num <= 1:
             if self.work_mode_str == 'deepspeed':
                 self.work_mode = WorkMode.DS
                 skip_init = True
