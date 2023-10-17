@@ -8,7 +8,7 @@ model_config = {
     "qwen-7b-chat-int4": {
         "alias": None, # 别名
         "enable": False,
-        "work_mode": "deepspeed",  # one of deepspeed,accelerate,hf
+        "work_mode": "deepspeed",  # one of deepspeed,accelerate,hf    单卡建议使用 hf
         "workers": [
             {
                 "device_id": [0]  # 默认启动一个worker , 使用第一块显卡
@@ -35,7 +35,7 @@ model_config = {
     "chatglm2-6b-int4": {
         "alias": ["gpt-3.5-turbo","gpt-4"], # 别名 str or list[str]
         "enable": False,
-        "work_mode": "deepspeed",  # one of deepspeed,accelerate,hf
+        "work_mode": "deepspeed",  # one of deepspeed,accelerate,hf    单卡建议使用 hf
         "workers": [
             {
                 "device_id": [0]  # 默认启动一个worker , 使用第一块显卡

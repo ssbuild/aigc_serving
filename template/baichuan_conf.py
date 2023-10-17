@@ -7,7 +7,7 @@ baichuan_config = {
     "baichuan-7B": {
         "alias": None,  # 别用
         "enable": False,
-        "work_mode": "deepspeed",  # one of deepspeed,accelerate,hf
+        "work_mode": "deepspeed",  # one of deepspeed,accelerate,hf    单卡建议使用 hf
         "workers": [
             {
                 "device_id": [0]  # 默认启动一个worker , 使用第一块显卡
@@ -31,7 +31,7 @@ baichuan_config = {
 
     "Baichuan-13B-Chat": {
         "enable": False,
-        "work_mode": "deepspeed",  # one of deepspeed,accelerate,hf
+        "work_mode": "deepspeed",  # one of deepspeed,accelerate,hf    单卡建议使用 hf
         "workers": [
             {
                 "device_id": [0]  # 默认启动一个worker , 使用第一块显卡
@@ -54,7 +54,7 @@ baichuan_config = {
     },
     "baichuan-13b-chat-int4": {
         "enable": False,
-        "work_mode": "deepspeed",  # one of deepspeed,accelerate,hf
+        "work_mode": "deepspeed",  # one of deepspeed,accelerate,hf    单卡建议使用 hf
         "workers": [
             {
                 "device_id": [0]  # 默认启动一个worker , 使用第一块显卡
