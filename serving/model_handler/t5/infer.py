@@ -4,17 +4,46 @@
 # @File：infer
 import json
 import os
+from typing import Tuple, List
+
 import torch
 from torch.nn import functional as F
 from deep_training.trainer.pl.modelweighter import default_peft_weight_preprocess
 from deep_training.data_helper import ModelArguments, DataHelper
-from transformers import HfArgumentParser
+from transformers import HfArgumentParser, BatchEncoding
 from aigc_zoo.model_zoo.t5.llm_model import MyTransformer,PetlArguments,PetlModel,AutoConfig
 from aigc_zoo.generator_utils.generator_llm import Generate
 from serving.model_handler.base import EngineAPI_Base, CompletionResult,LoraModelState, load_lora_config, \
     GenerateProcess, WorkMode
 from serving.prompt import *
 
+
+class GenerateT5(Generate):
+    def preprocess_inputs(self,query,history = None,**kwargs):
+        return query, history or []
+
+    @torch.no_grad()
+    def generate(self, query: str, **kwargs):
+        prompt, _ = self.preprocess_inputs(query)
+        inputs = self.build_tokens(prompt)
+        output_scores = kwargs.get('output_scores', False)
+        if output_scores:
+            kwargs['return_dict_in_generate'] = True
+
+        outputs = self.model.generate(**inputs, **kwargs)
+        response = self.post_process(outputs, 0, output_scores)
+        return response
+
+    @torch.no_grad()
+    def chat(self, query: str, history: List[Tuple[str, str]] = None, **kwargs):
+        prompt, history = self.preprocess_inputs(query, history)
+        inputs = self.build_tokens(prompt)
+        output_scores = kwargs.get('output_scores', False)
+        if output_scores:
+            kwargs['return_dict_in_generate'] = True
+        outputs = self.model.generate(**inputs, **kwargs)
+        response = self.post_process(outputs, 0, output_scores)
+        return response, history
 
 class NN_DataHelper(DataHelper):pass
 
@@ -42,7 +71,7 @@ class EngineAPI(EngineAPI_Base):
                 model.cuda()
             else:
                 model.cuda(device_id)
-        self.gen_core = Generate(model, tokenizer)
+        self.gen_core = GenerateT5(model, tokenizer)
         return model, config, tokenizer
 
     def _load_model_lora(self, device_id=None):
@@ -102,7 +131,7 @@ class EngineAPI(EngineAPI_Base):
                 self.lora_model.cuda()
             else:
                 self.lora_model.cuda(device_id)
-        self.gen_core = Generate(self.lora_model, tokenizer)
+        self.gen_core = GenerateT5(self.lora_model, tokenizer)
         return self.lora_model, config, tokenizer
 
     def get_default_gen_args(self):
@@ -134,7 +163,7 @@ class EngineAPI(EngineAPI_Base):
         default_kwargs = self.get_default_gen_args()
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
-        response = self.gen_core.generate(query=prompt, **default_kwargs)
+        response = self.gen_core.generate(prompt, **default_kwargs)
         response = postprocess_chatyuan(response)
         response = args_process.postprocess_response(response, **kwargs)
         # history = history + [(query, response)]
