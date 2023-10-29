@@ -143,10 +143,7 @@ class EngineAPI(EngineAPI_Base):
         return self.lora_model, config, tokenizer
 
     def get_default_gen_args(self):
-        default_kwargs = dict(
-                              eos_token_id=self.model.config.eos_token_id,
-                              do_sample=True, top_p=0.8, temperature=0.8,
-                              )
+        default_kwargs = dict(do_sample=True, top_p=0.8, temperature=0.8,)
         return default_kwargs
 
     def chat_stream(self, query, **kwargs):
@@ -191,8 +188,7 @@ class EngineAPI(EngineAPI_Base):
     def generate(self,query,**kwargs):
         args_process = GenerateProcess(self)
         default_kwargs = dict(
-            eos_token_id=self.model.config.eos_token_id,
-            do_sample=True, top_p=0.7, temperature=0.95,
+            do_sample=True, top_p=0.8, temperature=0.8,
         )
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)

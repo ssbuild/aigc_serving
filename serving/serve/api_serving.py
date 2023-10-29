@@ -139,6 +139,75 @@ def create_chat_completion(request: typing.Union[CompletionRequest,ChatCompletio
         return create_error_response(ErrorCode.INTERNAL_ERROR, str(e))
 
 
+
+
+def _process_qwen_function(request,context_text,choices):
+    functions = request.functions
+    if "Thought:" in context_text:
+        react_res = parse_qwen_plugin_call(context_text)
+        if react_res is not None:
+            # if plugin_name contains other str
+            available_functions = [ f.get("name", None) or f.get("name_for_model", None) for f in functions ]
+            plugin_name = react_res[ 1 ]
+            if plugin_name not in available_functions:
+                for fct in available_functions:
+                    if fct in plugin_name:
+                        plugin_name = fct
+                        break
+
+            function_call = ChatFunctionCallResponse(
+                thought=react_res[ 0 ],
+                name=plugin_name,
+                arguments=react_res[ 2 ],
+            )
+        else:
+            function_call = None
+        choices.append(
+            ChatCompletionResponseChoice(
+                index=len(choices),
+                message=ChatMessage(role=Role.ASSISTANT, content="", function_call=function_call, functions=functions),
+                finish_reason="function_call",
+            )
+        )
+def _process_chatglm3_function(request,context_text,choices):
+    ...
+    # functions = request.functions
+    #
+    # try:
+    #     jd = json.loads(context_text)
+    # except:
+    #     return
+    #
+    # if "name" not in jd or ("parameters" not in jd and "content" not in jd)
+    #     return
+    #
+    # if "Thought:" in context_text:
+    #     react_res = parse_qwen_plugin_call(context_text)
+    #     if react_res is not None:
+    #         # if plugin_name contains other str
+    #         available_functions = [ f.get("name", None) or f.get("name_for_model", None) for f in functions ]
+    #         plugin_name = react_res[ 1 ]
+    #         if plugin_name not in available_functions:
+    #             for fct in available_functions:
+    #                 if fct in plugin_name:
+    #                     plugin_name = fct
+    #                     break
+    #
+    #         function_call = ChatFunctionCallResponse(
+    #             thought=react_res[ 0 ],
+    #             name=plugin_name,
+    #             arguments=react_res[ 2 ],
+    #         )
+    #     else:
+    #         function_call = None
+    #     choices.append(
+    #         ChatCompletionResponseChoice(
+    #             index=len(choices),
+    #             message=ChatMessage(role=Role.ASSISTANT, content="", function_call=function_call, functions=functions),
+    #             finish_reason="function_call",
+    #         )
+    #     )
+
 def _openai_chat(request: typing.Union[CompletionRequest,ChatCompletionRequest]):
     functions = None
     if request.model.lower().find('qwen') != -1:
@@ -163,33 +232,11 @@ def _openai_chat(request: typing.Union[CompletionRequest,ChatCompletionRequest])
             response_length += len(result["response"])
             context_text = result["response"]
             if functions is not None:
-                functions = request.functions
-                if "Thought:" in context_text:
-                    react_res = parse_qwen_plugin_call(context_text)
-                    if react_res is not None:
-                        # if plugin_name contains other str
-                        available_functions = [f.get("name",None) or f.get("name_for_model",None) for f in functions]
-                        plugin_name = react_res[1]
-                        if plugin_name not in available_functions:
-                            for fct in available_functions:
-                                if fct in plugin_name:
-                                    plugin_name = fct
-                                    break
+                if request.model.lower().find('qwen') != -1:
+                    _process_qwen_function(request,context_text,choices)
+                elif request.model.lower().find('chatglm3') != -1:
+                    _process_chatglm3_function(request, context_text, choices)
 
-                        function_call = ChatFunctionCallResponse(
-                            thought=react_res[0],
-                            name=plugin_name,
-                            arguments=react_res[2],
-                        )
-                    else:
-                        function_call = None
-                    choices.append(
-                        ChatCompletionResponseChoice(
-                            index=len(choices),
-                            message=ChatMessage(role=Role.ASSISTANT,content="", function_call=function_call, functions=functions),
-                            finish_reason="function_call",
-                        )
-                    )
             else:
                 choices.append(ChatCompletionResponseChoice(
                     index=len(choices),
