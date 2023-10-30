@@ -3,8 +3,8 @@
 # @Author: tk
 # @File：chatglm
 
-def get_chat(query, history=None):
-    prompt = ''
+def get_chat(query, history=None,prefix=None):
+    prompt = prefix or ''
     sid = 0
     if history is not None:
         for q, a in history:

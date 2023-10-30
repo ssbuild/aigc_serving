@@ -138,6 +138,10 @@ class EngineAPI(EngineAPI_Base):
     def is_tigger(self):
         return 'tiger' in self.model_config_dict["model_config"]["model_name_or_path"].lower()
 
+    @functools.cached_property
+    def is_causallm(self):
+        return 'causallm' in self.model_config_dict["model_config"]["model_name_or_path"].lower()
+
     def get_default_gen_args(self):
         default_kwargs = dict(
             bos_token_id=self.config.bos_token_id,
@@ -153,13 +157,15 @@ class EngineAPI(EngineAPI_Base):
         default_kwargs = self.get_default_gen_args()
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
-        query, history = args_process.get_chat_info(messages)
+        prefix,query, history = args_process.get_chat_info_with_system(messages)
         if self.is_openbuddy:
-            prompt = get_chat_openbuddy(self.tokenizer, query, history)
+            prompt = get_chat_openbuddy(self.tokenizer, query, history=history, prefix=prefix)
         elif self.is_tigger:
-            prompt = get_chat_tiger(self.tokenizer, query, history)
+            prompt = get_chat_tiger(self.tokenizer, query, history=history, prefix=prefix)
+        elif self.is_causallm:
+            prompt = get_chat_causallm(self.tokenizer, query, history=history, prefix=prefix)
         else:
-            prompt = get_chat_default(self.tokenizer, query, history)
+            prompt = get_chat_default(self.tokenizer, query, history=history, prefix=prefix)
         skip_word_list = default_kwargs.get('eos_token_id', None) or [self.tokenizer.eos_token_id]
         streamer = args_process.get_streamer(skip_word_list)
         inputs = self.gen_core.build_tokens(prompt)
@@ -175,13 +181,15 @@ class EngineAPI(EngineAPI_Base):
         default_kwargs = self.get_default_gen_args()
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
-        query, history = args_process.get_chat_info(messages)
+        prefix,query, history = args_process.get_chat_info_with_system(messages)
         if self.is_openbuddy:
-            prompt = get_chat_openbuddy(self.tokenizer,query, history)
+            prompt = get_chat_openbuddy(self.tokenizer, query, history=history, prefix=prefix)
         elif self.is_tigger:
-            prompt = get_chat_tiger(self.tokenizer,query, history)
+            prompt = get_chat_tiger(self.tokenizer, query, history=history, prefix=prefix)
+        elif self.is_causallm:
+            prompt = get_chat_causallm(self.tokenizer, query, history=history, prefix=prefix)
         else:
-            prompt = get_chat_default(self.tokenizer, query, history)
+            prompt = get_chat_default(self.tokenizer, query, history=history, prefix=prefix)
         response = self.gen_core.generate(query=prompt, **default_kwargs)
         response = args_process.postprocess_response(response, **kwargs)
         return CompletionResult(result={

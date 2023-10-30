@@ -223,6 +223,18 @@ class GenerateProcess:
         query = messages[0]["content"]
         return query
 
+    def get_chat_info_with_system(self,messages: List[Dict],chat_format="chat"):
+        query = messages.pop(-1)["content"]
+        if chat_format == "chat":
+            prefix = None
+            if len(messages) > 0:
+                if messages[0]["role"] == "system":
+                    prefix = messages.pop(0)["content"]
+            history = [(q, a) for q, a in zip(messages[::2], messages[1::2])]
+            return (prefix, query, history)
+
+        query = messages[0]["content"]
+        return query
 
     def postprocess_response(self, response, **kwargs):
         stops = kwargs.get('stop',None)
