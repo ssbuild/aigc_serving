@@ -179,7 +179,11 @@ class EngineAPI(EngineAPI_Base):
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
         response, history = self.model.chat(self.tokenizer, query=query,  **default_kwargs)
-        response = args_process.postprocess_response(response, **kwargs)
+        if isinstance(response,str):
+            response = args_process.postprocess_response(response, **kwargs)
+        else:
+            response = json.dumps(response,ensure_ascii=True)
+
         return CompletionResult(result={
             "response": response,
             #"history": history

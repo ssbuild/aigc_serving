@@ -4,23 +4,22 @@
 # @File：api
 import json
 import traceback
-import typing
-import uuid
+from typing import Union, Optional, Dict, Tuple
 from functools import cached_property
 from fastapi import FastAPI, Depends
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import StreamingResponse
+from serving.utils import logger
 from serving.config_parser.main import global_models_info_args
-from serving.openai_api.openai_api_protocol import ModelCard, ModelPermission, ModelList, ChatCompletionRequest, Role, \
+from serving.openai_api.openai_api_protocol import (ModelCard, ModelPermission, ModelList, ChatCompletionRequest, Role, \
     ChatCompletionResponseStreamChoice, DeltaMessage, ChatCompletionStreamResponse, Finish, \
     ChatCompletionResponseChoice, ChatMessage, UsageInfo, ChatCompletionResponse, CompletionRequest, \
     CompletionResponseChoice, CompletionResponseStreamChoice, CompletionStreamResponse, CompletionResponse, \
-    ChatFunctionCallResponse, EmbeddingsRequest, EmbeddingsResponse
-from serving.react.qwen.react_prompt import parse_qwen_plugin_call
+    ChatFunctionCallResponse, EmbeddingsRequest, EmbeddingsResponse)
 from serving.serve.api_keys import auth_api_key
 from serving.serve.api_react import build_request_functions
-from serving.utils import logger
-from serving.serve.api_check import check_requests, create_error_response, ErrorCode, check_requests_embedding
+from serving.react.qwen.react_prompt import parse_qwen_plugin_call
+from serving.serve.api_check import check_requests, create_error_response, ErrorCode
 
 
 class Resource:
@@ -59,6 +58,7 @@ class Resource:
             msg = "{} Invalid model: model not in [".format(request.model) + ','.join(self.alias_map) + "]"
             return create_error_response(ErrorCode.INVALID_MODEL, msg)
         request.model = self.alias_map[request.model]
+        request._model_type = global_models_info_args[request.model]["model_config"]["model_type"]
         return None
 
 _g_instance = Resource()
@@ -117,7 +117,7 @@ def list_models():
 
 @app.post("/v1/completions", dependencies=[Depends(auth_api_key)])
 @app.post("/v1/chat/completions", dependencies=[Depends(auth_api_key)])
-def create_chat_completion(request: typing.Union[CompletionRequest,ChatCompletionRequest]):
+def create_chat_completion(request: Union[CompletionRequest,ChatCompletionRequest]):
     self = global_instance()
     try:
         logger.info(request.json(indent=2,ensure_ascii=False))
@@ -129,10 +129,10 @@ def create_chat_completion(request: typing.Union[CompletionRequest,ChatCompletio
             return error_check_ret
 
         if request.stream:
-            _openai_chat_stream_generate = _openai_chat_stream(request) if isinstance(request,ChatCompletionRequest) else _openai_legend_stream(request)
+            _openai_chat_stream_generate = _openai_chat_stream_v2(self,request) if isinstance(request,ChatCompletionRequest) else _openai_chat_stream_v1(self,request)
             return StreamingResponse(_openai_chat_stream_generate, media_type="text/event-stream")
         else:
-            return _openai_chat(request) if isinstance(request,ChatCompletionRequest) else _openai_legend(request)
+            return _openai_chat_v2(self,request) if isinstance(request,ChatCompletionRequest) else _openai_chat_v1(self,request)
     except Exception as e:
         traceback.print_exc()
         logger.info(e)
@@ -141,8 +141,10 @@ def create_chat_completion(request: typing.Union[CompletionRequest,ChatCompletio
 
 
 
-def _process_qwen_function(request,context_text,choices):
-    functions = request.functions
+def _process_qwen_function(request: Union[CompletionRequest,ChatCompletionRequest],
+                           functions,
+                           context_text)-> Optional[ChatFunctionCallResponse]:
+    function_call = None
     if "Thought:" in context_text:
         react_res = parse_qwen_plugin_call(context_text)
         if react_res is not None:
@@ -160,60 +162,52 @@ def _process_qwen_function(request,context_text,choices):
                 name=plugin_name,
                 arguments=react_res[ 2 ],
             )
-        else:
-            function_call = None
-        choices.append(
-            ChatCompletionResponseChoice(
-                index=len(choices),
-                message=ChatMessage(role=Role.ASSISTANT, content="", function_call=function_call, functions=functions),
-                finish_reason="function_call",
-            )
-        )
-def _process_chatglm3_function(request,context_text,choices):
-    ...
-    # functions = request.functions
-    #
-    # try:
-    #     jd = json.loads(context_text)
-    # except:
-    #     return
-    #
-    # if "name" not in jd or ("parameters" not in jd and "content" not in jd)
-    #     return
-    #
-    # if "Thought:" in context_text:
-    #     react_res = parse_qwen_plugin_call(context_text)
-    #     if react_res is not None:
-    #         # if plugin_name contains other str
-    #         available_functions = [ f.get("name", None) or f.get("name_for_model", None) for f in functions ]
-    #         plugin_name = react_res[ 1 ]
-    #         if plugin_name not in available_functions:
-    #             for fct in available_functions:
-    #                 if fct in plugin_name:
-    #                     plugin_name = fct
-    #                     break
-    #
-    #         function_call = ChatFunctionCallResponse(
-    #             thought=react_res[ 0 ],
-    #             name=plugin_name,
-    #             arguments=react_res[ 2 ],
-    #         )
-    #     else:
-    #         function_call = None
-    #     choices.append(
-    #         ChatCompletionResponseChoice(
-    #             index=len(choices),
-    #             message=ChatMessage(role=Role.ASSISTANT, content="", function_call=function_call, functions=functions),
-    #             finish_reason="function_call",
-    #         )
-    #     )
+    return function_call
 
-def _openai_chat(request: typing.Union[CompletionRequest,ChatCompletionRequest]):
+def _process_chatglm3_function(request: Union[CompletionRequest,ChatCompletionRequest],
+                               functions,
+                               context_text)-> Optional[ChatFunctionCallResponse]:
+    for response in context_text.split("<|assistant|>"):
+        metadata, content = response.split("\n", maxsplit=1)
+        if not metadata.strip():
+            content = content.strip()
+            content = content.replace("[[训练时间]]", "2023年")
+        else:
+            if request.messages[0].role == "system":
+                content = "\n".join(content.split("\n")[1:-1])
+                def tool_call(**kwargs):
+                    return kwargs
+                parameters = eval(content)
+                content = {"name": metadata.strip(), "parameters": parameters}
+            else:
+                content = {"name": metadata.strip(), "content": content}
+
+    jd = content
+    if "parameters" not in jd and not isinstance(jd["parameters"], dict):
+        function_call = None
+    else:
+        parameters = jd["parameters"]
+        # if plugin_name contains other str
+        available_functions = [f.get("name", None) for f in functions]
+        plugin_name = jd.get("name", None)
+        if plugin_name not in available_functions:
+            for fct in available_functions:
+                if fct in plugin_name:
+                    plugin_name = fct
+                    break
+        function_call = ChatFunctionCallResponse(
+            name=plugin_name,
+            arguments=parameters if isinstance(parameters,str) else json.dumps(parameters, ensure_ascii=False),
+        )
+    return function_call
+
+
+def _openai_chat_v2(self: Resource,request: Union[CompletionRequest,ChatCompletionRequest]):
     functions = None
-    if request.model.lower().find('qwen') != -1:
-        functions = build_request_functions(request)
+    if request.model_type in ["qwen","chatglm","chatglm3"]:
+        functions = build_request_functions(request,model_type=request.model_type)
     self = global_instance()
-    rs = request.build_request_chat()
+    rs = request.build_request()
     choices = []
     prompt_length, response_length = 0, 0
     for r in rs:
@@ -232,11 +226,18 @@ def _openai_chat(request: typing.Union[CompletionRequest,ChatCompletionRequest])
             response_length += len(result["response"])
             context_text = result["response"]
             if functions is not None:
-                if request.model.lower().find('qwen') != -1:
-                    _process_qwen_function(request,context_text,choices)
-                elif request.model.lower().find('chatglm3') != -1:
-                    _process_chatglm3_function(request, context_text, choices)
-
+                if request.model_type == "qwen":
+                    function_call = _process_qwen_function(request,functions,context_text)
+                    context_text = None
+                elif request.model_type == "chatglm":
+                    function_call = _process_chatglm3_function(request,functions, context_text)
+                else:
+                    function_call = None
+                choices.append(ChatCompletionResponseChoice(
+                    index=len(choices),
+                    message=ChatMessage(role=Role.ASSISTANT, content=context_text, function_call=function_call,functions=functions),
+                    finish_reason=Finish.FUNCTION_CALL
+                ))
             else:
                 choices.append(ChatCompletionResponseChoice(
                     index=len(choices),
@@ -250,9 +251,7 @@ def _openai_chat(request: typing.Union[CompletionRequest,ChatCompletionRequest])
     )
     return ChatCompletionResponse(model=request.model, choices=choices, usage=usage)
 
-def _openai_chat_stream(request: typing.Union[CompletionRequest,ChatCompletionRequest]):
-    self = global_instance()
-
+def _openai_chat_stream_v2(self: Resource,request: Union[CompletionRequest,ChatCompletionRequest]):
     for i in range(max(1, request.n)):
         idx = i
         choice_data = ChatCompletionResponseStreamChoice(
@@ -263,7 +262,7 @@ def _openai_chat_stream(request: typing.Union[CompletionRequest,ChatCompletionRe
         chunk = ChatCompletionStreamResponse(model=request.model, choices=[choice_data])
         yield f"data: {chunk.json(exclude_unset=True, ensure_ascii=False)}\n\n"
 
-        r = request.build_request_streaming()
+        r = request.build_request()
         instance = self.queue_mapper[request.model]
         request_id = instance.put(r)
 
@@ -305,9 +304,8 @@ def _openai_chat_stream(request: typing.Union[CompletionRequest,ChatCompletionRe
 
 
 
-def _openai_legend(request: CompletionRequest):
-    self = global_instance()
-    rs = request.build_request_chat()
+def _openai_chat_v1(self: Resource,request: CompletionRequest):
+    rs = request.build_request()
     choices = []
     prompt_length, response_length = 0, 0
     for r in rs:
@@ -338,9 +336,7 @@ def _openai_legend(request: CompletionRequest):
     )
     return CompletionResponse(model=request.model, choices=choices, usage=usage)
 
-def _openai_legend_stream(request: CompletionRequest):
-    self = global_instance()
-
+def _openai_chat_stream_v1(self: Resource,request: CompletionRequest):
     for i in range(max(1, request.n)):
         idx = i
         choice_data = CompletionResponseStreamChoice(
@@ -351,7 +347,7 @@ def _openai_legend_stream(request: CompletionRequest):
         chunk = CompletionStreamResponse(model=request.model, choices=[choice_data])
         yield f"data: {chunk.json(exclude_unset=True, ensure_ascii=False)}\n\n"
 
-        r = request.build_request_streaming()
+        r = request.build_request()
         instance = self.queue_mapper[request.model]
         request_id = instance.put(r)
         request_seq_id = 1

@@ -10,6 +10,17 @@ __all__ = [
 
 
 class CustomChatParams(BaseModel):
+    model: str
+    messages: List
+    temperature: Optional[float] = 0.7
+    top_p: Optional[float] = 1.0
+    n: Optional[int] = 1
+    max_tokens: Optional[int] = 512
+    stop: Optional[Union[str, List[str]]] = None
+    stream: Optional[bool] = False
+    presence_penalty: Optional[float] = None
+    frequency_penalty: Optional[float] = None
+    user: Optional[str] = None
 
     adapter_name: Optional[str] = "default"
     gtype: Optional[str] = "increace"  # one of total,increace
@@ -35,10 +46,14 @@ class CustomChatParams(BaseModel):
     functions: Optional[List[Dict[str, Any]]] = None
     function_call: Union[str, Dict[str, str]] = "auto"
 
+#   私有成员
+    _model_type: Optional[str] = None
 
-    def build_query_history(self):
-        raise NotImplemented
 
+
+    @property
+    def model_type(self):
+        return self._model_type
     def _update_params(self, r):
         params = {
             "adapter_name": self.adapter_name,
@@ -89,49 +104,34 @@ class CustomChatParams(BaseModel):
         r["params"] = {k: params[k] for k in keep_keys}
         return r
 
-
-    def build_request_chat(self):
-        r = []
-        items = self.build_query_history()
-        if isinstance(items,tuple):
+    def build_history(self):
+        raise NotImplemented
+    def build_request(self):
+        items = self.build_history()
+        if self.stream:
+            if isinstance(items, list):
+                items = items[0]
             query, history = items
-            r_ = {
-                "method": "chat",
+            r = self._update_params({
+                "method": "chat_stream",
                 "model": self.model,
                 "history": history,
                 "query": query,
-            }
-            r_ = self._update_params(r_)
-            r.append(r_)
+            })
         else:
+            r = []
+            if isinstance(items, tuple):
+                items = [items]
             for item in items:
                 query, history = item
-                r_ = {
+                r.append(self._update_params({
                     "method": "chat",
                     "model": self.model,
                     "history": history,
                     "query": query,
-                }
-                r_ = self._update_params(r_)
-                r.append(r_)
-
-
-
+                }))
         return r
 
-    def build_request_streaming(self):
-        items = self.build_query_history()
-        if isinstance(items, list):
-            items = items[0]
-        query, history = items
-        r = {
-            "method": "chat_stream",
-            "model": self.model,
-            "history": history,
-            "query": query,
-        }
-        r = self._update_params(r)
-        return r
 
 
 class CustomEmbeddingParams(BaseModel):
