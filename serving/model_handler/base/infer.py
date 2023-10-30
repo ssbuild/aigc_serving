@@ -5,7 +5,7 @@ import logging
 import os
 import time
 import traceback
-import typing
+from typing import List,Union,Dict
 from abc import ABC
 import torch
 import torch.distributed as dist
@@ -116,13 +116,13 @@ class EngineAPI_Base(ABC):
         return self.model_ds or self.model_accelerate or self.model
 
 
-    def chat_stream(self, query, history=None, **kwargs):
+    def chat_stream(self, messages: List[Dict], **kwargs):
         raise NotImplemented
 
-    def chat(self, query, history=None, **kwargs):
+    def chat(self, messages: List[Dict], **kwargs):
         raise NotImplemented
 
-    def generate(self,query,**kwargs):
+    def generate(self,messages: List[Dict], **kwargs):
         raise NotImplemented
 
     def worker_ds(self,rank):
@@ -304,23 +304,21 @@ class EngineAPI_Base(ABC):
         return 0,'ok'
 
 
-    def _do_work_generator(self, r: typing.Dict):
+    def _do_work_generator(self, r: Dict):
         ret = CompletionResult()
         try:
             if self.work_mode == WorkMode.DS and self.model_ds is None:
                 yield ret._replace(code=-1,result=None,msg="ds_engine init failed",complete=True)
 
             params = r.get('params', {})
-            query = r.get('query', "")
-            history = r.get('history', [])
-            history = [(_["q"], _["a"]) for _ in history]
+            messages = r.get("messages", [])
 
             adapter_name = params.pop('adapter_name', None)
             code, msg = self.switch_lora(adapter_name)
             if code != 0:
                 yield ret._replace(code=code,result=None,msg=msg,complete=True)
 
-            gen_results = self.chat_stream(query, history=history, **params)
+            gen_results = self.chat_stream(messages=messages, **params)
             if gen_results is None:
                 return None
             iter_: CompletionResult
@@ -340,7 +338,7 @@ class EngineAPI_Base(ABC):
         yield ret._replace(code=code,result=result,msg=msg,complete=True)
 
 
-    def trigger_generator(self ,r: typing.Dict):
+    def trigger_generator(self ,r: Dict):
         self.clear_data()
         if self.work_mode == WorkMode.DS:
             for i in range(self.world_size):
@@ -360,7 +358,7 @@ class EngineAPI_Base(ABC):
                     break
         return None
 
-    def _do_work(self,r: typing.Dict):
+    def _do_work(self,r: Dict):
         ret = CompletionResult(complete=True)
         if self.work_mode == WorkMode.DS and self.model_ds is None:
             return ret._replace(code=-1, msg="ds_engine init failed")
@@ -378,23 +376,15 @@ class EngineAPI_Base(ABC):
             code, msg = self.switch_lora(adapter_name)
             if code != 0:
                 return ret._replace(code=-1, msg=msg)
+            messages = r.get("messages", [])
             if method == "chat":
-                query = r.get('query', "")
-                history = r.get('history', [])
-                history = [(_["q"], _["a"]) for _ in history]
-                node: CompletionResult = method_fn(query, history=history, **params)
-                # history = [{"q": _[0], "a": _[1]} for _ in results["history"]]
+                node: CompletionResult = method_fn(messages=messages, **params)
                 result = {
                     "response": node.result["response"],
-                    # #"history": history,
                     "num_token": node.result.get('num_token', len(node.result["response"]))
                 }
             else:
-                query = r.get('query')
-                if not isinstance(query, list):
-                    return ret._replace(code=-1, msg="invalid key query , list required".format(method))
-
-                node: CompletionResult = method_fn(query, **params)
+                node: CompletionResult = method_fn(messages=messages, **params)
                 result = {
                     "response": node.result["response"],
                 }
@@ -404,7 +394,7 @@ class EngineAPI_Base(ABC):
             result = None
         return ret._replace(code=code, result=result, msg=msg)
 
-    def trigger(self ,r: typing.Dict):
+    def trigger(self ,r: Dict):
         if self.work_mode == WorkMode.DS:
             self.clear_data()
             for i in range(self.world_size):

@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 # @Author  : ssbuild
 # @Time    : 2023/7/10 17:24
+import copy
 import json
 import os
+from typing import Dict, List
+
 import torch
 from torch.nn import functional as F
 from deep_training.trainer.pl.modelweighter import default_peft_weight_preprocess
@@ -16,6 +19,25 @@ from serving.prompt import *
 
 
 class NN_DataHelper(DataHelper):pass
+
+
+def _preprocess_messages_for_chatglm3(messages: List[Dict]):
+    item = messages.pop(-1)
+    role,query = item["role"],item["content"]
+    history = []
+    for message in messages:
+        if message["role"] == "assistant":
+            output = message["content"]
+            for response in output.split("<|assistant|>"):
+                metadata, content = response.split("\n", maxsplit=1)
+                if not metadata.strip():
+                    content = content.strip()
+                    history.append({"role": "assistant", "metadata": metadata, "content": content})
+                else:
+                    history.append({"role": "assistant", "metadata": metadata, "content": content})
+        else:
+            history.append(copy.copy(message))
+    return role,query,history
 
 
 class EngineAPI(EngineAPI_Base):
@@ -146,15 +168,15 @@ class EngineAPI(EngineAPI_Base):
         default_kwargs = dict(do_sample=True, top_p=0.8, temperature=0.8,)
         return default_kwargs
 
-    def chat_stream(self, query, **kwargs):
+    def chat_stream(self, messages: List[Dict], **kwargs):
         args_process = GenerateProcess(self,is_stream=True)
         args_process.preprocess(kwargs)
         chunk = args_process.chunk
         default_kwargs = self.get_default_gen_args()
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
-
-        for response, history in self.get_model().stream_chat(self.tokenizer, query=query, **default_kwargs):
+        role,query,history = _preprocess_messages_for_chatglm3(messages)
+        for response, history in self.get_model().stream_chat(self.tokenizer, query=query,role=role,history=history,with_postprocess=False,**default_kwargs):
             chunk.step(response)
             if chunk.can_output():
                 text = chunk.step_text()
@@ -172,13 +194,14 @@ class EngineAPI(EngineAPI_Base):
                 "num_token": args_process.get_num_tokens()
             }, complete=False)
 
-    def chat(self, query, **kwargs):
+    def chat(self,messages: List[Dict], **kwargs):
         args_process = GenerateProcess(self)
         args_process.preprocess(kwargs)
         default_kwargs = self.get_default_gen_args()
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
-        response, history = self.model.chat(self.tokenizer, query=query,  **default_kwargs)
+        role, query, history = _preprocess_messages_for_chatglm3(messages)
+        response, history = self.model.chat(self.tokenizer, query=query,role=role,history=messages,with_postprocess=False,**default_kwargs)
         if isinstance(response,str):
             response = args_process.postprocess_response(response, **kwargs)
         else:
@@ -189,19 +212,21 @@ class EngineAPI(EngineAPI_Base):
             #"history": history
         })
 
-    def generate(self,query,**kwargs):
+    def generate(self,messages: List[Dict],**kwargs):
         args_process = GenerateProcess(self)
-        default_kwargs = dict(
-            do_sample=True, top_p=0.8, temperature=0.8,
-        )
+        default_kwargs = self.get_default_gen_args()
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
-        output,_ = self.model.chat(self.tokenizer, query=query, **default_kwargs)
+        query = messages[0]["content"]
+        output,_ = self.model.chat(self.tokenizer,query=query,with_postprocess=False, **default_kwargs)
         output_scores = default_kwargs.get('output_scores', False)
         if output_scores:
             return output
         response, history = output
-        return response
+        return CompletionResult(result={
+            "response": response,
+            #"history": history
+        })
 
     def embedding(self, query, **kwargs):
         model = self.get_model()

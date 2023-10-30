@@ -4,6 +4,8 @@
 # @File：infer
 import json
 import os
+from typing import List, Dict
+
 import torch
 from torch.nn import functional as F
 from deep_training.trainer.pl.modelweighter import default_peft_weight_preprocess
@@ -113,13 +115,14 @@ class EngineAPI(EngineAPI_Base):
         )
         return default_kwargs
 
-    def chat_stream(self, query, history=None, **kwargs):
+    def chat_stream(self,messages: List[Dict], **kwargs):
         args_process = GenerateProcess(self,is_stream=True)
         args_process.preprocess(kwargs)
-        prompt = get_chat_default(self.tokenizer, query, history)
         default_kwargs = self.get_default_gen_args()
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
+        query, history = args_process.get_chat_info(messages)
+        prompt = get_chat_default(self.tokenizer, query, history)
         skip_word_list = default_kwargs.get('eos_token_id', None) or [self.tokenizer.eos_token_id]
         streamer = args_process.get_streamer(skip_word_list)
         self.gen_core.model.generate(**self.gen_core.build_tokens(prompt),streamer=streamer,  **default_kwargs)
@@ -127,13 +130,14 @@ class EngineAPI(EngineAPI_Base):
         return None
 
 
-    def chat(self, query, history=None, **kwargs):
+    def chat(self,messages: List[Dict], **kwargs):
         args_process = GenerateProcess(self)
         args_process.preprocess(kwargs)
-        prompt = get_chat_default(self.tokenizer, query, history)
         default_kwargs = self.get_default_gen_args()
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
+        query, history = args_process.get_chat_info(messages)
+        prompt = get_chat_default(self.tokenizer, query, history)
         response =  self.gen_core.generate(query=prompt, **default_kwargs)
         response = args_process.postprocess_response(response, **kwargs)
         # history = history + [(query, response)]

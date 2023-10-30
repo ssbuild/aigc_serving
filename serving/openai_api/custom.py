@@ -104,31 +104,24 @@ class CustomChatParams(BaseModel):
         r["params"] = {k: params[k] for k in keep_keys}
         return r
 
-    def build_history(self):
+    def build_messages(self):
         raise NotImplemented
     def build_request(self):
-        items = self.build_history()
+        messages_list = self.build_messages()
         if self.stream:
-            if isinstance(items, list):
-                items = items[0]
-            query, history = items
+            messages = messages_list[0]
             r = self._update_params({
                 "method": "chat_stream",
                 "model": self.model,
-                "history": history,
-                "query": query,
+                "messages": messages,
             })
         else:
             r = []
-            if isinstance(items, tuple):
-                items = [items]
-            for item in items:
-                query, history = item
+            for messages in messages_list:
                 r.append(self._update_params({
                     "method": "chat",
                     "model": self.model,
-                    "history": history,
-                    "query": query,
+                    "messages": messages,
                 }))
         return r
 

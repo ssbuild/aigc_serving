@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # @Author  : ssbuild
 # @Time    : 2023/8/8 16:55
-from typing import Iterable, List, Optional, Callable, Tuple, Union
+from typing import Iterable, List, Optional, Callable, Tuple, Union, Dict
 
 import numpy as np
 import torch
@@ -204,6 +204,25 @@ class GenerateProcess:
             if len(stopping_criteria):
                 args_dict["stopping_criteria"] = stopping_criteria
         return args_dict
+
+    def get_chat_info(self,messages: List[Dict],chat_format="chat"):
+        query = messages.pop(-1)["content"]
+        if chat_format == "chat":
+            prefix = ""
+            if len(messages) > 0:
+                if messages[0]["role"] == "system":
+                    prefix = messages.pop(0)["content"]
+            history = [(q, a) for q, a in zip(messages[::2], messages[1::2])]
+            if prefix:
+                if history:
+                    history[0] = (prefix + history[0][0],history[1])
+                else:
+                    query = prefix + query
+            return (query, history)
+
+        query = messages[0]["content"]
+        return query
+
 
     def postprocess_response(self, response, **kwargs):
         stops = kwargs.get('stop',None)

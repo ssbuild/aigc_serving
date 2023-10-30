@@ -79,27 +79,11 @@ class ChatMessage(BaseModel):
 
 class ChatCompletionRequest(CustomChatParams):
     messages: List[ChatMessage]
-    def build_history(self):
-        prev_messages = self.messages[:-1]
-        if len(prev_messages) > 0 and prev_messages[0].role == Role.SYSTEM:
-            prefix = prev_messages.pop(0).content
-        else:
-            prefix = ""
 
-
-        history = []
-        if len(prev_messages) % 2 == 0:
-            for i in range(0, len(prev_messages), 2):
-                if prev_messages[i].role in [Role.USER,Role.OBSERVATION] and prev_messages[i + 1].role == Role.ASSISTANT:
-                    history.append({
-                        "role": prev_messages[i].role,
-                        "q": prev_messages[i].content ,
-                        "a": prev_messages[i + 1].content
-                    })
-
+    def build_messages(self):
+        messages = [message.json() for message in self.messages]
         assert self.messages[-1].role in [Role.USER,Role.OBSERVATION]
-        query = prefix + self.messages[-1].content
-        return (query,history)
+        return [messages]
 
 
 
@@ -200,10 +184,11 @@ class CompletionRequest(CustomChatParams):
     frequency_penalty: Optional[float] = 0.0
     user: Optional[str] = None
 
-    def build_history(self):
-        if isinstance(self.prompt,list):
-            return [(_,[]) for _ in self.prompt]
-        return [(self.prompt,[])]
+    def build_messages(self):
+        if isinstance(self.prompt,str):
+            self.prompt = [self.prompt]
+        messages_list = [[{"role": Role.USER,"content": prompt}] for prompt in self.prompt]
+        return messages_list
 
 class CompletionResponseChoice(BaseModel):
     index: int

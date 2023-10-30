@@ -219,10 +219,9 @@ def _openai_chat_v2(self: Resource,request: Union[CompletionRequest,ChatCompleti
                 logger.error(result["msg"])
                 return create_error_response(ErrorCode.INTERNAL_ERROR, result["msg"])
 
-            for x in r["history"]:
-                prompt_length += len(x['q'])
-                prompt_length += len(x['a'])
-            prompt_length += len(r['query'])
+            for message in r["messages"]:
+                prompt_length += len(message["content"])
+
             response_length += len(result["response"])
             context_text = result["response"]
             if functions is not None:
@@ -317,10 +316,8 @@ def _openai_chat_v1(self: Resource,request: CompletionRequest):
                 logger.error(result["msg"])
                 return create_error_response(ErrorCode.INTERNAL_ERROR, result["msg"])
 
-            for x in r["history"]:
-                prompt_length += len(x['q'])
-                prompt_length += len(x['a'])
-            prompt_length += len(r['query'])
+            for message in r["messages"]:
+                prompt_length += len(message['content'])
 
             response_length += len(result["response"])
             choice_data = CompletionResponseChoice(

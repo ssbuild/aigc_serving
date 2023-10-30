@@ -4,6 +4,8 @@
 # @File：infer
 import json
 import os
+from typing import Dict, List
+
 import torch
 from torch.nn import functional as F
 from deep_training.trainer.pl.modelweighter import default_peft_weight_preprocess
@@ -131,14 +133,15 @@ class EngineAPI(EngineAPI_Base):
                               )
         return default_kwargs
 
-    def chat_stream(self, query, history=None, **kwargs):
+    def chat_stream(self,messages: List[Dict], **kwargs):
         args_process = GenerateProcess(self,is_stream=True)
         args_process.preprocess(kwargs)
         chunk = args_process.chunk
-        prompt = get_chat_default(self.tokenizer, query, history)
         default_kwargs= self.get_default_gen_args()
         default_kwargs.update(kwargs)
         generation_config = GenerationConfig(**args_process.postprocess(default_kwargs))
+        query, history = args_process.get_chat_info(messages)
+        prompt = get_chat_default(self.tokenizer, query, history)
 
         inputs = self.gen_core.build_tokens(prompt)
         from transformers_stream_generator.main import NewGenerationMixin, StreamGenerationConfig
@@ -173,12 +176,13 @@ class EngineAPI(EngineAPI_Base):
 
 
 
-    def chat(self, query, history=None, **kwargs):
+    def chat(self,messages: List[Dict], **kwargs):
         args_process = GenerateProcess(self)
         args_process.preprocess(kwargs)
-        prompt = get_chat_default(self.tokenizer, query, history)
         default_kwargs = self.get_default_gen_args()
         default_kwargs.update(kwargs)
+        query, history = args_process.get_chat_info(messages)
+        prompt = get_chat_default(self.tokenizer, query, history)
         response = self.gen_core.generate(query=prompt, **args_process.postprocess(default_kwargs))
         response = args_process.postprocess_response(response, **kwargs)
         # history = history + [(query, response)]
@@ -187,13 +191,17 @@ class EngineAPI(EngineAPI_Base):
             #"history": history
         })
 
-    def generate(self,query,**kwargs):
+    def generate(self,messages: List[Dict],**kwargs):
         args_process = GenerateProcess(self)
         default_kwargs = self.get_default_gen_args()
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
+        query = args_process.get_chat_info(messages,chat_format="generate")
         response = self.gen_core.generate(query=query, **kwargs)
-        return response
+        return CompletionResult(result={
+            "response": response,
+            #"history": history
+        })
 
     def embedding(self, query, **kwargs):
         model = self.get_model()

@@ -5,6 +5,8 @@
 import functools
 import json
 import os
+from typing import Dict, List
+
 import torch
 from torch.nn import functional as F
 from deep_training.trainer.pl.modelweighter import default_peft_weight_preprocess
@@ -145,18 +147,19 @@ class EngineAPI(EngineAPI_Base):
         )
         return default_kwargs
 
-    def chat_stream(self, query, history=None, **kwargs):
+    def chat_stream(self,messages: List[Dict], **kwargs):
         args_process = GenerateProcess(self,is_stream=True)
         args_process.preprocess(kwargs)
-        if self.is_openbuddy:
-            prompt = get_chat_openbuddy(self.tokenizer,query,history)
-        elif self.is_tigger:
-            prompt = get_chat_tiger(self.tokenizer,query, history)
-        else:
-            prompt = get_chat_default(self.tokenizer, query, history)
         default_kwargs = self.get_default_gen_args()
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
+        query, history = args_process.get_chat_info(messages)
+        if self.is_openbuddy:
+            prompt = get_chat_openbuddy(self.tokenizer, query, history)
+        elif self.is_tigger:
+            prompt = get_chat_tiger(self.tokenizer, query, history)
+        else:
+            prompt = get_chat_default(self.tokenizer, query, history)
         skip_word_list = default_kwargs.get('eos_token_id', None) or [self.tokenizer.eos_token_id]
         streamer = args_process.get_streamer(skip_word_list)
         inputs = self.gen_core.build_tokens(prompt)
@@ -166,18 +169,19 @@ class EngineAPI(EngineAPI_Base):
 
 
 
-    def chat(self, query, history=None, **kwargs):
+    def chat(self,messages: List[Dict], **kwargs):
         args_process = GenerateProcess(self)
         args_process.preprocess(kwargs)
+        default_kwargs = self.get_default_gen_args()
+        default_kwargs.update(kwargs)
+        args_process.postprocess(default_kwargs)
+        query, history = args_process.get_chat_info(messages)
         if self.is_openbuddy:
             prompt = get_chat_openbuddy(self.tokenizer,query, history)
         elif self.is_tigger:
             prompt = get_chat_tiger(self.tokenizer,query, history)
         else:
             prompt = get_chat_default(self.tokenizer, query, history)
-        default_kwargs = self.get_default_gen_args()
-        default_kwargs.update(kwargs)
-        args_process.postprocess(default_kwargs)
         response = self.gen_core.generate(query=prompt, **default_kwargs)
         response = args_process.postprocess_response(response, **kwargs)
         return CompletionResult(result={
@@ -186,13 +190,17 @@ class EngineAPI(EngineAPI_Base):
         })
 
 
-    def generate(self,query,**kwargs):
+    def generate(self,messages: List[Dict],**kwargs):
         args_process = GenerateProcess(self)
         default_kwargs = self.get_default_gen_args()
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
+        query = args_process.get_chat_info(messages,chat_format="generate")
         response = self.gen_core.generate(query=query, **default_kwargs)
-        return response
+        return CompletionResult(result={
+            "response": response,
+            #"history": history
+        })
 
     def embedding(self, query, **kwargs):
         model = self.get_model()
