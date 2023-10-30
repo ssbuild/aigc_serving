@@ -46,10 +46,10 @@ class CustomChatParams(BaseModel):
     functions: Optional[List[Dict[str, Any]]] = None
     function_call: Union[str, Dict[str, str]] = "auto"
 
+    class Config:
+        underscore_attrs_are_private = True
 #   私有成员
     _model_type: Optional[str] = None
-
-
 
     @property
     def model_type(self):

@@ -81,7 +81,7 @@ class ChatCompletionRequest(CustomChatParams):
     messages: List[ChatMessage]
 
     def build_messages(self):
-        messages = [message.json() for message in self.messages]
+        messages = [message.dict() for message in self.messages]
         assert self.messages[-1].role in [Role.USER,Role.OBSERVATION]
         return [messages]
 
