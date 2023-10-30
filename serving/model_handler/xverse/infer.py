@@ -4,6 +4,8 @@
 # @File：infer
 import json
 import os
+from typing import Dict, List
+
 import torch
 from torch.nn import functional as F
 from deep_training.trainer.pl.modelweighter import default_peft_weight_preprocess
@@ -23,25 +25,6 @@ from serving.prompt import *
 class NN_DataHelper(DataHelper):pass
 
 
-def build_messages(query,history = None):
-    if history is None:
-        history = []
-    messages = []
-    for q, a in history:
-        messages.append({
-            "role": "user",
-            "content": q
-        })
-        messages.append({
-            "role": "assistant",
-            "content": a
-        })
-
-    messages.append({
-        "role": "user",
-        "content": query
-    })
-    return messages
 
 
 class EngineAPI(EngineAPI_Base):
@@ -158,7 +141,7 @@ class EngineAPI(EngineAPI_Base):
         }
         return default_kwargs
 
-    def chat_stream(self, query, history=None, **kwargs):
+    def chat_stream(self,messages: List[Dict], **kwargs):
         args_process = GenerateProcess(self,is_stream=True)
         args_process.preprocess(kwargs)
         default_kwargs = self.get_default_gen_args()
@@ -167,19 +150,20 @@ class EngineAPI(EngineAPI_Base):
 
         stopping_criteria = default_kwargs.pop('stopping_criteria',None)
         generation_config = GenerationConfig(**default_kwargs)
-        messages = build_messages(query, history)
+
 
         skip_word_list = default_kwargs.get('eos_token_id', None) or [self.tokenizer.eos_token_id]
         streamer = args_process.get_streamer(skip_word_list)
-        self.get_model().chat(tokenizer=self.tokenizer,messages=messages,
-                                  generation_config=generation_config,
-                                  streamer=streamer,
-                                  stopping_criteria=stopping_criteria)
+        self.get_model().chat(tokenizer=self.tokenizer,
+                              messages=messages,
+                              generation_config=generation_config,
+                              streamer=streamer,
+                              stopping_criteria=stopping_criteria)
         args_process.do_final_stream()
         return None
 
 
-    def chat(self, query, history=None, **kwargs):
+    def chat(self,messages: List[Dict], **kwargs):
         args_process = GenerateProcess(self)
         args_process.preprocess(kwargs)
         default_kwargs = self.get_default_gen_args()
@@ -187,8 +171,8 @@ class EngineAPI(EngineAPI_Base):
         args_process.postprocess(default_kwargs)
         stopping_criteria = default_kwargs.pop('stopping_criteria', None)
         generation_config = GenerationConfig(**default_kwargs)
-        messages = build_messages(query, history)
-        response = self.get_model().chat(tokenizer=self.tokenizer,messages=messages,
+        response = self.get_model().chat(tokenizer=self.tokenizer,
+                                         messages=messages,
                                          generation_config=generation_config,
                                          stopping_criteria=stopping_criteria)
         response = args_process.postprocess_response(response, **kwargs)
@@ -199,7 +183,7 @@ class EngineAPI(EngineAPI_Base):
         })
 
 
-    def generate(self,query,**kwargs):
+    def generate(self,messages: List[Dict],**kwargs):
         args_process = GenerateProcess(self)
         default_kwargs = dict(
             eos_token_id=self.config.eos_token_id,
@@ -208,10 +192,14 @@ class EngineAPI(EngineAPI_Base):
         )
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
+        query = args_process.get_chat_info(messages, chat_format="generate")
         response = Generate.generate(self.get_model(),
                                      tokenizer=self.tokenizer,
-                                     query=input,**kwargs)
-        return response
+                                     query=query,**kwargs)
+        return CompletionResult(result={
+            "response": response,
+            #"history": history
+        })
 
     def embedding(self, query, **kwargs):
         model = self.get_model()

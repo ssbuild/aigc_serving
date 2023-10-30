@@ -12,8 +12,8 @@ def postprocess(text):
     return text.replace("\\n", "\n").replace("\\t", "\t")
 
 
-def get_chat(tokenizer,query,history = None):
-    prompt = ''
+def get_chat(tokenizer,query,history = None,prefix=None):
+    prompt = prefix or ''
     if history is not None:
         for q, a in history:
             prompt += "用户：{}\n小元：{}".format(q, a)

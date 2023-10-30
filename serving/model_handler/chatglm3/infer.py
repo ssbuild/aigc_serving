@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 # @Author  : ssbuild
-# @Time    : 2023/7/10 16:42
+# @Time    : 2023/7/10 17:24
+import copy
 import json
 import os
-from typing import List, Dict
+from typing import Dict, List
 
 import torch
 from torch.nn import functional as F
@@ -11,33 +12,50 @@ from deep_training.trainer.pl.modelweighter import default_peft_weight_preproces
 from deep_training.data_helper import ModelArguments,DataHelper
 from deep_training.nlp.layers.rope_scale.patch import RotaryNtkScaledArguments
 from transformers import HfArgumentParser
-from aigc_zoo.model_zoo.chatglm.llm_model import MyTransformer, ChatGLMTokenizer, PetlArguments, setup_model_profile, \
-    ChatGLMConfig,PetlModel
+from aigc_zoo.model_zoo.chatglm3.llm_model import MyTransformer, ChatGLMTokenizer, PetlArguments, \
+    setup_model_profile, ChatGLMConfig
 from serving.model_handler.base import EngineAPI_Base,CompletionResult,LoraModelState, load_lora_config, GenerateProcess,WorkMode
 from serving.prompt import *
 
+
 class NN_DataHelper(DataHelper):pass
 
+
+def _preprocess_messages_for_chatglm3(messages: List[Dict]):
+    item = messages.pop(-1)
+    role,query = item["role"],item["content"]
+    history = []
+    for message in messages:
+        if message["role"] == "assistant":
+            output = message["content"]
+            for response in output.split("<|assistant|>"):
+                metadata, content = response.split("\n", maxsplit=1)
+                if not metadata.strip():
+                    content = content.strip()
+                    history.append({"role": "assistant", "metadata": metadata, "content": content})
+                else:
+                    history.append({"role": "assistant", "metadata": metadata, "content": content})
+        else:
+            history.append(copy.copy(message))
+    return role,query,history
 
 
 class EngineAPI(EngineAPI_Base):
 
     def _load_model(self,device_id=None):
+        
         parser = HfArgumentParser((ModelArguments,))
         (model_args,) = parser.parse_dict(self.model_config_dict["model_config"], allow_extra_keys=True)
-
         setup_model_profile()
-
         dataHelper = NN_DataHelper(model_args)
         tokenizer: ChatGLMTokenizer
-        tokenizer, config, _, _ = dataHelper.load_tokenizer_and_config(tokenizer_class_name=ChatGLMTokenizer,
-                                                                       config_class_name=ChatGLMConfig)
-        assert tokenizer.eos_token_id == 130005
-        config.initializer_weight = False
+        tokenizer, config, _, _ = dataHelper.load_tokenizer_and_config(
+            tokenizer_class_name=ChatGLMTokenizer, config_class_name=ChatGLMConfig)
 
         if self.ntk_scale > 1:
-            rope_args = RotaryNtkScaledArguments(model_type='chatglm',
-                                                 max_position_embeddings=config.max_sequence_length, alpha=self.ntk_scale)
+            rope_args = RotaryNtkScaledArguments(model_type='chatglm2',name='rotary_pos_emb',
+                                                 max_position_embeddings=2048,
+                                                 alpha=self.ntk_scale)
         else:
             rope_args = None
 
@@ -49,11 +67,12 @@ class EngineAPI(EngineAPI_Base):
             model_args.model_name_or_path = None
 
         pl_model = MyTransformer(config=config, model_args=model_args, torch_dtype=torch.float16,rope_args=rope_args )
+
         if is_enbale_ptv2:
             model_args.model_name_or_path = model_name_or_path
             assert os.path.isdir(model_name_or_path)
             # 加载微调权重
-            pl_model.load_sft_weight(os.path.join(model_name_or_path, "pytorch_model.bin"), strict=False)
+            pl_model.load_sft_weight(os.path.join(model_name_or_path,"pytorch_model.bin"), strict=False)
 
         model = pl_model.get_llm_model()
         model = model.eval()
@@ -71,8 +90,10 @@ class EngineAPI(EngineAPI_Base):
                 model.cuda()
             else:
                 model.cuda(device_id)
+
         return model,config,tokenizer
-    
+
+
 
     def _load_model_lora(self,device_id=None):
         parser = HfArgumentParser((ModelArguments,))
@@ -98,8 +119,9 @@ class EngineAPI(EngineAPI_Base):
             config.vocab_size = config.task_specific_params['vocab_size']
 
         if self.ntk_scale > 1:
-            rope_args = RotaryNtkScaledArguments(model_type='chatglm',
-                                                 max_position_embeddings=config.max_sequence_length, alpha=self.ntk_scale)
+            rope_args = RotaryNtkScaledArguments(model_type='chatglm2',name='rotary_pos_emb',
+                                                 max_position_embeddings=2048,
+                                                 alpha=self.ntk_scale)
         else:
             rope_args = None
         pl_model = MyTransformer(config=config, model_args=model_args,
@@ -114,8 +136,10 @@ class EngineAPI(EngineAPI_Base):
 
         for adapter_name, ckpt_dir in self.lora_conf.items():
             lora_args,ls_peft = load_lora_config(ckpt_dir)
-            pl_model.load_sft_weight(ckpt_dir, adapter_name=adapter_name, lora_config=lora_args,
+            pl_model.load_sft_weight(ckpt_dir, adapter_name=adapter_name,
+                                     lora_config=lora_args,
                                      map_preprocess=default_peft_weight_preprocess if ls_peft else None)
+
         self.lora_model = pl_model.backbone.eval()
         self.lora_state = LoraModelState.NONE
         if not self.is_config_quarted(config):
@@ -141,21 +165,18 @@ class EngineAPI(EngineAPI_Base):
         return self.lora_model, config, tokenizer
 
     def get_default_gen_args(self):
-        default_kwargs = dict(
-                              eos_token_id=self.model.config.eos_token_id,
-                              do_sample=True, top_p=0.7, temperature=0.95,
-                              )
+        default_kwargs = dict(do_sample=True, top_p=0.8, temperature=0.8,)
         return default_kwargs
 
     def chat_stream(self, messages: List[Dict], **kwargs):
         args_process = GenerateProcess(self,is_stream=True)
         args_process.preprocess(kwargs)
         chunk = args_process.chunk
-        default_kwargs=self.get_default_gen_args()
+        default_kwargs = self.get_default_gen_args()
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
-        query,history = args_process.get_chat_info(messages)
-        for response, history in self.model.stream_chat(self.tokenizer, query=query,history=history, **kwargs):
+        role,query,history = _preprocess_messages_for_chatglm3(messages)
+        for response, history in self.get_model().stream_chat(self.tokenizer, query=query,role=role,history=history,with_postprocess=False,**default_kwargs):
             chunk.step(response)
             if chunk.can_output():
                 text = chunk.step_text()
@@ -165,24 +186,27 @@ class EngineAPI(EngineAPI_Base):
                     "num_token": args_process.get_num_tokens()
                 }, complete=False)
 
-        # history = history + [(query, response)]
         text = chunk.final_text()
         if text is not None:
             yield CompletionResult(result={
                 "response": text,
-                #"history": history,
+                #"history": history + [(query, response)],
                 "num_token": args_process.get_num_tokens()
             }, complete=False)
 
     def chat(self,messages: List[Dict], **kwargs):
         args_process = GenerateProcess(self)
         args_process.preprocess(kwargs)
-        default_kwargs=self.get_default_gen_args()
+        default_kwargs = self.get_default_gen_args()
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
-        query, history = args_process.get_chat_info(messages)
-        response, history = self.model.chat(self.tokenizer, query=query,history=history, **default_kwargs)
-        response = args_process.postprocess_response(response, **kwargs)
+        role, query, history = _preprocess_messages_for_chatglm3(messages)
+        response, history = self.model.chat(self.tokenizer, query=query,role=role,history=messages,with_postprocess=False,**default_kwargs)
+        if isinstance(response,str):
+            response = args_process.postprocess_response(response, **kwargs)
+        else:
+            response = json.dumps(response,ensure_ascii=True)
+
         return CompletionResult(result={
             "response": response,
             #"history": history
@@ -190,11 +214,11 @@ class EngineAPI(EngineAPI_Base):
 
     def generate(self,messages: List[Dict],**kwargs):
         args_process = GenerateProcess(self)
-        default_kwargs=self.get_default_gen_args()
+        default_kwargs = self.get_default_gen_args()
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
-        query = args_process.get_chat_info(messages,chat_format="generate")
-        output,_ = self.model.chat(self.tokenizer, query=query,**default_kwargs)
+        query = messages[0]["content"]
+        output,_ = self.model.chat(self.tokenizer,query=query,with_postprocess=False, **default_kwargs)
         output_scores = default_kwargs.get('output_scores', False)
         if output_scores:
             return output
@@ -215,3 +239,4 @@ class EngineAPI(EngineAPI_Base):
         return CompletionResult(result={
             "response": embedding,
         })
+

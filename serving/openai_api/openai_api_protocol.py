@@ -20,6 +20,7 @@ class Role(str, Enum):
     ASSISTANT = "assistant"
     SYSTEM = "system"
     FUNCTION = "function"
+    OBSERVATION = "observation"
 
 
 class Finish(str, Enum):
@@ -77,39 +78,12 @@ class ChatMessage(BaseModel):
 
 
 class ChatCompletionRequest(CustomChatParams):
-    model: str
     messages: List[ChatMessage]
-    temperature: Optional[float] = 0.7
-    top_p: Optional[float] = 1.0
-    n: Optional[int] = 1
-    max_tokens: Optional[int] = 512
-    stop: Optional[Union[str, List[str]]] = None
-    stream: Optional[bool] = False
-    presence_penalty: Optional[float] = None
-    frequency_penalty: Optional[float] = None
-    user: Optional[str] = None
 
-
-
-    def build_query_history(self):
-        prev_messages = self.messages[:-1]
-        if len(prev_messages) > 0 and prev_messages[0].role == Role.SYSTEM:
-            prefix = prev_messages.pop(0).content
-        else:
-            prefix = ""
-
-        flag = False
-        history = []
-        if len(prev_messages) % 2 == 0:
-            for i in range(0, len(prev_messages), 2):
-                if prev_messages[i].role == Role.USER and prev_messages[i + 1].role == Role.ASSISTANT:
-                    history.append({
-                        "q": prefix + prev_messages[i].content if not flag else prev_messages[i].content ,
-                        "a": prev_messages[i + 1].content
-                    })
-                    flag = True
-        query = prefix + self.messages[-1].content if not flag else self.messages[-1].content
-        return (query,history)
+    def build_messages(self):
+        messages = [message.dict() for message in self.messages]
+        assert self.messages[-1].role in [Role.USER,Role.OBSERVATION]
+        return [messages]
 
 
 
@@ -210,10 +184,11 @@ class CompletionRequest(CustomChatParams):
     frequency_penalty: Optional[float] = 0.0
     user: Optional[str] = None
 
-    def build_query_history(self):
-        if isinstance(self.prompt,list):
-            return [(_,[]) for _ in self.prompt]
-        return [(self.prompt,[])]
+    def build_messages(self):
+        if isinstance(self.prompt,str):
+            self.prompt = [self.prompt]
+        messages_list = [[{"role": Role.USER,"content": prompt}] for prompt in self.prompt]
+        return messages_list
 
 class CompletionResponseChoice(BaseModel):
     index: int

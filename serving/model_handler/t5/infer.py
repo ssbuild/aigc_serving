@@ -4,7 +4,7 @@
 # @File：infer
 import json
 import os
-from typing import Tuple, List
+from typing import Tuple, List, Dict
 
 import torch
 from torch.nn import functional as F
@@ -32,7 +32,10 @@ class GenerateT5(Generate):
 
         outputs = self.model.generate(**inputs, **kwargs)
         response = self.post_process(outputs, 0, output_scores)
-        return response
+        return CompletionResult(result={
+            "response": response,
+            #"history": history
+        })
 
     @torch.no_grad()
     def chat(self, query: str, history: List[Tuple[str, str]] = None, **kwargs):
@@ -142,13 +145,14 @@ class EngineAPI(EngineAPI_Base):
         )
         return default_kwargs
 
-    def chat_stream(self, query, history=None, **kwargs):
+    def chat_stream(self,messages: List[Dict], **kwargs):
         args_process = GenerateProcess(self,is_stream=True)
         args_process.preprocess(kwargs)
-        prompt = get_chat_chatyaun(self.tokenizer, query, history)
         default_kwargs = self.get_default_gen_args()
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
+        query, history = args_process.get_chat_info(messages)
+        prompt = get_chat_chatyaun(self.tokenizer, query, history)
         skip_word_list = default_kwargs.get('eos_token_id', None) or [self.tokenizer.eos_token_id]
         streamer = args_process.get_streamer(skip_word_list,text_filter_fn=postprocess_chatyuan)
         self.gen_core.model.generate(**self.gen_core.build_tokens(prompt),streamer=streamer,  **default_kwargs)
@@ -156,13 +160,14 @@ class EngineAPI(EngineAPI_Base):
         return None
 
 
-    def chat(self, query, history=None, **kwargs):
+    def chat(self,messages: List[Dict], **kwargs):
         args_process = GenerateProcess(self)
         args_process.preprocess(kwargs)
-        prompt = get_chat_chatyaun(self.tokenizer, query, history)
         default_kwargs = self.get_default_gen_args()
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
+        query, history = args_process.get_chat_info(messages)
+        prompt = get_chat_chatyaun(self.tokenizer, query, history)
         response = self.gen_core.generate(prompt, **default_kwargs)
         response = postprocess_chatyuan(response)
         response = args_process.postprocess_response(response, **kwargs)
@@ -170,6 +175,20 @@ class EngineAPI(EngineAPI_Base):
         return CompletionResult(result={
             "response": response,
             #"history": history
+        })
+
+    def generate(self, messages: List[Dict], **kwargs):
+        args_process = GenerateProcess(self)
+        default_kwargs = self.get_default_gen_args()
+        default_kwargs.update(kwargs)
+        args_process.postprocess(default_kwargs)
+        query = args_process.get_chat_info(messages, chat_format="generate")
+        response = Generate.generate(self.get_model(),
+                                     tokenizer=self.tokenizer,
+                                     query=query, **default_kwargs)
+        return CompletionResult(result={
+            "response": response,
+            # "history": history
         })
 
 

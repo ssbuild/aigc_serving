@@ -32,11 +32,13 @@ def get_worker_instance(model_name,config,group_name,worker_idx):
             else:
                 from serving.model_handler.baichuan_7b.infer import EngineAPI
                 api_client = EngineAPI(config,group_name=group_name,worker_idx=worker_idx)
-    elif model_type == "chatglm" or model_type == "chatglm2":
-        if model_name.startswith("chatglm2"):
+    elif model_type == "chatglm" or model_type == "chatglm2" or model_type == "chatglm3":
+        if model_name.startswith("chatglm3"):
+            from serving.model_handler.chatglm3.infer import EngineAPI
+            api_client = EngineAPI(config, group_name=group_name, worker_idx=worker_idx)
+        elif model_name.startswith("chatglm2"):
             from serving.model_handler.chatglm2.infer import EngineAPI
             api_client = EngineAPI(config,group_name=group_name,worker_idx=worker_idx)
-
         elif model_name.startswith("chatglm"):
             from serving.model_handler.chatglm.infer import EngineAPI
             api_client = EngineAPI(config,group_name=group_name,worker_idx=worker_idx)
@@ -46,6 +48,9 @@ def get_worker_instance(model_name,config,group_name,worker_idx):
 
     elif model_type == "xverse":
         from serving.model_handler.xverse.infer import EngineAPI
+        api_client = EngineAPI(config, group_name=group_name, worker_idx=worker_idx)
+    elif model_name.startswith("causallm"):
+        from serving.model_handler.causallm.infer import EngineAPI
         api_client = EngineAPI(config, group_name=group_name, worker_idx=worker_idx)
     elif model_name.startswith("tiger") or model_name.startswith("llama"):
         from serving.model_handler.llama.infer import EngineAPI

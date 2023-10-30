@@ -3,6 +3,8 @@
 # @Time    : 2023/7/10 17:24
 import json
 import os
+from typing import List, Dict
+
 import torch
 from torch.nn import functional as F
 from deep_training.trainer.pl.modelweighter import default_peft_weight_preprocess
@@ -149,15 +151,15 @@ class EngineAPI(EngineAPI_Base):
                               )
         return default_kwargs
 
-    def chat_stream(self, query, **kwargs):
+    def chat_stream(self, messages: List[Dict], **kwargs):
         args_process = GenerateProcess(self,is_stream=True)
         args_process.preprocess(kwargs)
         chunk = args_process.chunk
         default_kwargs = self.get_default_gen_args()
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
-
-        for response, history in self.get_model().stream_chat(self.tokenizer, query=query, **default_kwargs):
+        query, history = args_process.get_chat_info(messages)
+        for response, history in self.get_model().stream_chat(self.tokenizer, query=query,history=history, **default_kwargs):
             chunk.step(response)
             if chunk.can_output():
                 text = chunk.step_text()
@@ -175,33 +177,35 @@ class EngineAPI(EngineAPI_Base):
                 "num_token": args_process.get_num_tokens()
             }, complete=False)
 
-    def chat(self, query, **kwargs):
+    def chat(self,messages: List[Dict], **kwargs):
         args_process = GenerateProcess(self)
         args_process.preprocess(kwargs)
         default_kwargs = self.get_default_gen_args()
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
-        response, history = self.model.chat(self.tokenizer, query=query,  **default_kwargs)
+        query, history = args_process.get_chat_info(messages)
+        response, history = self.model.chat(self.tokenizer, query=query,history=history, **default_kwargs)
         response = args_process.postprocess_response(response, **kwargs)
         return CompletionResult(result={
             "response": response,
             #"history": history
         })
 
-    def generate(self,query,**kwargs):
+    def generate(self,messages: List[Dict],**kwargs):
         args_process = GenerateProcess(self)
-        default_kwargs = dict(
-            eos_token_id=self.model.config.eos_token_id,
-            do_sample=True, top_p=0.7, temperature=0.95,
-        )
+        default_kwargs = self.get_default_gen_args()
         default_kwargs.update(kwargs)
         args_process.postprocess(default_kwargs)
-        output,_ = self.model.chat(self.tokenizer, query=query, **default_kwargs)
+        query = args_process.get_chat_info(messages,chat_format="generate")
+        output,_ = self.model.chat(self.tokenizer, query=query,**default_kwargs)
         output_scores = default_kwargs.get('output_scores', False)
         if output_scores:
             return output
         response, history = output
-        return response
+        return CompletionResult(result={
+            "response": response,
+            #"history": history
+        })
 
     def embedding(self, query, **kwargs):
         model = self.get_model()

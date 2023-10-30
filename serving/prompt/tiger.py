@@ -4,7 +4,7 @@
 # @FileName: tigger
 
 
-def get_chat(tokenizer,query,history = None):
+def get_chat(tokenizer,query,history = None,prefix=None):
     if history is None:
         history = []
 
@@ -13,7 +13,7 @@ def get_chat(tokenizer,query,history = None):
 
     # eos_token =  tokenizer.eos_token or ''
     eos_token = ''
-    prompt_text = ''
+    prompt_text = prefix or ''
     for q,a in history:
         prompt_text += tok_ins + q + tok_res + a + eos_token
 

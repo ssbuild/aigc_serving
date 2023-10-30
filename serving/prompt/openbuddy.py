@@ -17,12 +17,12 @@ Assistant: Hi, I'm Buddy, your AI assistant. How can I help you today?😊
 
 
 
-def get_chat(tokenizer,query,history = None):
+def get_chat(tokenizer,query,history = None,prefix=None):
     if history is None:
         history = []
 
     eos_token =  tokenizer.eos_token or ''
-    prompt_text = ''
+    prompt_text = prefix or ''
     for q,a in history:
         prompt_text += "User: {}\nAssistant:{}".format(q,a) + eos_token
 

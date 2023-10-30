@@ -1,8 +1,10 @@
 import json
-import typing
-from typing import Tuple, Union
-
+from typing import Tuple, Union, List
 from serving.openai_api.openai_api_protocol import ChatMessage
+
+__all__ = [
+    'get_react_prompt_for_qwen'
+]
 
 TOOL_DESC = """{name_for_model}: Call this tool to interact with the {name_for_human} API. What is the {name_for_human} API useful for? {description_for_model} Parameters: {parameters} Format the arguments as a JSON object."""
 
@@ -26,11 +28,9 @@ Begin!
 Question: {query}"""
 
 
-__all__ = [
-    'get_qwen_react_prompt'
-]
 
-def get_qwen_react_prompt(messages: typing.List[ChatMessage], functions=None, function_call="auto"):
+
+def get_react_prompt_for_qwen(messages: List[ChatMessage], functions=None, function_call="auto"):
     if functions is not None:
         if "name" in functions[0]:
             new_function = []
