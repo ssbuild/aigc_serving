@@ -250,7 +250,7 @@ class GenerateProcess:
                 response = response[:pos]
         return response
 
-    def get_streamer(self,skip_word_list,text_filter_fn=Optional[Callable]):
+    def get_streamer(self,skip_word_list,text_filter_fn:Optional[Callable] = None):
         def process_token_fn(text, stream_end,user_data: Tuple):
             chunk: ChunkData
             chunk,this_obj = user_data
