@@ -45,7 +45,6 @@ def get_worker_instance(model_name,config,group_name,worker_idx):
     elif model_type == "t5":
         from serving.model_handler.t5.infer import EngineAPI
         api_client = EngineAPI(config, group_name=group_name, worker_idx=worker_idx)
-
     elif model_type == "xverse":
         from serving.model_handler.xverse.infer import EngineAPI
         api_client = EngineAPI(config, group_name=group_name, worker_idx=worker_idx)
