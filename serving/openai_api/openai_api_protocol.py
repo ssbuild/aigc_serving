@@ -91,7 +91,7 @@ class ChatCompletionRequest(CustomChatParams):
 class ChatFunctionCallResponse(BaseModel):
     name: str
     arguments: str
-    thought: str = None
+    thought: Optional[str] = None
 
 
 
