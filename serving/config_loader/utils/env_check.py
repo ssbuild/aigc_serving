@@ -6,7 +6,8 @@ import os
 import socket
 
 __all__ = [
-    'check_config'
+    "load_config_from_yaml",
+    "check_config",
 ]
 
 import yaml
@@ -54,17 +55,20 @@ def check_config(global_models_info_args):
                 conf["TORCH_SHOW_CPP_STACKTRACES"] = "1"
 
 
-def load_config_yaml(path_dir = None):
-    if path_dir is None:
-        path_dir = os.path.abspath(os.path.dirname(__file__))
+def load_config_from_yaml(path_file):
+    serve_args = None
+    model_config = {}
+    if os.path.isfile(path_file):
+        path_file = [path_file]
+    else:
+        fs = os.listdir(path_file)
+        path_file = [os.path.join(path_file,_) for _ in fs if _.lower().endswith('.yaml')]
 
-    yaml_config = {}
-    fs = os.listdir(path_dir)
-    fs = [os.path.join(path_dir,_) for _ in fs if _.lower().endswith('.yaml')]
-    for file in fs:
+    for file in path_file:
         with open(file,mode='r',encoding='utf-8') as f:
             c = yaml.full_load(f)
-        for k,conf in c.items():
+        serve_args = serve_args or c.pop("serve_args",None)
+        for model_name,conf in c.items():
             if not isinstance(conf,dict):
                 continue
             if 'model_config' not in conf:
@@ -72,6 +76,6 @@ def load_config_yaml(path_dir = None):
                 continue
             if not conf.get('enable',False):
                 continue
-            yaml_config[k] = conf
+            model_config[model_name] = conf
 
-    return yaml_config
+    return serve_args,model_config

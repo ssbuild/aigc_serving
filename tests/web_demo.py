@@ -11,7 +11,7 @@ openai.api_base = "http://192.168.101.30:8081/v1"
 import sys 
 sys.path.append(".") 
 
-from serving.config_parser.main import global_models_info_args
+from serving.config_loader.main import global_models_info_args
 
 models = list()
 for model_name,model_config in global_models_info_args.items():

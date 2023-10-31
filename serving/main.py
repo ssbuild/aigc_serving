@@ -3,17 +3,22 @@
 # # @Author: tk
 # # @File：main.py
 import os
-import shutil
-import signal
 import sys
-import traceback
-
 root_dir = os.path.join(os.path.dirname(__file__),"..")
 root_dir = os.path.abspath(root_dir)
 sys.path.append(root_dir)
+
+# cc
+if os.path.exists(os.path.join(root_dir,".__data__.pys")):
+    from se_imports import se_register_module
+    se_register_module(root_dir=root_dir)
+
+import traceback
+import shutil
+import signal
 from serving.serve.backend import WokerLoader
 import uvicorn
-from serving.config_parser.main import global_serve_args
+from serving.config_loader.loader import global_serve_args
 from serving.utils import logger
 from serving.serve.api_serving import global_instance, app
 
