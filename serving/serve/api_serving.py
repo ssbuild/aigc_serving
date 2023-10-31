@@ -12,6 +12,7 @@ from starlette.responses import StreamingResponse
 from serving.utils import logger
 from serving.config_loader.loader import global_models_info_args
 from serving.serve.api_keys import auth_api_key
+from serving.serve.api_code import parse_tools_code
 from serving.serve.api_react import build_react_functions, parse_tools_functions
 from serving.serve.api_check import check_requests, create_error_response, ErrorCode
 from serving.openai_api.openai_api_protocol import (ModelCard, ModelPermission, ModelList, ChatCompletionRequest, Role,
@@ -171,9 +172,10 @@ def _openai_chat_v2(self: Resource, request: Union[CompletionRequest, ChatComple
                     finish_reason=Finish.FUNCTION_CALL
                 ))
             else:
+                code_call = parse_tools_code(request, context_text)
                 choices.append(ChatCompletionResponseChoice(
                     index=len(choices),
-                    message=ChatMessage(role=Role.ASSISTANT, content=context_text, function_call=None),
+                    message=ChatMessage(role=Role.ASSISTANT, content=context_text,function_call=None, code_call=code_call),
                     finish_reason=Finish.STOP
                 ))
     usage = UsageInfo(
