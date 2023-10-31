@@ -17,7 +17,7 @@ from serving.openai_api.openai_api_protocol import (ModelCard, ModelPermission, 
     CompletionResponseChoice, CompletionResponseStreamChoice, CompletionStreamResponse, CompletionResponse, \
     ChatFunctionCallResponse, EmbeddingsRequest, EmbeddingsResponse)
 from serving.serve.api_keys import auth_api_key
-from serving.serve.api_react import build_request_functions
+from serving.serve.api_react import build_react_functions
 from serving.react.qwen.react_prompt import parse_qwen_plugin_call
 from serving.serve.api_check import check_requests, create_error_response, ErrorCode
 
@@ -60,6 +60,9 @@ class Resource:
         request.model = self.alias_map[request.model]
         request._model_type = global_models_info_args[request.model]["model_config"]["model_type"]
         return None
+
+    def build_react_function(self,request):
+        return build_react_functions(request)
 
 _g_instance = Resource()
 
@@ -121,12 +124,12 @@ def create_chat_completion(request: Union[CompletionRequest,ChatCompletionReques
     self = global_instance()
     try:
         logger.info(request.json(indent=2,ensure_ascii=False))
-        error_check_ret = check_requests(request)
-        if error_check_ret is not None:
-            return error_check_ret
-        error_check_ret = self.check_model(request)
-        if error_check_ret is not None:
-            return error_check_ret
+        ret = check_requests(request)
+        if ret is not None:
+            return ret
+        ret = self.check_model(request)
+        if ret is not None:
+            return ret
 
         if request.stream:
             _openai_chat_stream_generate = _openai_chat_stream_v2(self,request) if isinstance(request,ChatCompletionRequest) else _openai_chat_stream_v1(self,request)
@@ -203,10 +206,7 @@ def _process_chatglm3_function(request: Union[CompletionRequest,ChatCompletionRe
 
 
 def _openai_chat_v2(self: Resource,request: Union[CompletionRequest,ChatCompletionRequest]):
-    functions = None
-    if request.model_type in ["qwen","chatglm","chatglm3"]:
-        functions = build_request_functions(request,model_type=request.model_type)
-    self = global_instance()
+    functions = self.build_react_function(request)
     rs = request.build_request()
     choices = []
     prompt_length, response_length = 0, 0
@@ -228,7 +228,7 @@ def _openai_chat_v2(self: Resource,request: Union[CompletionRequest,ChatCompleti
                 if request.model_type == "qwen":
                     function_call = _process_qwen_function(request,functions,context_text)
                     context_text = None
-                elif request.model_type == "chatglm":
+                elif request.model_type == ["chatglm""chatglm3"]:
                     function_call = _process_chatglm3_function(request,functions, context_text)
                 else:
                     function_call = None
