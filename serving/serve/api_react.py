@@ -8,7 +8,10 @@ from serving.react.qwen.react_prompt import get_react_prompt_for_qwen
 from serving.react.chaglm3.react_prompt import get_react_prompt_for_chatglm3
 
 
-def build_request_functions(request: Union[CompletionRequest,ChatCompletionRequest],model_type):
+def build_react_functions(request: Union[CompletionRequest,ChatCompletionRequest]):
+    if request.model_type not in ["qwen","chatglm","chatglm3"]:
+        return None
+
     function_call = request.function_call
     functions = request.functions
     messages = request.messages
@@ -18,11 +21,11 @@ def build_request_functions(request: Union[CompletionRequest,ChatCompletionReque
             if message.functions:
                 use_function = True
                 break
-
+    model_type = request.model_type
     if functions is not None or use_function:
         if model_type == "qwen":
             request.messages, functions = get_react_prompt_for_qwen(messages, functions, function_call)
-        elif model_type == "chatglm3":
+        elif model_type in ["chatglm","chatglm3"]:
             request.messages, functions = get_react_prompt_for_chatglm3(messages, functions, function_call)
 
     return functions
