@@ -6,7 +6,7 @@ import json
 from typing import Union, Optional
 from serving.openai_api.openai_api_protocol import CompletionRequest, ChatCompletionRequest, ChatFunctionCallResponse
 from serving.react.qwen.react_prompt import get_react_prompt_for_qwen, parse_qwen_plugin_call
-from serving.react.chaglm3.react_prompt import get_react_prompt_for_chatglm3
+from serving.react.chatglm3.react_prompt import get_react_prompt_for_chatglm3
 
 __all__ = [
     'build_react_functions',
@@ -73,11 +73,13 @@ def _process_qwen_function(request: Union[CompletionRequest,ChatCompletionReques
 def _process_chatglm3_function(request: Union[CompletionRequest,ChatCompletionRequest],
                                functions,
                                context_text)-> Optional[ChatFunctionCallResponse]:
+    thought= ""
     for response in context_text.split("<|assistant|>"):
         metadata, content = response.split("\n", maxsplit=1)
         if not metadata.strip():
             content = content.strip()
             content = content.replace("[[训练时间]]", "2023年")
+            thought += content
         else:
             if request.messages[0].role == "system":
                 content = "\n".join(content.split("\n")[1:-1])
@@ -89,13 +91,13 @@ def _process_chatglm3_function(request: Union[CompletionRequest,ChatCompletionRe
                 content = {"name": metadata.strip(), "content": content}
 
     jd = content
-    if "parameters" not in jd and not isinstance(jd["parameters"], dict):
+    if not isinstance(jd,dict) or ("parameters" not in jd and not isinstance(jd["parameters"], dict)):
         function_call = None
     else:
         parameters = jd["parameters"]
         # if plugin_name contains other str
         available_functions = [f.get("name", None) for f in functions]
-        plugin_name = jd.get("name", None)
+        plugin_name = jd.get("name", "")
         if plugin_name not in available_functions:
             for fct in available_functions:
                 if fct in plugin_name:
@@ -103,6 +105,7 @@ def _process_chatglm3_function(request: Union[CompletionRequest,ChatCompletionRe
                     break
         function_call = ChatFunctionCallResponse(
             name=plugin_name,
+            thought=thought,
             arguments=parameters if isinstance(parameters,str) else json.dumps(parameters, ensure_ascii=False),
         )
     return function_call
