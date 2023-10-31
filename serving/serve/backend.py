@@ -6,7 +6,7 @@ import os
 import multiprocessing
 from serving.workers import llm_worker
 from ipc_worker.ipc_zmq_loader import IPC_zmq, ZMQ_process_worker # noqa
-from serving.config_parser.main import global_models_info_args
+from serving.config_loader.loader import global_models_info_args
 from serving.utils import logger
 
 class WokerLoader:

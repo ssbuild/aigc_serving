@@ -39,7 +39,7 @@ class EngineAPI_Base(ABC):
         self.current_adapter_name = ''
         self.lora_conf = model_config_dict['model_config']['lora']
         self.muti_lora_num = len(self.lora_conf.keys())
-        self.work_mode_str = model_config_dict['work_mode'].lower()
+        self.work_mode_str = model_config_dict['work_mode'].strip().lower()
         device_id = model_config_dict['workers'][worker_idx]['device_id']
         if device_id is None:
             device_id = [0]
@@ -402,8 +402,3 @@ class EngineAPI_Base(ABC):
             result_tuple = self.pull_response()
             return result_tuple
         return self._do_work(r)
-
-
-
-
-

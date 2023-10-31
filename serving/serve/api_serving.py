@@ -10,27 +10,29 @@ from fastapi import FastAPI, Depends
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import StreamingResponse
 from serving.utils import logger
-from serving.config_parser.main import global_models_info_args
-from serving.openai_api.openai_api_protocol import (ModelCard, ModelPermission, ModelList, ChatCompletionRequest, Role, \
-    ChatCompletionResponseStreamChoice, DeltaMessage, ChatCompletionStreamResponse, Finish, \
-    ChatCompletionResponseChoice, ChatMessage, UsageInfo, ChatCompletionResponse, CompletionRequest, \
-    CompletionResponseChoice, CompletionResponseStreamChoice, CompletionStreamResponse, CompletionResponse, \
-    ChatFunctionCallResponse, EmbeddingsRequest, EmbeddingsResponse)
+from serving.config_loader.loader import global_models_info_args
 from serving.serve.api_keys import auth_api_key
-from serving.serve.api_react import build_react_functions
-from serving.react.qwen.react_prompt import parse_qwen_plugin_call
+from serving.serve.api_react import build_react_functions, parse_tools_functions
 from serving.serve.api_check import check_requests, create_error_response, ErrorCode
+from serving.openai_api.openai_api_protocol import (ModelCard, ModelPermission, ModelList, ChatCompletionRequest, Role,
+                                                    ChatCompletionResponseStreamChoice, DeltaMessage,
+                                                    ChatCompletionStreamResponse, Finish,
+                                                    ChatCompletionResponseChoice, ChatMessage, UsageInfo,
+                                                    ChatCompletionResponse, CompletionRequest,
+                                                    CompletionResponseChoice, CompletionResponseStreamChoice,
+                                                    CompletionStreamResponse, CompletionResponse,
+                                                    EmbeddingsRequest, EmbeddingsResponse)
+
 
 
 class Resource:
     def __init__(self):
-       self.valid_model_map = self._get_model_mapper
-       self.alias_map = self._get_alias_mapper
-       self.lifespan = None
+        self.valid_model_map = self._get_model_mapper
+        self.alias_map = self._get_alias_mapper
+        self.lifespan = None
 
-    def set_mapper(self,queue_mapper):
+    def set_mapper(self, queue_mapper):
         self.queue_mapper = queue_mapper
-
 
     @cached_property
     def _get_alias_mapper(self):
@@ -50,10 +52,9 @@ class Resource:
 
     @cached_property
     def _get_model_mapper(self):
-        return {k:v for k, v in global_models_info_args.items() if v["enable"]}
+        return {k: v for k, v in global_models_info_args.items() if v["enable"]}
 
-
-    def check_model(self,request):
+    def check_model(self, request):
         if request.model not in self.alias_map:
             msg = "{} Invalid model: model not in [".format(request.model) + ','.join(self.alias_map) + "]"
             return create_error_response(ErrorCode.INVALID_MODEL, msg)
@@ -61,15 +62,16 @@ class Resource:
         request._model_type = global_models_info_args[request.model]["model_config"]["model_type"]
         return None
 
-    def build_react_function(self,request):
+    def build_react_function(self, request):
         return build_react_functions(request)
 
+
 _g_instance = Resource()
+
 
 def global_instance() -> Resource:
     global _g_instance
     return _g_instance
-
 
 
 app = FastAPI()
@@ -82,28 +84,26 @@ app.add_middleware(  # 添加中间件
 )
 
 
-
-
-
-
 @app.get("/")
 def read_root():
     return {"aigc_serving": "hello world"}
 
+
 @app.get("/v1/models", dependencies=[Depends(auth_api_key)])
 def list_models():
-    models = [(k,v.get('alias',None),v['model_config'].get('lora',{}),v.get('auto_merge_lora_single',False)) for k, v in global_models_info_args.items() if v["enable"]]
+    models = [(k, v.get('alias', None), v['model_config'].get('lora', {}), v.get('auto_merge_lora_single', False)) for
+              k, v in global_models_info_args.items() if v["enable"]]
     # models.sort()
     # TODO: return real model permission details
     model_cards = []
-    for m,alias,lora_conf,auto_merge_lora_single in models:
+    for m, alias, lora_conf, auto_merge_lora_single in models:
         adapters = None
         if len(lora_conf) > 1 or (len(lora_conf) == 1 and not auto_merge_lora_single):
             adapters = list(lora_conf.keys())
 
         sub_models = [m]
         if alias is not None:
-            if isinstance(alias,list):
+            if isinstance(alias, list):
                 sub_models.extend(alias)
             else:
                 sub_models.append(alias)
@@ -116,14 +116,12 @@ def list_models():
     return ModelList(data=model_cards)
 
 
-
-
 @app.post("/v1/completions", dependencies=[Depends(auth_api_key)])
 @app.post("/v1/chat/completions", dependencies=[Depends(auth_api_key)])
-def create_chat_completion(request: Union[CompletionRequest,ChatCompletionRequest]):
+def create_chat_completion(request: Union[CompletionRequest, ChatCompletionRequest]):
     self = global_instance()
     try:
-        logger.info(request.json(indent=2,ensure_ascii=False))
+        logger.info(request.json(indent=2, ensure_ascii=False))
         ret = check_requests(request)
         if ret is not None:
             return ret
@@ -132,86 +130,26 @@ def create_chat_completion(request: Union[CompletionRequest,ChatCompletionReques
             return ret
 
         if request.stream:
-            _openai_chat_stream_generate = _openai_chat_stream_v2(self,request) if isinstance(request,ChatCompletionRequest) else _openai_chat_stream_v1(self,request)
+            _openai_chat_stream_generate = _openai_chat_stream_v2(self, request) if isinstance(request,
+                                                                                               ChatCompletionRequest) else _openai_chat_stream_v1(
+                self, request)
             return StreamingResponse(_openai_chat_stream_generate, media_type="text/event-stream")
         else:
-            return _openai_chat_v2(self,request) if isinstance(request,ChatCompletionRequest) else _openai_chat_v1(self,request)
+            return _openai_chat_v2(self, request) if isinstance(request, ChatCompletionRequest) else _openai_chat_v1(
+                self, request)
     except Exception as e:
         traceback.print_exc()
         logger.info(e)
         return create_error_response(ErrorCode.INTERNAL_ERROR, str(e))
 
 
-
-
-def _process_qwen_function(request: Union[CompletionRequest,ChatCompletionRequest],
-                           functions,
-                           context_text)-> Optional[ChatFunctionCallResponse]:
-    function_call = None
-    if "Thought:" in context_text:
-        react_res = parse_qwen_plugin_call(context_text)
-        if react_res is not None:
-            # if plugin_name contains other str
-            available_functions = [ f.get("name", None) or f.get("name_for_model", None) for f in functions ]
-            plugin_name = react_res[ 1 ]
-            if plugin_name not in available_functions:
-                for fct in available_functions:
-                    if fct in plugin_name:
-                        plugin_name = fct
-                        break
-
-            function_call = ChatFunctionCallResponse(
-                thought=react_res[ 0 ],
-                name=plugin_name,
-                arguments=react_res[ 2 ],
-            )
-    return function_call
-
-def _process_chatglm3_function(request: Union[CompletionRequest,ChatCompletionRequest],
-                               functions,
-                               context_text)-> Optional[ChatFunctionCallResponse]:
-    for response in context_text.split("<|assistant|>"):
-        metadata, content = response.split("\n", maxsplit=1)
-        if not metadata.strip():
-            content = content.strip()
-            content = content.replace("[[训练时间]]", "2023年")
-        else:
-            if request.messages[0].role == "system":
-                content = "\n".join(content.split("\n")[1:-1])
-                def tool_call(**kwargs):
-                    return kwargs
-                parameters = eval(content)
-                content = {"name": metadata.strip(), "parameters": parameters}
-            else:
-                content = {"name": metadata.strip(), "content": content}
-
-    jd = content
-    if "parameters" not in jd and not isinstance(jd["parameters"], dict):
-        function_call = None
-    else:
-        parameters = jd["parameters"]
-        # if plugin_name contains other str
-        available_functions = [f.get("name", None) for f in functions]
-        plugin_name = jd.get("name", None)
-        if plugin_name not in available_functions:
-            for fct in available_functions:
-                if fct in plugin_name:
-                    plugin_name = fct
-                    break
-        function_call = ChatFunctionCallResponse(
-            name=plugin_name,
-            arguments=parameters if isinstance(parameters,str) else json.dumps(parameters, ensure_ascii=False),
-        )
-    return function_call
-
-
-def _openai_chat_v2(self: Resource,request: Union[CompletionRequest,ChatCompletionRequest]):
+def _openai_chat_v2(self: Resource, request: Union[CompletionRequest, ChatCompletionRequest]):
     functions = self.build_react_function(request)
     rs = request.build_request()
     choices = []
     prompt_length, response_length = 0, 0
     for r in rs:
-        for i in range(max(1,request.n)):
+        for i in range(max(1, request.n)):
             instance = self.queue_mapper[request.model]
             request_id = instance.put(r)
             result = instance.get(request_id)
@@ -225,22 +163,17 @@ def _openai_chat_v2(self: Resource,request: Union[CompletionRequest,ChatCompleti
             response_length += len(result["response"])
             context_text = result["response"]
             if functions is not None:
-                if request.model_type == "qwen":
-                    function_call = _process_qwen_function(request,functions,context_text)
-                    context_text = None
-                elif request.model_type == ["chatglm""chatglm3"]:
-                    function_call = _process_chatglm3_function(request,functions, context_text)
-                else:
-                    function_call = None
+                function_call = parse_tools_functions(request, functions, context_text)
                 choices.append(ChatCompletionResponseChoice(
                     index=len(choices),
-                    message=ChatMessage(role=Role.ASSISTANT, content=context_text, function_call=function_call,functions=functions),
+                    message=ChatMessage(role=Role.ASSISTANT, content=context_text, function_call=function_call,
+                                        functions=functions),
                     finish_reason=Finish.FUNCTION_CALL
                 ))
             else:
                 choices.append(ChatCompletionResponseChoice(
                     index=len(choices),
-                    message=ChatMessage(role=Role.ASSISTANT, content=context_text,function_call=None),
+                    message=ChatMessage(role=Role.ASSISTANT, content=context_text, function_call=None),
                     finish_reason=Finish.STOP
                 ))
     usage = UsageInfo(
@@ -250,12 +183,13 @@ def _openai_chat_v2(self: Resource,request: Union[CompletionRequest,ChatCompleti
     )
     return ChatCompletionResponse(model=request.model, choices=choices, usage=usage)
 
-def _openai_chat_stream_v2(self: Resource,request: Union[CompletionRequest,ChatCompletionRequest]):
+
+def _openai_chat_stream_v2(self: Resource, request: Union[CompletionRequest, ChatCompletionRequest]):
     for i in range(max(1, request.n)):
         idx = i
         choice_data = ChatCompletionResponseStreamChoice(
             index=idx,
-            delta=DeltaMessage(role=Role.ASSISTANT,content=''),
+            delta=DeltaMessage(role=Role.ASSISTANT, content=''),
             finish_reason=None
         )
         chunk = ChatCompletionStreamResponse(model=request.model, choices=[choice_data])
@@ -267,7 +201,7 @@ def _openai_chat_stream_v2(self: Resource,request: Union[CompletionRequest,ChatC
 
         request_seq_id = 1
         while True:
-            result = instance.get(request_id,request_seq_id)
+            result = instance.get(request_id, request_seq_id)
             request_seq_id += 1
             if result["code"] != 0:
                 yield f"data: {json.dumps(result, ensure_ascii=False)}\n\n"
@@ -276,7 +210,7 @@ def _openai_chat_stream_v2(self: Resource,request: Union[CompletionRequest,ChatC
             elif not result["complete"] and len(result["response"]) > 0:
                 choice_data = ChatCompletionResponseStreamChoice(
                     index=idx,
-                    delta=DeltaMessage(role=Role.ASSISTANT,content=result["response"]),
+                    delta=DeltaMessage(role=Role.ASSISTANT, content=result["response"]),
                     finish_reason=None
                 )
                 chunk = ChatCompletionStreamResponse(model=request.model, choices=[choice_data])
@@ -284,7 +218,6 @@ def _openai_chat_stream_v2(self: Resource,request: Union[CompletionRequest,ChatC
 
             if result["complete"]:
                 break
-
 
         choice_data = ChatCompletionResponseStreamChoice(
             index=idx,
@@ -296,19 +229,12 @@ def _openai_chat_stream_v2(self: Resource,request: Union[CompletionRequest,ChatC
     yield "data: [DONE]\n\n"
 
 
-
-
-
-
-
-
-
-def _openai_chat_v1(self: Resource,request: CompletionRequest):
+def _openai_chat_v1(self: Resource, request: CompletionRequest):
     rs = request.build_request()
     choices = []
     prompt_length, response_length = 0, 0
     for r in rs:
-        for i in range(max(1,request.n)):
+        for i in range(max(1, request.n)):
             instance = self.queue_mapper[request.model]
             request_id = instance.put(r)
             result = instance.get(request_id)
@@ -333,7 +259,8 @@ def _openai_chat_v1(self: Resource,request: CompletionRequest):
     )
     return CompletionResponse(model=request.model, choices=choices, usage=usage)
 
-def _openai_chat_stream_v1(self: Resource,request: CompletionRequest):
+
+def _openai_chat_stream_v1(self: Resource, request: CompletionRequest):
     for i in range(max(1, request.n)):
         idx = i
         choice_data = CompletionResponseStreamChoice(
@@ -349,7 +276,7 @@ def _openai_chat_stream_v1(self: Resource,request: CompletionRequest):
         request_id = instance.put(r)
         request_seq_id = 1
         while True:
-            result = instance.get(request_id,request_seq_id)
+            result = instance.get(request_id, request_seq_id)
             request_seq_id += 1
             if result["code"] != 0:
                 yield f"data: {json.dumps(result, ensure_ascii=False)}\n\n"
@@ -367,7 +294,6 @@ def _openai_chat_stream_v1(self: Resource,request: CompletionRequest):
             if result["complete"]:
                 break
 
-
         choice_data = CompletionResponseStreamChoice(
             index=idx,
             text="",
@@ -376,14 +302,6 @@ def _openai_chat_stream_v1(self: Resource,request: CompletionRequest):
         chunk = CompletionStreamResponse(model=request.model, choices=[choice_data])
         yield f"data: {chunk.json(exclude_unset=True, ensure_ascii=False)}\n\n"
     yield "data: [DONE]\n\n"
-
-
-
-
-
-
-
-
 
 
 @app.post("/v1/embeddings", dependencies=[Depends(auth_api_key)])
@@ -403,12 +321,12 @@ def create_embeddings(request: EmbeddingsRequest, model_name: str = None):
             return error_check_ret
 
         conf = self.valid_model_map[request.model]
-        max_batch_size = getattr(conf,"max_batch_size",1)
+        max_batch_size = getattr(conf, "max_batch_size", 1)
 
         batches = request.build_data(max_batch_size)
 
-        data,prompt_length = [],0
-        for bs_id,bs in enumerate(batches):
+        data, prompt_length = [], 0
+        for bs_id, bs in enumerate(batches):
             r = request.build_request(bs)
             instance = self.queue_mapper[request.model]
             request_id = instance.put(r)
@@ -440,4 +358,3 @@ def create_embeddings(request: EmbeddingsRequest, model_name: str = None):
         traceback.print_exc()
         logger.info(e)
         return create_error_response(ErrorCode.INTERNAL_ERROR, str(e))
-

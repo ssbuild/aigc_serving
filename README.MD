@@ -42,6 +42,30 @@
 ## install
 pip install -r requirements.txt
 
+## 支持的模型
+支持且不限于以下模型 ，原则上支持transformer 全系列
+
+| 模型            | 16bit | 4bit | ptv2 | deepspeed | accelerate | hf |
+|---------------|-------|------|------|-----------|------------|----|
+| baichuan-7b   | √     | √    | ×    | √         | √          | √  |
+| baichuan-13b  | √     | √    | ×    | √         | √          | √  |
+| baichuan2-7b  | √     | √    | ×    | √         | √          | √  |
+| baichuan2-13b | √     | √    | ×    | √         | √          | √  |
+| bloom         | √     | ×    | ×    | √         | √          | √  |
+| casuallm      | √     | √    | ×    | √         | √          | √  |
+| chatglm       | √     | √    | √    | √         | √          | √  |
+| chatglm2      | √     | √    | √    | √         | √          | √  |
+| chatglm3      | √     | √    | √    | √         | √          | √  |
+| internlm      | √     | √    | ×    | √         | √          | √  |
+| llama         | √     | √    | ×    | √         | √          | √  |
+| moss          | √     | √    | ×    | √         | √          | √  |
+| openbuddy     | √     | √    | ×    | √         | √          | √  |
+| opt           | √     | ×    | ×    | √         | √          | √  |
+| qwen          | √     | √    | ×    | √         | √          | √  |
+| rwkv          | √     | ×    | ×    | √         | √          | √  |
+| t5            | √     | ×    | ×    | √         | √          | √  |
+| tiger         | √     | ×    | ×    | √         | √          | √  |
+| xverse        | √     | √    | ×    | √         | √          | √  |
 
 ## docker
 
@@ -54,8 +78,11 @@ docker build -f docker/Dockerfile -t aigc_serving ..
 ```commandline
 docker run -it --runtime=nvidia --name aigc_serving aigc_serving:latest /bin/bash
 ```
+## 模型配置 
+[config.yaml](config/config.yaml)
+更多模型配置参见 assets/template
 
-## 最新的安装包
+## 依赖
  - [aigc-zoo](https://pypi.org/project/aigc-zoo/#history)
  - [deep-training](https://pypi.org/project/deep-training/#history)
 
@@ -76,7 +103,7 @@ bash stop.sh
 ### 第一步加密工程
 ```commandline
 pip install -U se_imports
-cd code_crypto
+cd serving/cc
 python cc.py
 ```
 ### 第二步加密工程部署
