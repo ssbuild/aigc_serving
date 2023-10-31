@@ -9,7 +9,7 @@ import openai
 
 # 新版本
 openai.api_key = "EMPTY"
-openai.api_base = "http://106.12.147.243:8082/v1"
+openai.api_base = "http://192.168.2.180:8081/v1"
 model = "chatglm3-6b"
 # model = "qwen-7b-chat-int4"
 # model = "gpt-4" # 别名
