@@ -91,7 +91,7 @@ def _process_chatglm3_function(request: Union[CompletionRequest,ChatCompletionRe
                 content = {"name": metadata.strip(), "content": content}
 
     jd = content
-    if not isinstance(jd,dict) or ("parameters" not in jd and not isinstance(jd["parameters"], dict)):
+    if not isinstance(jd,dict) or "parameters" not in jd:
         function_call = None
     else:
         parameters = jd["parameters"]

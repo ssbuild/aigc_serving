@@ -75,7 +75,7 @@ class ChatMessage(BaseModel):
     name: Optional[str] = None
     functions: Optional[List[Dict[str, Any]]] = None
     function_call: Optional[Union[str, Dict[str, str]]] = "auto"
-
+    code_call: Optional[Union[str, Dict[str, str]]] = None
 
 class ChatCompletionRequest(CustomChatParams):
     messages: List[ChatMessage]
@@ -93,12 +93,16 @@ class ChatFunctionCallResponse(BaseModel):
     arguments: str
     thought: Optional[str] = None
 
+class ChatCodeCallResponse(BaseModel):
+    metadata: Optional[str]
+    thought: Optional[str]
+    code: Optional[str]
 
 
 class ChatCompletionResponseChoice(BaseModel):
     index: int
     message: ChatMessage
-    finish_reason: Optional[Literal["stop", "length", "function_call"]]
+    finish_reason: Optional[Literal["stop", "length", "function_call", "code_call"]]
 
 
 class ChatCompletionResponse(BaseModel):
