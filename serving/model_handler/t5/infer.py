@@ -32,10 +32,7 @@ class GenerateT5(Generate):
 
         outputs = self.model.generate(**inputs, **kwargs)
         response = self.post_process(outputs, 0, output_scores)
-        return CompletionResult(result={
-            "response": response,
-            #"history": history
-        })
+        return response
 
     @torch.no_grad()
     def chat(self, query: str, history: List[Tuple[str, str]] = None, **kwargs):
