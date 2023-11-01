@@ -45,7 +45,8 @@ def test_se_project(src_dir='/home/aigc_serving', dst_dir='/home/aigc_serving_se
                     'serving/workers/*/*',
                     'serving/workers/*/*/*',
                     'serving/workers/*/*/*/*',
-                    'serving/main.py',]
+                    # 'serving/main.py',
+                    ]
 
     se_project_crypto(
         src_dir,
