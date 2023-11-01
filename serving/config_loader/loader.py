@@ -14,7 +14,7 @@ __all__ = [
 AS_CONFIG_PATH = os.environ.get("AS_CONFIG_PATH",None)
 if AS_CONFIG_PATH is None:
     # 从本地文件导入配置
-    AS_CONFIG_PATH = os.path.join(os.path.join(os.path.dirname(__file__),'../../config/config.yaml'))
+    AS_CONFIG_PATH = os.path.join(os.path.join(os.path.dirname(__file__),'../../script/config.yaml'))
 
 assert os.path.exists(AS_CONFIG_PATH)
 

@@ -10,6 +10,7 @@
 
 ## update information
 ```text
+    11-01 support bluelm aigc-zoo>=0.2.7.post2
     10-31 support chatglm3,CausalLM,skywork , aigc-zoo>=0.2.7.post0
     10-11 support t5
     09-13 支持模型别名
@@ -66,6 +67,7 @@ pip install -r requirements.txt
 | t5            | √     | ×    | ×    | √         | √          | √  |
 | tiger         | √     | ×    | ×    | √         | √          | √  |
 | xverse        | √     | √    | ×    | √         | √          | √  |
+| bluelm        | √     | √    | ×    | √         | √          | √  |
 
 ## docker
 

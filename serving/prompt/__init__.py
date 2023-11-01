@@ -11,3 +11,4 @@ from serving.prompt.chatglm2 import get_chat as get_chat_chatglm2
 from serving.prompt.chatyuan import get_chat as get_chat_chatyaun,postprocess as postprocess_chatyuan
 from serving.prompt.causallm import get_chat as get_chat_causallm
 from serving.prompt.skywork import get_chat as get_chat_skywork
+from serving.prompt.bluelm import get_chat as get_chat_bluelm
