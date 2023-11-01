@@ -21,9 +21,9 @@ def test_se_project(src_dir='/home/aigc_serving', dst_dir='/home/aigc_serving_se
     # 如果是pypi包，package_name 需要设置包名,否则可以设置None
 
     # 加密接受规则
-    accept_rules = ['serving/config_parser/*',
-                    'serving/config_parser/*/*',
-                    'serving/config_parser/*/*/*',
+    accept_rules = ['serving/config_loader/*',
+                    'serving/config_loader/*/*',
+                    'serving/config_loader/*/*/*',
                     'serving/model_handler/*',
                     'serving/model_handler/*/*',
                     'serving/model_handler/*/*/*',
