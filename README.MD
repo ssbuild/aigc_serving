@@ -10,7 +10,8 @@
 
 ## update information
 ```text
-    11-01 support bluelm aigc-zoo>=0.2.7.post2
+    11-04 support yi aigc-zoo>=0.2.7.post2 , 支持 pydantic >= 2 
+    11-01 support bluelm aigc-zoo>=0.2.7.post1
     10-31 support chatglm3,CausalLM,skywork , aigc-zoo>=0.2.7.post0
     10-11 support t5
     09-13 支持模型别名
@@ -68,6 +69,7 @@ pip install -r requirements.txt
 | tiger         | √     | ×    | ×    | √         | √          | √  |
 | xverse        | √     | √    | ×    | √         | √          | √  |
 | bluelm        | √     | √    | ×    | √         | √          | √  |
+| yi            | √     | √    | ×    | √         | √          | √  |
 
 ## docker
 
