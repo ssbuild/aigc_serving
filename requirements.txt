@@ -1,15 +1,15 @@
 pyzmq
 fastapi
-pydantic<2
+pydantic
 uvicorn
 numpy
 cpm_kernels
 tiktoken
 einops
 accelerate>=0.20.3
-numpy-io >=0.0.8
+numpy-io>0.0.8
 ipc-worker>=0.1.6
-deepspeed
+deepspeed>=0.12
 transformers_stream_generator
 bitsandbytes>=0.39
 git+https://github.com/ssbuild/aigc_zoo#egg=aigc_zoo

@@ -5,9 +5,11 @@ import typing
 import pydantic
 from fastapi import Depends, HTTPException
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from pydantic import BaseSettings
-
-
+#兼容旧版本
+if pydantic.__version__.split('.')[0] == '1':
+    from pydantic import BaseSettings
+else:
+    from pydantic.v1 import BaseSettings
 
 class AppSettings(BaseSettings):
     # The address of the model controller.
