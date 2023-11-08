@@ -38,6 +38,12 @@ if __name__ == '__main__':
     os.environ['ZEROMQ_SOCK_TMP_DIR'] = tmp_dir
     remove_dir(tmp_dir)
     bk_worker = WokerLoader()
+
+    def signal_handler(signum, frame):
+        bk_worker.release()
+        raise KeyboardInterrupt
+    signal.signal(signal.SIGINT, signal_handler)
+
     try:
         global_instance().set_mapper(bk_worker.queue)
         bk_worker.create()

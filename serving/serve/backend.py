@@ -4,6 +4,8 @@
 # @File：serving
 import os
 import multiprocessing
+import traceback
+
 from serving.workers import llm_worker
 from ipc_worker.ipc_zmq_loader import IPC_zmq, ZMQ_process_worker # noqa
 from serving.config_loader.loader import global_models_info_args
@@ -13,7 +15,8 @@ class WokerLoader:
     def __init__(self,):
         self._queue_mapper = {}
         self.evt_quit = multiprocessing.Manager().Event()
-        self.process_list = []
+        self.group_process_list = []
+        self.stopped = False
 
     @property
     def queue(self):
@@ -22,7 +25,7 @@ class WokerLoader:
     def create(self):
         logger.info('WokerLoader create...')
         queue_mapper = self._queue_mapper
-        process_list = self.process_list
+        group_process_list = self.group_process_list
         for model_name, config in global_models_info_args.items():
             if not config["enable"]:
                 continue
@@ -39,17 +42,21 @@ class WokerLoader:
                 queue_size=20,  # recv queue size
                 is_log_time=True,  # whether log compute time
             )
-            process_list.append(instance)
+            group_process_list.append(instance)
             queue_mapper[model_name] = instance
             instance.start()
 
     def release(self):
+        if self.stopped:
+            return
         logger.info('WokerLoader release ...')
-        try:
-            self.evt_quit.set()
-            for p in self.process_list:
+        self.evt_quit.set()
+        for p in self.group_process_list:
+            try:
                 p.terminate()
-            del self.evt_quit
-        except Exception as e:  # noqa
-            print(e)
+            except Exception as e:  # noqa
+                traceback.print_exc()
+                logger.error(e)
+        del self.evt_quit
         logger.info('WokerLoader release end')
+        self.stopped = True
