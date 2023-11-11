@@ -46,7 +46,7 @@ class EngineAPI(EngineAPI_Base):
         model = pl_model.get_llm_model()
         model = model.eval()
         if not self.is_config_quarted(config):
-            if config.pretraining_tp<=1 and self.auto_quantize and hasattr(model,'quantize') and not model.quantized:
+            if self.auto_quantize and hasattr(model,'quantize') and not model.quantized:
                 if not model.quantized:
                     # 按需修改，目前只支持 4/8 bit 量化 ， 可以保存量化模型
                     model.half().quantize(4)
@@ -116,7 +116,7 @@ class EngineAPI(EngineAPI_Base):
                     self.lora_state = LoraModelState.MERGE_AND_LOCKED
                     self.lora_model.merge_and_unload()
                     model = self.lora_model
-                    if config.pretraining_tp<=1 and hasattr(model,'quantize') and self.auto_quantize:
+                    if hasattr(model,'quantize') and self.auto_quantize:
                         model.half().quantize(4)
                     else:
                         model.half()
