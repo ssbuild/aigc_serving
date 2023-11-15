@@ -355,7 +355,7 @@ def create_embeddings(request: EmbeddingsRequest, model_name: str = None):
                 total_tokens=prompt_length,
                 completion_tokens=None,
             ),
-        ).dict(exclude_none=True)
+        ).model_dump(exclude_none=True)
     except Exception as e:
         traceback.print_exc()
         logger.info(e)
