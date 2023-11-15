@@ -122,7 +122,7 @@ def list_models():
 def create_chat_completion(request: Union[CompletionRequest, ChatCompletionRequest]):
     self = global_instance()
     try:
-        logger.info(request.json(indent=2, ensure_ascii=False))
+        logger.info(request.model_dump_json(indent=2))
         ret = check_requests(request)
         if ret is not None:
             return ret
@@ -314,7 +314,7 @@ def create_embeddings(request: EmbeddingsRequest, model_name: str = None):
         request.model = model_name
     self = global_instance()
     try:
-        logger.info(request.json(indent=2, ensure_ascii=False))
+        logger.info(request.model_dump_json(indent=2))
         error_check_ret = check_requests(request)
         if error_check_ret is not None:
             return error_check_ret
