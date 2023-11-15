@@ -195,7 +195,7 @@ def _openai_chat_stream_v2(self: Resource, request: Union[CompletionRequest, Cha
             finish_reason=None
         )
         chunk = ChatCompletionStreamResponse(model=request.model, choices=[choice_data])
-        yield f"data: {chunk.json(exclude_unset=True, ensure_ascii=False)}\n\n"
+        yield f"data: {chunk.model_dump_json(exclude_unset=True)}\n\n"
 
         r = request.build_request()
         instance = self.queue_mapper[request.model]
@@ -216,7 +216,7 @@ def _openai_chat_stream_v2(self: Resource, request: Union[CompletionRequest, Cha
                     finish_reason=None
                 )
                 chunk = ChatCompletionStreamResponse(model=request.model, choices=[choice_data])
-                yield f"data: {chunk.json(exclude_unset=True, ensure_ascii=False)}\n\n"
+                yield f"data: {chunk.model_dump_json(exclude_unset=True)}\n\n"
 
             if result["complete"]:
                 break
@@ -227,7 +227,7 @@ def _openai_chat_stream_v2(self: Resource, request: Union[CompletionRequest, Cha
             finish_reason=Finish.STOP
         )
         chunk = ChatCompletionStreamResponse(model=request.model, choices=[choice_data])
-        yield f"data: {chunk.json(exclude_unset=True, ensure_ascii=False)}\n\n"
+        yield f"data: {chunk.model_dump_json(exclude_unset=True)}\n\n"
     yield "data: [DONE]\n\n"
 
 
@@ -271,7 +271,7 @@ def _openai_chat_stream_v1(self: Resource, request: CompletionRequest):
             finish_reason=None
         )
         chunk = CompletionStreamResponse(model=request.model, choices=[choice_data])
-        yield f"data: {chunk.json(exclude_unset=True, ensure_ascii=False)}\n\n"
+        yield f"data: {chunk.model_dump_json(exclude_unset=True)}\n\n"
 
         r = request.build_request()
         instance = self.queue_mapper[request.model]
@@ -291,7 +291,7 @@ def _openai_chat_stream_v1(self: Resource, request: CompletionRequest):
                     finish_reason=None
                 )
                 chunk = CompletionStreamResponse(model=request.model, choices=[choice_data])
-                yield f"data: {chunk.json(exclude_unset=True, ensure_ascii=False)}\n\n"
+                yield f"data: {chunk.model_dump_json(exclude_unset=True)}\n\n"
 
             if result["complete"]:
                 break
@@ -302,7 +302,7 @@ def _openai_chat_stream_v1(self: Resource, request: CompletionRequest):
             finish_reason=Finish.STOP
         )
         chunk = CompletionStreamResponse(model=request.model, choices=[choice_data])
-        yield f"data: {chunk.json(exclude_unset=True, ensure_ascii=False)}\n\n"
+        yield f"data: {chunk.model_dump_json(exclude_unset=True)}\n\n"
     yield "data: [DONE]\n\n"
 
 
