@@ -10,12 +10,10 @@ RUN apt-get update -y && apt-get install -y --no-install-recommends python3.10 p
     curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py &&  \
     python3.10 get-pip.py
 
-WORKDIR /aigc_serving/
 ENV LANG=C.UTF-8
+RUN pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+
+WORKDIR /aigc_serving/
 ENV PYTHONPATH /aigc_serving/
 COPY aigc_serving /aigc_serving
-
-
-RUN pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118 && \
-    pip3 install --no-cache-dir -r /aigc_serving/requirements.txt -i https://mirror.baidu.com/pypi/simple && \
-    pip3 install bitsandbytes --upgrade -i https://mirror.baidu.com/pypi/simple
+RUN pip3 install --no-cache-dir -r /aigc_serving/requirements.txt -i https://mirror.baidu.com/pypi/simple
