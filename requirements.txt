@@ -1,6 +1,6 @@
 pyzmq
 fastapi
-pydantic
+pydantic>=2
 uvicorn
 numpy
 cpm_kernels
