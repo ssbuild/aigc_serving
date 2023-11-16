@@ -1,2 +1,5 @@
 /.idea
 /serving/config_loader/utils/__pycache__
+/serving/__pycache__
+__pycache__
+/serving/utils/__pycache__
