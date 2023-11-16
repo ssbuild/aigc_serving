@@ -10,8 +10,8 @@ from fastapi import FastAPI, Depends
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import StreamingResponse
 from serving.utils import logger
-from serving.config_loader.loader import global_models_info_args
-from serving.serve.api_keys import auth_api_key
+from serving.config_loader.loader import global_models_info_args,global_serve_args
+from serving.serve.api_keys import auth_api_key,app_settings
 from serving.serve.api_code import parse_tools_code
 from serving.serve.api_react import build_react_functions, parse_tools_functions
 from serving.serve.api_check import check_requests, create_error_response, ErrorCode
@@ -25,6 +25,8 @@ from serving.openai_api.openai_api_protocol import (ModelCard, ModelPermission, 
                                                     EmbeddingsRequest, EmbeddingsResponse)
 
 
+
+app_settings.api_keys = global_serve_args.get("api_keys",[])
 
 class Resource:
     def __init__(self):

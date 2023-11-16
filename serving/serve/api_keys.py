@@ -19,6 +19,7 @@ def auth_api_key(
     auth: Optional[HTTPAuthorizationCredentials] = Depends(get_bearer_token),
 ) -> Optional[str]:
     if app_settings.api_keys:
+        print(auth,app_settings.api_keys)
         if auth is None or (token := auth.credentials) not in app_settings.api_keys:
             raise HTTPException(
                 status_code=401,

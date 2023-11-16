@@ -2,6 +2,7 @@
 # # @Time:  23:28
 # # @Author: tk
 # # @File：main.py
+import copy
 import os
 import sys
 root_dir = os.path.join(os.path.dirname(__file__),"..")
@@ -47,7 +48,9 @@ if __name__ == '__main__':
     try:
         global_instance().set_mapper(bk_worker.queue)
         bk_worker.create()
-        config = uvicorn.Config(app, **global_serve_args, lifespan='off')
+        kwargs = copy.deepcopy(global_serve_args)
+        kwargs.pop("api_keys",None)
+        config = uvicorn.Config(app, **kwargs, lifespan='off')
         uvicorn.Server(config).run()
     except Exception as e:
         traceback.print_exc()
