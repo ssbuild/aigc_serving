@@ -8,6 +8,11 @@ serve_args:
   # http 工作进程
   workers: 4
 
+  api_keys: []
+#  api_keys:
+#    - 112233
+
+
 
 chatglm3-6b:
   alias: null

@@ -1,7 +1,7 @@
 import openai
 
 # 旧版本
-openai.api_key = "EMPTY"
+openai.api_key = "112233"
 openai.api_base = "http://192.168.2.180:8081/v1"
 model = "chatglm2-6b-int4"
 model = "ChatYuan-large-v2"

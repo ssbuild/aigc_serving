@@ -24,4 +24,10 @@ assert global_serve_args is not None and global_models_info_args is not None
 
 check_config(global_models_info_args)
 
+api_keys = global_serve_args.get("api_keys",[])
+assert api_keys is None or isinstance(api_keys,list)
+if api_keys:
+    api_keys = list(map(lambda x:str(x),api_keys))
+global_serve_args["api_keys"] = api_keys
+
 
