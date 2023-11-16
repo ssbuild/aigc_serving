@@ -1,7 +1,9 @@
-import typing
+# -*- coding: utf-8 -*-
+# @Author  : ssbuild
+# @Time    : 2023/8/11 15:31
+
 from enum import Enum
 from typing import Literal, Optional, List, Dict, Any, Union
-
 import time
 import uuid
 from pydantic import BaseModel, Field
@@ -15,7 +17,7 @@ class ErrorResponse(BaseModel):
     message: str
     code: int
 
-class Role(str, Enum):
+class Role:
     USER = "user"
     ASSISTANT = "assistant"
     SYSTEM = "system"
@@ -23,7 +25,7 @@ class Role(str, Enum):
     OBSERVATION = "observation"
 
 
-class Finish(str, Enum):
+class Finish:
     STOP = "stop"
     LENGTH = "length"
     FUNCTION_CALL = "function_call"

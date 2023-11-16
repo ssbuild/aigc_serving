@@ -11,7 +11,6 @@ __all__ = [
 
 class CustomChatParams(BaseModel):
     model: str
-    messages: List
     temperature: Optional[float] = 0.7
     top_p: Optional[float] = 1.0
     n: Optional[int] = 1
