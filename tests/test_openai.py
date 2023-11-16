@@ -4,7 +4,7 @@ import openai
 openai.api_key = "EMPTY"
 openai.api_base = "http://192.168.2.180:8081/v1"
 model = "chatglm2-6b-int4"
-model = "qwen-7b-chat-int4"
+model = "ChatYuan-large-v2"
 
 # # Test list models API
 # models = openai.Model.list()
