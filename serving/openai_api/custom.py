@@ -3,6 +3,7 @@
 # @Time    : 2023/8/11 15:31
 from typing import Optional, Union, List, Dict, Any
 from pydantic import BaseModel
+from pydantic.v1 import PrivateAttr
 
 __all__ = [
     'CustomChatParams'
@@ -45,10 +46,11 @@ class CustomChatParams(BaseModel):
     functions: Optional[List[Dict[str, Any]]] = None
     function_call: Union[str, Dict[str, str]] = "auto"
 
-    class Config:
-        underscore_attrs_are_private = True
-#   私有成员
-    _model_type: Optional[str] = None
+#     class Config:
+#         underscore_attrs_are_private = True
+#     _model_type: Optional[str] = None
+
+    _model_type: Optional[str] = PrivateAttr(default=None)
 
     @property
     def model_type(self):
