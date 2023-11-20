@@ -19,6 +19,12 @@ def build_react_functions(request: Union[CompletionRequest,ChatCompletionRequest
 
     function_call = request.function_call
     functions = request.functions
+    tools = request.tools
+    tool_choice = request.tool_choice
+    if tools is not None and tool_choice is not None:
+        functions = [_.function for _ in tools if _.function]
+        function_call = tool_choice
+
     messages = request.messages
     use_function = False
     if isinstance(messages, list) and isinstance(messages[0], dict):
@@ -32,7 +38,6 @@ def build_react_functions(request: Union[CompletionRequest,ChatCompletionRequest
             request.messages, functions = get_react_prompt_for_qwen(messages, functions, function_call)
         elif model_type in ["chatglm","chatglm3"]:
             request.messages, functions = get_react_prompt_for_chatglm3(messages, functions, function_call)
-
     return functions
 
 

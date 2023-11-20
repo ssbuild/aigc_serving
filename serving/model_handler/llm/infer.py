@@ -14,7 +14,7 @@ from transformers import HfArgumentParser
 from aigc_zoo.model_zoo.llm.llm_model import MyTransformer,PetlArguments,PetlModel,AutoConfig
 from aigc_zoo.generator_utils.generator_llm import Generate
 from serving.model_handler.base import EngineAPI_Base, CompletionResult,LoraModelState, load_lora_config, \
-    GenerateProcess, WorkMode
+    GenArgs, WorkMode
 from serving.prompt import *
 
 
@@ -116,11 +116,10 @@ class EngineAPI(EngineAPI_Base):
         return default_kwargs
 
     def chat_stream(self,messages: List[Dict], **kwargs):
-        args_process = GenerateProcess(self,is_stream=True)
-        args_process.preprocess(kwargs)
+        args_process = GenArgs(kwargs, self, is_stream=True)
         default_kwargs = self.get_default_gen_args()
         default_kwargs.update(kwargs)
-        args_process.postprocess(default_kwargs)
+        args_process.build_args(default_kwargs)
         prefix,query, history = args_process.get_chat_info_with_system(messages)
         prompt = get_chat_default(self.tokenizer, query, history=history, prefix=prefix)
         skip_word_list = default_kwargs.get('eos_token_id', None) or [self.tokenizer.eos_token_id]
@@ -131,11 +130,10 @@ class EngineAPI(EngineAPI_Base):
 
 
     def chat(self,messages: List[Dict], **kwargs):
-        args_process = GenerateProcess(self)
-        args_process.preprocess(kwargs)
+        args_process = GenArgs(kwargs, self)
         default_kwargs = self.get_default_gen_args()
         default_kwargs.update(kwargs)
-        args_process.postprocess(default_kwargs)
+        args_process.build_args(default_kwargs)
         prefix,query, history = args_process.get_chat_info_with_system(messages)
         prompt = get_chat_default(self.tokenizer, query, history=history, prefix=prefix)
         response = self.gen_core.generate(query=prompt, **default_kwargs)
@@ -149,6 +147,7 @@ class EngineAPI(EngineAPI_Base):
 
 
     def embedding(self, query, **kwargs):
+        args_process = GenArgs(kwargs, self)
         model = self.get_model()
         inputs = self.tokenizer(query, return_tensors="pt")
         inputs = inputs.to(model.device)

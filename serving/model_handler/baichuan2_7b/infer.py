@@ -14,7 +14,7 @@ from transformers import HfArgumentParser, BitsAndBytesConfig, GenerationConfig
 from aigc_zoo.model_zoo.baichuan.baichuan2_7b.llm_model import MyTransformer,BaichuanConfig,BaichuanTokenizer,\
     MyBaichuanForCausalLM,PetlArguments,PetlModel
 from serving.model_handler.base import EngineAPI_Base,CompletionResult,LoraModelState, \
-    load_lora_config,GenerateProcess,WorkMode
+    load_lora_config,GenArgs,WorkMode
 from serving.prompt import *
 
 class NN_DataHelper(DataHelper):pass
@@ -125,12 +125,11 @@ class EngineAPI(EngineAPI_Base):
         return default_kwargs
 
     def chat_stream(self,messages: List[Dict], **kwargs):
-        args_process = GenerateProcess(self,is_stream=True)
-        args_process.preprocess(kwargs)
+        args_process = GenArgs(kwargs, self, is_stream=True)
         chunk = args_process.chunk
         default_kwargs=self.get_default_gen_args()
         default_kwargs.update(kwargs)
-        args_process.postprocess(default_kwargs)
+        args_process.build_args(default_kwargs)
         stopping_criteria = default_kwargs.pop('stopping_criteria', None)
         generation_config = GenerationConfig(**default_kwargs)
         for response in self.get_model().chat(tokenizer=self.tokenizer,
@@ -158,11 +157,10 @@ class EngineAPI(EngineAPI_Base):
 
 
     def chat(self,messages: List[Dict], **kwargs):
-        args_process = GenerateProcess(self)
-        args_process.preprocess(kwargs)
+        args_process = GenArgs(kwargs, self)
         default_kwargs = self.get_default_gen_args()
         default_kwargs.update(kwargs)
-        args_process.postprocess(default_kwargs)
+        args_process.build_args(default_kwargs)
         stopping_criteria = default_kwargs.pop('stopping_criteria', None)
         generation_config = GenerationConfig(**default_kwargs)
         response = self.get_model().chat(tokenizer=self.tokenizer,
@@ -177,6 +175,7 @@ class EngineAPI(EngineAPI_Base):
 
 
     def embedding(self, query, **kwargs):
+        args_process = GenArgs(kwargs, self)
         model = self.get_model()
         inputs = self.tokenizer(query, return_tensors="pt")
         inputs = inputs.to(model.device)

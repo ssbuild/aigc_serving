@@ -10,6 +10,11 @@ __all__ = [
 ]
 
 
+class Tools(BaseModel):
+    type: Optional[str] = "function"
+    function: Optional[Dict] = None
+
+
 class CustomChatParams(BaseModel):
     model: str
     temperature: Optional[float] = 0.7
@@ -43,8 +48,18 @@ class CustomChatParams(BaseModel):
     forced_eos_token_id: Optional[int] = None
     guidance_scale: Optional[float] = None
     low_memory: Optional[bool] = None
+
+    # Deprecated
     functions: Optional[List[Dict[str, Any]]] = None
-    function_call: Union[str, Dict[str, str]] = "auto"
+    # Deprecated
+    function_call: Optional[Union[str, Dict[str, str]]] = "auto"
+
+    seed: Optional[int] = None
+
+    # 取代 functions
+    tools: Optional[List[Tools]] = None
+    # 取代 function_call
+    tool_choice: Optional[Union[str, Dict[str, str]]] = "auto"
 
 #     class Config:
 #         underscore_attrs_are_private = True
@@ -77,6 +92,7 @@ class CustomChatParams(BaseModel):
             "forced_eos_token_id": self.forced_eos_token_id,
             "guidance_scale": self.guidance_scale,
             "low_memory": self.low_memory,
+            "seed": self.seed,
         }
         if self.frequency_penalty is not None and self.frequency_penalty > 0:
             params["repetition_penalty"] = self.frequency_penalty

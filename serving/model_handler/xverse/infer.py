@@ -13,7 +13,7 @@ from deep_training.data_helper import ModelArguments, DataHelper
 from deep_training.nlp.layers.rope_scale.patch import RotaryNtkScaledArguments
 from transformers import HfArgumentParser, GenerationConfig
 from aigc_zoo.utils.xverse_generate import Generate
-from serving.model_handler.base import EngineAPI_Base,CompletionResult,LoraModelState, load_lora_config, GenerateProcess,WorkMode
+from serving.model_handler.base import EngineAPI_Base,CompletionResult,LoraModelState, load_lora_config, GenArgs,WorkMode
 from transformers import AutoModelForCausalLM
 from deep_training.utils.hf import register_transformer_model, register_transformer_config  # noqa
 # from deep_training.nlp.models.xverse.modeling_xverse import XverseForCausalLM, XverseConfig
@@ -142,11 +142,10 @@ class EngineAPI(EngineAPI_Base):
         return default_kwargs
 
     def chat_stream(self,messages: List[Dict], **kwargs):
-        args_process = GenerateProcess(self,is_stream=True)
-        args_process.preprocess(kwargs)
+        args_process = GenArgs(kwargs, self, is_stream=True)
         default_kwargs = self.get_default_gen_args()
         default_kwargs.update(kwargs)
-        args_process.postprocess(default_kwargs)
+        args_process.build_args(default_kwargs)
 
         stopping_criteria = default_kwargs.pop('stopping_criteria',None)
         generation_config = GenerationConfig(**default_kwargs)
@@ -164,11 +163,10 @@ class EngineAPI(EngineAPI_Base):
 
 
     def chat(self,messages: List[Dict], **kwargs):
-        args_process = GenerateProcess(self)
-        args_process.preprocess(kwargs)
+        args_process = GenArgs(kwargs, self)
         default_kwargs = self.get_default_gen_args()
         default_kwargs.update(kwargs)
-        args_process.postprocess(default_kwargs)
+        args_process.build_args(default_kwargs)
         stopping_criteria = default_kwargs.pop('stopping_criteria', None)
         generation_config = GenerationConfig(**default_kwargs)
         response = self.get_model().chat(tokenizer=self.tokenizer,
@@ -184,14 +182,14 @@ class EngineAPI(EngineAPI_Base):
 
 
     def generate(self,messages: List[Dict],**kwargs):
-        args_process = GenerateProcess(self)
+        args_process = GenArgs(kwargs, self)
         default_kwargs = dict(
             eos_token_id=self.config.eos_token_id,
             pad_token_id=self.config.eos_token_id,
             do_sample=True, top_p=0.7, temperature=0.95,
         )
         default_kwargs.update(kwargs)
-        args_process.postprocess(default_kwargs)
+        args_process.build_args(default_kwargs)
         query = args_process.get_chat_info(messages, chat_format="generate")
         response = Generate.generate(self.get_model(),
                                      tokenizer=self.tokenizer,
@@ -202,6 +200,7 @@ class EngineAPI(EngineAPI_Base):
         })
 
     def embedding(self, query, **kwargs):
+        args_process = GenArgs(kwargs, self)
         model = self.get_model()
         inputs = self.tokenizer(query, return_tensors="pt")
         inputs = inputs.to(model.device)

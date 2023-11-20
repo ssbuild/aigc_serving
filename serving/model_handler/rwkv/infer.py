@@ -14,7 +14,7 @@ from transformers import HfArgumentParser
 from aigc_zoo.model_zoo.rwkv4.llm_model import MyTransformer, RwkvConfig, \
     set_model_profile,PetlArguments,PetlModel
 from aigc_zoo.utils.rwkv4_generate import Generate
-from serving.model_handler.base import EngineAPI_Base,CompletionResult,LoraModelState, load_lora_config, GenerateProcess,WorkMode
+from serving.model_handler.base import EngineAPI_Base,CompletionResult,LoraModelState, load_lora_config, GenArgs,WorkMode
 from serving.prompt import *
 
 
@@ -122,11 +122,10 @@ class EngineAPI(EngineAPI_Base):
 
 
     def chat_stream(self,messages: List[Dict], **kwargs):
-        args_process = GenerateProcess(self,is_stream=True)
-        args_process.preprocess(kwargs)
+        args_process = GenArgs(kwargs, self, is_stream=True)
         default_kwargs = self.get_default_gen_args()
         default_kwargs.update(kwargs)
-        args_process.postprocess(default_kwargs)
+        args_process.build_args(default_kwargs)
         query, history = args_process.get_chat_info(messages)
         prompt = get_chat_default(self.tokenizer, query, history)
         skip_word_list = default_kwargs.get('eos_token_id', None) or [self.tokenizer.eos_token_id]
@@ -136,11 +135,10 @@ class EngineAPI(EngineAPI_Base):
         return None
 
     def chat(self,messages: List[Dict], **kwargs):
-        args_process = GenerateProcess(self)
-        args_process.preprocess(kwargs)
+        args_process = GenArgs(kwargs, self)
         default_kwargs = self.get_default_gen_args()
         default_kwargs.update(kwargs)
-        args_process.postprocess(default_kwargs)
+        args_process.build_args(default_kwargs)
         query, history = args_process.get_chat_info(messages)
         prompt = get_chat_default(self.tokenizer, query, history)
         response = Generate.generate(self.get_model(),
@@ -154,10 +152,10 @@ class EngineAPI(EngineAPI_Base):
 
 
     def generate(self,messages: List[Dict],**kwargs):
-        args_process = GenerateProcess(self)
+        args_process = GenArgs(kwargs, self)
         default_kwargs = self.get_default_gen_args()
         default_kwargs.update(kwargs)
-        args_process.postprocess(default_kwargs)
+        args_process.build_args(default_kwargs)
         query = args_process.get_chat_info(messages,chat_format="generate")
         response = Generate.generate(self.get_model(),
                                      tokenizer=self.tokenizer,
@@ -168,6 +166,7 @@ class EngineAPI(EngineAPI_Base):
         })
 
     def embedding(self, query, **kwargs):
+        args_process = GenArgs(kwargs, self)
         model = self.get_model()
         inputs = self.tokenizer(query, return_tensors="pt")
         inputs = inputs.to(model.device)
