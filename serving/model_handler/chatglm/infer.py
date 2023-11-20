@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # @Author  : ssbuild
 # @Time    : 2023/7/10 16:42
+import functools
 import json
 import os
 from typing import List, Dict
@@ -147,6 +148,10 @@ class EngineAPI(EngineAPI_Base):
                               )
         return default_kwargs
 
+    @functools.cached_property
+    def is_bianque2(self):
+        return 'bianque2' in self.model_config_dict["model_config"]["model_name_or_path"].lower()
+
     def chat_stream(self, messages: List[Dict], **kwargs):
         args_process = GenArgs(kwargs, self, is_stream=True)
         chunk = args_process.chunk
@@ -154,7 +159,11 @@ class EngineAPI(EngineAPI_Base):
         default_kwargs.update(kwargs)
         args_process.build_args(default_kwargs)
         query,history = args_process.get_chat_info(messages)
-        for response, history in self.model.stream_chat(self.tokenizer, query=query,history=history, **kwargs):
+        if self.is_bianque2:
+            prompt = get_chat_bianque2(self.tokenizer,query, history)
+        else:
+            prompt = get_chat_chatglm(self.tokenizer,query, history)
+        for response, history in self.model.stream_chat(self.tokenizer, query=prompt,history=None, **kwargs):
             chunk.step(response)
             if chunk.can_output():
                 text = chunk.step_text()
@@ -179,7 +188,11 @@ class EngineAPI(EngineAPI_Base):
         default_kwargs.update(kwargs)
         args_process.build_args(default_kwargs)
         query, history = args_process.get_chat_info(messages)
-        response, history = self.model.chat(self.tokenizer, query=query,history=history, **default_kwargs)
+        if self.is_bianque2:
+            prompt = get_chat_bianque2(self.tokenizer,query, history)
+        else:
+            prompt = get_chat_chatglm(self.tokenizer,query, history)
+        response, history = self.model.chat(self.tokenizer, query=prompt,history=None, **default_kwargs)
         response = args_process.postprocess_response(response, **kwargs)
         return CompletionResult(result={
             "response": response,
