@@ -38,7 +38,7 @@ def postprocess(self, y):
     return y
 
 
-gr.Chatbot.postprocess = postprocess
+gr.Chatbot.build_args = postprocess
 
 def parse_text(text):
     """copy from https://github.com/GaiZhenbiao/ChuanhuChatGPT/"""

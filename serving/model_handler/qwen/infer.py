@@ -12,7 +12,7 @@ from deep_training.data_helper import ModelArguments,DataHelper
 from transformers import HfArgumentParser, BitsAndBytesConfig
 from aigc_zoo.model_zoo.qwen.llm_model import MyTransformer, QWenTokenizer, PetlArguments, \
     setup_model_profile, QWenConfig
-from serving.model_handler.base import EngineAPI_Base,CompletionResult,LoraModelState, load_lora_config, GenerateProcess,WorkMode
+from serving.model_handler.base import EngineAPI_Base,CompletionResult,LoraModelState, load_lora_config, GenArgs,WorkMode
 from serving.prompt import *
 
 
@@ -139,11 +139,10 @@ class EngineAPI(EngineAPI_Base):
         return default_kwargs
 
     def chat_stream(self, messages: List[Dict], **kwargs):
-        args_process = GenerateProcess(self,is_stream=True)
-        args_process.preprocess(kwargs)
+        args_process = GenArgs(kwargs, self, is_stream=True)
         default_kwargs = self.get_default_gen_args()
         default_kwargs.update(kwargs)
-        args_process.postprocess(default_kwargs)
+        args_process.build_args(default_kwargs)
         query, history = args_process.get_chat_info(messages)
         skip_word_list = [self.tokenizer.im_end_id, self.tokenizer.im_start_id, self.tokenizer.eos_token_id or 151643]
         skip_word_list += default_kwargs.get('stop_words_ids', [])
@@ -155,11 +154,10 @@ class EngineAPI(EngineAPI_Base):
 
 
     def chat(self,messages: List[Dict], **kwargs):
-        args_process = GenerateProcess(self)
-        args_process.preprocess(kwargs)
+        args_process = GenArgs(kwargs, self)
         default_kwargs = self.get_default_gen_args()
         default_kwargs.update(kwargs)
-        args_process.postprocess(default_kwargs)
+        args_process.build_args(default_kwargs)
         query, history = args_process.get_chat_info(messages)
         response, history = self.model.chat(self.tokenizer, query=query,history=history, **default_kwargs)
         response = args_process.postprocess_response(response, **kwargs)
@@ -169,10 +167,10 @@ class EngineAPI(EngineAPI_Base):
         })
 
     def generate(self,messages: List[Dict],**kwargs):
-        args_process = GenerateProcess(self)
+        args_process = GenArgs(kwargs, self)
         default_kwargs = self.get_default_gen_args()
         default_kwargs.update(kwargs)
-        args_process.postprocess(default_kwargs)
+        args_process.build_args(default_kwargs)
         query = args_process.get_chat_info(messages,chat_format="generate")
         output = self.model.chat(self.tokenizer, query=query,**default_kwargs)
         output_scores = default_kwargs.get('output_scores', False)
@@ -185,6 +183,7 @@ class EngineAPI(EngineAPI_Base):
         })
 
     def embedding(self, query, **kwargs):
+        args_process = GenArgs(kwargs, self)
         from deep_training.nlp.models.qwen.modeling_qwen import QWenLMHeadModel
         model: QWenLMHeadModel = self.get_model()
         inputs = self.tokenizer(query, return_tensors="pt")

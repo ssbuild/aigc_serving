@@ -156,22 +156,42 @@ class StopWordsCriteria(StoppingCriteria):
             del ids
         return False
 
-class GenerateProcess:
-    def __init__(self,this_obj,is_stream=False):
+class GenArgs:
+    def __init__(self,args_dict:Dict, this_obj,is_stream=False):
+        if args_dict is None:
+            args_dict = {}
+
         self.tokenizer: Optional[PreTrainedTokenizer] = this_obj.tokenizer
         self.config: Optional[PretrainedConfig] = this_obj.config
         self.is_stream = is_stream
         self.chunk: Optional[ChunkData] = None
         self.this_obj = this_obj
 
-    def preprocess(self, args_dict: dict):
+        # support seed
+        self.multinomial_fn = torch.multinomial
+        self.__preprocess(args_dict)
+    def __del__(self):
+        # restore
+        if torch.multinomial != self.multinomial_fn:
+            torch.multinomial = self.multinomial_fn
+
+    def __preprocess(self, args_dict):
         if self.is_stream:
             nchar = args_dict.pop('nchar',1)
             gtype = args_dict.pop('gtype',"total")
             self.chunk = ChunkData(nchar=nchar, stop=args_dict.get('stop', None), mode=gtype)
+
+        seed = args_dict.pop('seed',None)
+
+        #进程隔离，互不影响
+        if isinstance(seed,int):
+            device = self.this_obj.get_model().device
+            torch.multinomial = lambda *args, **kwargs: self.multinomial_fn(*args,
+                                                                     generator=torch.Generator(device=device).manual_seed(seed),
+                                                                     **kwargs)
         return args_dict
 
-    def postprocess(self, args_dict):
+    def build_args(self, args_dict):
         stop = args_dict.pop('stop',None)
         if stop is None:
             return args_dict
