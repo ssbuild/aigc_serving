@@ -39,7 +39,7 @@ def get_worker_instance(model_name,config,group_name,worker_idx):
         elif model_name.startswith("chatglm2"):
             from serving.model_handler.chatglm2.infer import EngineAPI
             api_client = EngineAPI(config,group_name=group_name,worker_idx=worker_idx)
-        elif model_name.startswith("chatglm"):
+        elif model_name.startswith("chatglm") or model_name.startswith("bianque2"):
             from serving.model_handler.chatglm.infer import EngineAPI
             api_client = EngineAPI(config,group_name=group_name,worker_idx=worker_idx)
     elif model_type == "t5":

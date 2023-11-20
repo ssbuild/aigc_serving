@@ -10,7 +10,7 @@
 
 ## update information
 ```text
-    11-20 support seed for generator sample
+    11-20 support seed for generator sample and support bianque2 , lingowhale
     11-06 fix pydantic 2 and support api_keys in config
     11-04 support yi aigc-zoo>=0.2.7.post2 , 支持 pydantic >= 2 
     11-01 support bluelm aigc-zoo>=0.2.7.post1
@@ -72,7 +72,8 @@ pip install -r requirements.txt
 | xverse        | √     | √    | ×    | √         | √          | √  |
 | bluelm        | √     | √    | ×    | √         | √          | √  |
 | yi            | √     | √    | ×    | √         | √          | √  |
-
+| bianque2      | √     | √    | ×    | √         | √          | √  |
+| lingowhale    | √     | √    | ×    | √         | √          | √  |
 ## docker
 
 ### build
