@@ -14,7 +14,7 @@ from serving.config_loader.loader import global_models_info_args,global_serve_ar
 from serving.serve.api_keys import auth_api_key,app_settings
 from serving.serve.api_code import parse_tools_code
 from serving.serve.api_react import build_react_functions, parse_tools_functions
-from serving.serve.api_check import check_requests, create_error_response, ErrorCode
+from serving.serve.api_check import check_requests_gen, create_error_response, ErrorCode, check_requests_embedding
 from serving.openai_api.openai_api_protocol import (ModelCard, ModelPermission, ModelList, ChatCompletionRequest, Role,
                                                     ChatCompletionResponseStreamChoice, DeltaMessage,
                                                     ChatCompletionStreamResponse, Finish,
@@ -125,7 +125,7 @@ def create_chat_completion(request: Union[CompletionRequest, ChatCompletionReque
     self = global_instance()
     try:
         logger.info(request.model_dump_json(indent=2))
-        ret = check_requests(request)
+        ret = check_requests_gen(request)
         if ret is not None:
             return ret
         ret = self.check_model(request)
@@ -317,7 +317,7 @@ def create_embeddings(request: EmbeddingsRequest, model_name: str = None):
     self = global_instance()
     try:
         logger.info(request.model_dump_json(indent=2))
-        error_check_ret = check_requests(request)
+        error_check_ret = check_requests_embedding(request)
         if error_check_ret is not None:
             return error_check_ret
         error_check_ret = self.check_model(request)

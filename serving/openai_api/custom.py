@@ -157,7 +157,11 @@ class CustomEmbeddingParams(BaseModel):
         r = {
             "method": "embedding",
             "model": self.model,
-            "adapter_name": self.adapter_name,
             "query": data,
+            "params": {
+                "adapter_name": self.adapter_name,
+                "max_tokens": self.max_tokens
+            }
+
         }
         return r

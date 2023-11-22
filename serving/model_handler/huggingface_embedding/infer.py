@@ -3,18 +3,22 @@
 # @Time    : 2023/11/21 14:02
 
 import functools
+import importlib
 import json
 import os
-from typing import List, Dict, Union
+import types
+from collections import OrderedDict
+from typing import List, Dict, Union, Optional, Callable
 import numpy as np
 import torch
 from numpy import ndarray
+from sentence_transformers.models import Pooling
 from torch import Tensor
 from torch.nn import functional as F
 from deep_training.trainer.pl.modelweighter import default_peft_weight_preprocess
 from deep_training.data_helper import ModelArguments, DataHelper
 from deep_training.nlp.layers.rope_scale.patch import RotaryNtkScaledArguments
-from transformers import HfArgumentParser
+from transformers import HfArgumentParser, AutoModel, PreTrainedTokenizer
 from aigc_zoo.model_zoo.auto.llm_model import MyTransformer,AutoConfig, PetlArguments, PetlModel
 from serving.model_handler.base import EngineAPI_Base, CompletionResult, LoraModelState, load_lora_config, GenArgs, \
     WorkMode
@@ -24,8 +28,96 @@ from serving.prompt import *
 class NN_DataHelper(DataHelper): pass
 
 
+def import_from_string(dotted_path):
+    """
+    Import a dotted module path and return the attribute/class designated by the
+    last name in the path. Raise ImportError if the import failed.
+    """
+    try:
+        module_path, class_name = dotted_path.rsplit('.', 1)
+    except ValueError:
+        msg = "%s doesn't look like a module path" % dotted_path
+        raise ImportError(msg)
+
+    try:
+        module = importlib.import_module(dotted_path)
+    except:
+        module = importlib.import_module(module_path)
+
+    try:
+        return getattr(module, class_name)
+    except AttributeError:
+        msg = 'Module "%s" does not define a "%s" attribute/class' % (module_path, class_name)
+        raise ImportError(msg)
+
+
+
+global_forward_fn: Optional[Callable] = None
+def forward_new_fn(self,features):
+    """Returns token_embeddings, cls_token"""
+    trans_features = {'input_ids': features['input_ids'], 'attention_mask': features['attention_mask']}
+    if 'token_type_ids' in features:
+        trans_features['token_type_ids'] = features['token_type_ids']
+
+    output_states = global_forward_fn(**trans_features, return_dict=False)
+    output_tokens = output_states[0]
+
+    features.update({'token_embeddings': output_tokens, 'attention_mask': features['attention_mask']})
+
+    # if self.config.output_hidden_states:
+    #     all_layer_idx = 2
+    #     if len(output_states) < 3:  # Some models only output last_hidden_states and all_hidden_states
+    #         all_layer_idx = 1
+    #
+    #     hidden_states = output_states[all_layer_idx]
+    #     features.update({'all_layer_embeddings': hidden_states})
+
+    return features
+
+
 class EngineAPI(EngineAPI_Base):
 
+    def _load_sub_module(self,model):
+        global global_forward_fn
+        global_forward_fn = model.forward
+        model.forward = types.MethodType(forward_new_fn,model)
+
+        model_dir = self.model_config_dict["model_config"]["model_name_or_path"]
+        modules_path = os.path.join(model_dir, 'modules.json')
+
+
+
+
+        is_sub_module_empty = False
+        if not os.path.exists(modules_path):
+            is_sub_module_empty = True
+        else:
+
+            with open(modules_path) as fIn:
+                modules_config = json.load(fIn)
+
+            if len(modules_config) == 1:
+                is_sub_module_empty = True
+
+        device = model.device
+        config = model.config
+        modules = (model,)
+        if is_sub_module_empty:
+            pooling_model = Pooling(model.config.hidden_size, 'mean')
+            modules += (pooling_model,)
+        else:
+            for module_config in modules_config:
+                mtype = module_config['type'].strip()
+                if '.Transformer' in mtype:
+                    continue
+                module_class = import_from_string(module_config['type'])
+                module = module_class.load(os.path.join(model_dir, module_config['path']))
+                modules += (module,)
+
+        model = torch.nn.Sequential(*modules)
+        model.device = device
+        model.config = config
+        return model
     def _load_model(self, device_id=None):
         parser = HfArgumentParser((ModelArguments,))
         (model_args,) = parser.parse_dict(self.model_config_dict["model_config"], allow_extra_keys=True)
@@ -40,8 +132,9 @@ class EngineAPI(EngineAPI_Base):
             rope_args = None
 
 
-        pl_model = MyTransformer(config=config, model_args=model_args, torch_dtype=torch.float16, rope_args=rope_args)
+        pl_model = MyTransformer(model_class=AutoModel,config=config, model_args=model_args, torch_dtype=torch.float16, rope_args=rope_args)
         model = pl_model.get_llm_model()
+        model = self._load_sub_module(model)
         model = model.eval()
 
         if not self.is_config_quarted(config):
@@ -57,6 +150,12 @@ class EngineAPI(EngineAPI_Base):
                 model.cuda()
             else:
                 model.cuda(device_id)
+
+        try:
+            model.device = torch.device(device_id or torch.cuda.current_device())
+        except AttributeError:
+            pass
+
         return model, config, tokenizer
 
     def _load_model_lora(self, device_id=None):
@@ -83,11 +182,10 @@ class EngineAPI(EngineAPI_Base):
                                                  alpha=self.ntk_scale)
         else:
             rope_args = None
-        pl_model = MyTransformer(config=config, model_args=model_args,
+        pl_model = MyTransformer(model_class=AutoModel,config=config, model_args=model_args,
                                  lora_args=lora_args,
                                  torch_dtype=torch.float16, new_num_tokens=new_num_tokens,
                                  rope_args=rope_args,
-
                                  # # device_map="auto",
                                  # device_map = {"":0} # 第一块卡
                                  )
@@ -118,9 +216,32 @@ class EngineAPI(EngineAPI_Base):
                 self.lora_model.cuda()
             else:
                 self.lora_model.cuda(device_id)
+
+        self.lora_model = self._load_sub_module(self.lora_model)
+
+        try:
+            self.lora_model.device = torch.device(device_id or torch.cuda.current_device())
+        except AttributeError:
+            pass
+
         return self.lora_model, config, tokenizer
 
 
+    def _text_length(self, text: Union[List[int], List[List[int]]]):
+        """
+        Help function to get the length for the input text. Text can be either
+        a list of ints (which means a single text as input), or a tuple of list of ints
+        (representing several text inputs to the model).
+        """
+
+        if isinstance(text, dict):              #{key: value} case
+            return len(next(iter(text.values())))
+        elif not hasattr(text, '__len__'):      #Object has no len() method
+            return 1
+        elif len(text) == 0 or isinstance(text[0], int):    #Empty string or list of ints
+            return len(text)
+        else:
+            return sum([len(t) for t in text])      #Sum of length of individual strings
 
     def _encode(self,
                 model,
@@ -129,6 +250,7 @@ class EngineAPI(EngineAPI_Base):
                 output_value: str = 'sentence_embedding',
                 convert_to_numpy: bool = True,
                 convert_to_tensor: bool = False,
+                max_tokens= None,
                 device: str = None,
                 normalize_embeddings: bool = False) -> Union[List[Tensor], ndarray, Tensor]:
         """
@@ -159,10 +281,9 @@ class EngineAPI(EngineAPI_Base):
             sentences = [sentences]
             input_was_string = True
 
-        if device is None:
-            device = self._target_device
 
-        self.to(device)
+        if device is None:
+            device = model.device
 
         all_embeddings = []
         length_sorted_idx = np.argsort([-self._text_length(sen) for sen in sentences])
@@ -170,34 +291,19 @@ class EngineAPI(EngineAPI_Base):
 
         for start_index in range(0, len(sentences), batch_size):
             sentences_batch = sentences_sorted[start_index:start_index+batch_size]
-            features = self.tokenizer(sentences_batch)
-            features = batch_to_device(features, device)
-
+            self.tokenizer: PreTrainedTokenizer
+            features = self.tokenizer(sentences_batch,truncation=True,max_length=max_tokens,return_tensors="pt")
+            features = features.to(device=device)
             with torch.no_grad():
                 out_features = model(features)
+                embeddings = out_features[output_value]
+                embeddings = embeddings.detach()
+                if normalize_embeddings:
+                    embeddings = torch.nn.functional.normalize(embeddings, p=2, dim=1)
 
-                if output_value == 'token_embeddings':
-                    embeddings = []
-                    for token_emb, attention in zip(out_features[output_value], out_features['attention_mask']):
-                        last_mask_id = len(attention)-1
-                        while last_mask_id > 0 and attention[last_mask_id].item() == 0:
-                            last_mask_id -= 1
-
-                        embeddings.append(token_emb[0:last_mask_id+1])
-                elif output_value is None:  #Return all outputs
-                    embeddings = []
-                    for sent_idx in range(len(out_features['sentence_embedding'])):
-                        row =  {name: out_features[name][sent_idx] for name in out_features}
-                        embeddings.append(row)
-                else:   #Sentence embeddings
-                    embeddings = out_features[output_value]
-                    embeddings = embeddings.detach()
-                    if normalize_embeddings:
-                        embeddings = torch.nn.functional.normalize(embeddings, p=2, dim=1)
-
-                    # fixes for #522 and #487 to avoid oom problems on gpu with large datasets
-                    if convert_to_numpy:
-                        embeddings = embeddings.cpu()
+                # fixes for #522 and #487 to avoid oom problems on gpu with large datasets
+                if convert_to_numpy:
+                    embeddings = embeddings.cpu()
 
                 all_embeddings.extend(embeddings)
 
@@ -212,14 +318,10 @@ class EngineAPI(EngineAPI_Base):
             all_embeddings = all_embeddings[0]
 
         return all_embeddings
-    def embedding(self, query, **kwargs):
+    def embedding(self, query,max_tokens=None, **kwargs):
         model = self.get_model()
-        inputs = self.tokenizer(query, return_tensors="pt")
-        inputs = inputs.to(model.device)
-        model_output = model.forward(**inputs, return_dict=True, output_hidden_states=True, **kwargs)
-        data = model_output.hidden_states[-1]
-        data = F.normalize(torch.mean(data, dim=1), p=2, dim=1)
-        embedding = data.detach().tolist()
+        emb = self._encode(model,sentences=query,max_tokens=max_tokens,normalize_embeddings=True)
+        emb = emb.tolist()
         return CompletionResult(result={
-            "response": embedding,
+            "response": emb,
         })

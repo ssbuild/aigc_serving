@@ -163,6 +163,7 @@ class EmbeddingsRequest(CustomEmbeddingParams):
     input: Union[str, List[Any]]
     user: Optional[str] = None
     adapter_name: Optional[str] = None
+    max_tokens: Optional[str] = None
 
 
 class EmbeddingsResponse(BaseModel):
