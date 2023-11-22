@@ -383,12 +383,21 @@ class ModelEngine_Base(ABC):
                     "response": node.result["response"],
                     "num_token": node.result.get('num_token', len(node.result["response"]))
                 }
-            else:
+            elif method == "embedding":
                 query = r.get("query", "")
                 node: CompletionResult = method_fn(query=query, **params)
                 result = {
                     "response": node.result["response"],
                 }
+            else:
+                # generate
+                messages = r.get("messages", [])
+                node: CompletionResult = method_fn(messages=messages, **params)
+                result = {
+                    "response": node.result["response"],
+                    "num_token": node.result.get('num_token', len(node.result["response"]))
+                }
+
         else:
             code = -1
             msg = "{} not exist method {}".format(self.model_config_dict['model_config']['model_type'], "chat")
