@@ -20,7 +20,7 @@ from deep_training.data_helper import ModelArguments, DataHelper
 from deep_training.nlp.layers.rope_scale.patch import RotaryNtkScaledArguments
 from transformers import HfArgumentParser, AutoModel, PreTrainedTokenizer
 from aigc_zoo.model_zoo.auto.llm_model import MyTransformer,AutoConfig, PetlArguments, PetlModel
-from serving.model_handler.base import EngineAPI_Base, CompletionResult, LoraModelState, load_lora_config, GenArgs, \
+from serving.model_handler.base import ModelEngine_Base, CompletionResult, LoraModelState, load_lora_config, GenArgs, \
     WorkMode
 from serving.prompt import *
 
@@ -75,7 +75,7 @@ def forward_new_fn(self,features):
     return features
 
 
-class EngineAPI(EngineAPI_Base):
+class ModelEngine(ModelEngine_Base):
 
     def _load_sub_module(self,model):
         global global_forward_fn

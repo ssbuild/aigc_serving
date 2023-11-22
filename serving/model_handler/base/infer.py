@@ -20,7 +20,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-class EngineAPI_Base(ABC):
+class ModelEngine_Base(ABC):
     def __init__(self,model_config_dict,group_name="",worker_idx=0):
         self.model_config_dict = model_config_dict
         self.group_name = group_name

@@ -14,13 +14,13 @@ from deep_training.nlp.layers.rope_scale.patch import RotaryNtkScaledArguments
 from transformers import HfArgumentParser, BitsAndBytesConfig, GenerationConfig
 from aigc_zoo.model_zoo.baichuan.baichuan_7b.llm_model import MyTransformer,BaiChuanConfig,BaiChuanTokenizer,PetlArguments,PetlModel
 from aigc_zoo.generator_utils.generator_llm import Generate
-from serving.model_handler.base import EngineAPI_Base,CompletionResult, LoraModelState, load_lora_config,GenArgs,WorkMode
+from serving.model_handler.base import ModelEngine_Base,CompletionResult, LoraModelState, load_lora_config,GenArgs,WorkMode
 from serving.prompt import *
 
 class NN_DataHelper(DataHelper):pass
 
 
-class EngineAPI(EngineAPI_Base):
+class ModelEngine(ModelEngine_Base):
 
 
     def _load_model(self,device_id=None):
@@ -201,10 +201,9 @@ class EngineAPI(EngineAPI_Base):
             #"history": history
         })
 
-    def embedding(self, query, **kwargs):
-        args_process = GenArgs(kwargs, self)
+    def embedding(self, query,max_tokens=None, **kwargs):
         model = self.get_model()
-        inputs = self.tokenizer(query, return_tensors="pt")
+        inputs = self.tokenizer(query, truncation=True,max_length=max_tokens, return_tensors="pt")
         inputs = inputs.to(model.device)
         model_output = model.forward(**inputs,return_dict=True, output_hidden_states=True, **kwargs)
         data = model_output.hidden_states[-1]
