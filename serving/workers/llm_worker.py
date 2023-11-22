@@ -20,73 +20,73 @@ def get_worker_instance(model_name,config,group_name,worker_idx):
     if model_type.startswith("baichuan"):
         if model_name.startswith("baichuan2"):
             if model_name.find('13b') != -1:
-                from serving.model_handler.baichuan2_13b.infer import EngineAPI
-                api_client = EngineAPI(config,group_name=group_name,worker_idx=worker_idx)
+                from serving.model_handler.baichuan2_13b.infer import ModelEngine
+                api_client = ModelEngine(config, group_name=group_name, worker_idx=worker_idx)
             else:
-                from serving.model_handler.baichuan2_7b.infer import EngineAPI
-                api_client = EngineAPI(config,group_name=group_name,worker_idx=worker_idx)
+                from serving.model_handler.baichuan2_7b.infer import ModelEngine
+                api_client = ModelEngine(config, group_name=group_name, worker_idx=worker_idx)
         elif model_name.startswith("baichuan"):
             if model_name.find('13b') != -1:
-                from serving.model_handler.baichuan_13b.infer import EngineAPI
-                api_client = EngineAPI(config,group_name=group_name,worker_idx=worker_idx)
+                from serving.model_handler.baichuan_13b.infer import ModelEngine
+                api_client = ModelEngine(config, group_name=group_name, worker_idx=worker_idx)
             else:
-                from serving.model_handler.baichuan_7b.infer import EngineAPI
-                api_client = EngineAPI(config,group_name=group_name,worker_idx=worker_idx)
+                from serving.model_handler.baichuan_7b.infer import ModelEngine
+                api_client = ModelEngine(config, group_name=group_name, worker_idx=worker_idx)
     elif model_type == "chatglm" or model_type == "chatglm2" or model_type == "chatglm3":
         if model_name.startswith("chatglm3"):
-            from serving.model_handler.chatglm3.infer import EngineAPI
-            api_client = EngineAPI(config, group_name=group_name, worker_idx=worker_idx)
+            from serving.model_handler.chatglm3.infer import ModelEngine
+            api_client = ModelEngine(config, group_name=group_name, worker_idx=worker_idx)
         elif model_name.startswith("chatglm2"):
-            from serving.model_handler.chatglm2.infer import EngineAPI
-            api_client = EngineAPI(config,group_name=group_name,worker_idx=worker_idx)
+            from serving.model_handler.chatglm2.infer import ModelEngine
+            api_client = ModelEngine(config, group_name=group_name, worker_idx=worker_idx)
         elif model_name.startswith("chatglm") or model_name.startswith("bianque2"):
-            from serving.model_handler.chatglm.infer import EngineAPI
-            api_client = EngineAPI(config,group_name=group_name,worker_idx=worker_idx)
+            from serving.model_handler.chatglm.infer import ModelEngine
+            api_client = ModelEngine(config, group_name=group_name, worker_idx=worker_idx)
     elif model_type == "t5":
-        from serving.model_handler.t5.infer import EngineAPI
-        api_client = EngineAPI(config, group_name=group_name, worker_idx=worker_idx)
+        from serving.model_handler.t5.infer import ModelEngine
+        api_client = ModelEngine(config, group_name=group_name, worker_idx=worker_idx)
     elif model_type == "xverse":
-        from serving.model_handler.xverse.infer import EngineAPI
-        api_client = EngineAPI(config, group_name=group_name, worker_idx=worker_idx)
+        from serving.model_handler.xverse.infer import ModelEngine
+        api_client = ModelEngine(config, group_name=group_name, worker_idx=worker_idx)
     elif model_type == "bluelm":
-        from serving.model_handler.bluelm.infer import EngineAPI
-        api_client = EngineAPI(config, group_name=group_name, worker_idx=worker_idx)
+        from serving.model_handler.bluelm.infer import ModelEngine
+        api_client = ModelEngine(config, group_name=group_name, worker_idx=worker_idx)
     elif model_type == "skywork":
-        from serving.model_handler.skywork.infer import EngineAPI
-        api_client = EngineAPI(config, group_name=group_name, worker_idx=worker_idx)
+        from serving.model_handler.skywork.infer import ModelEngine
+        api_client = ModelEngine(config, group_name=group_name, worker_idx=worker_idx)
     elif model_type == "yi":
-        from serving.model_handler.yi.infer import EngineAPI
-        api_client = EngineAPI(config, group_name=group_name, worker_idx=worker_idx)
+        from serving.model_handler.yi.infer import ModelEngine
+        api_client = ModelEngine(config, group_name=group_name, worker_idx=worker_idx)
     elif model_name.startswith("tiger") or model_name.startswith("llama") or model_name.startswith("causallm"):
-        from serving.model_handler.llama.infer import EngineAPI
-        api_client = EngineAPI(config, group_name=group_name, worker_idx=worker_idx)
+        from serving.model_handler.llama.infer import ModelEngine
+        api_client = ModelEngine(config, group_name=group_name, worker_idx=worker_idx)
     elif model_type in ["opt","bloom"]:
-        from serving.model_handler.llm.infer import EngineAPI
-        api_client = EngineAPI(config,group_name=group_name,worker_idx=worker_idx)
+        from serving.model_handler.llm.infer import ModelEngine
+        api_client = ModelEngine(config, group_name=group_name, worker_idx=worker_idx)
         
     elif model_type == "internlm":
-        from serving.model_handler.internlm.infer import EngineAPI
-        api_client = EngineAPI(config,group_name=group_name,worker_idx=worker_idx)
+        from serving.model_handler.internlm.infer import ModelEngine
+        api_client = ModelEngine(config, group_name=group_name, worker_idx=worker_idx)
         
     elif model_type == "moss":
-        from serving.model_handler.moss.infer import EngineAPI
-        api_client = EngineAPI(config,group_name=group_name,worker_idx=worker_idx)
+        from serving.model_handler.moss.infer import ModelEngine
+        api_client = ModelEngine(config, group_name=group_name, worker_idx=worker_idx)
         
     elif model_type.startswith("rwkv"):
-        from serving.model_handler.rwkv.infer import EngineAPI
-        api_client = EngineAPI(config,group_name=group_name,worker_idx=worker_idx)
+        from serving.model_handler.rwkv.infer import ModelEngine
+        api_client = ModelEngine(config, group_name=group_name, worker_idx=worker_idx)
 
     elif model_type == "qwen":
-        from serving.model_handler.qwen.infer import EngineAPI
-        api_client = EngineAPI(config, group_name=group_name, worker_idx=worker_idx)
+        from serving.model_handler.qwen.infer import ModelEngine
+        api_client = ModelEngine(config, group_name=group_name, worker_idx=worker_idx)
 
     elif model_type == "lingowhale":
-        from serving.model_handler.lingowhale.infer import EngineAPI
-        api_client = EngineAPI(config, group_name=group_name, worker_idx=worker_idx)
+        from serving.model_handler.lingowhale.infer import ModelEngine
+        api_client = ModelEngine(config, group_name=group_name, worker_idx=worker_idx)
 
     elif model_type in ["bert","roberta"] and ("bge" in model_name or "m3e" in model_name):
-        from serving.model_handler.huggingface_embedding.infer import EngineAPI
-        api_client = EngineAPI(config, group_name=group_name, worker_idx=worker_idx)
+        from serving.model_handler.huggingface_embedding.infer import ModelEngine
+        api_client = ModelEngine(config, group_name=group_name, worker_idx=worker_idx)
 
     if not api_client:
         raise ValueError(f'******* {model_name} {model_type} not support yet *********')

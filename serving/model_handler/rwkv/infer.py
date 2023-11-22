@@ -14,7 +14,7 @@ from transformers import HfArgumentParser
 from aigc_zoo.model_zoo.rwkv4.llm_model import MyTransformer, RwkvConfig, \
     set_model_profile,PetlArguments,PetlModel
 from aigc_zoo.utils.rwkv4_generate import Generate
-from serving.model_handler.base import EngineAPI_Base,CompletionResult,LoraModelState, load_lora_config, GenArgs,WorkMode
+from serving.model_handler.base import ModelEngine_Base,CompletionResult,LoraModelState, load_lora_config, GenArgs,WorkMode
 from serving.prompt import *
 
 
@@ -22,7 +22,7 @@ class NN_DataHelper(DataHelper):pass
 
 
 
-class EngineAPI(EngineAPI_Base):
+class ModelEngine(ModelEngine_Base):
     def _load_model(self,device_id=None):
         parser = HfArgumentParser((ModelArguments,))
         (model_args,) = parser.parse_dict(self.model_config_dict["model_config"], allow_extra_keys=True)
@@ -165,10 +165,9 @@ class EngineAPI(EngineAPI_Base):
             #"history": history
         })
 
-    def embedding(self, query, **kwargs):
-        args_process = GenArgs(kwargs, self)
+    def embedding(self, query,max_tokens=None, **kwargs):
         model = self.get_model()
-        inputs = self.tokenizer(query, return_tensors="pt")
+        inputs = self.tokenizer(query, truncation=True,max_length=max_tokens, return_tensors="pt")
         inputs = inputs.to(model.device)
         model_output = model.forward(**inputs,return_dict=True, output_hidden_states=True, **kwargs)
         data = model_output.hidden_states[-1]
