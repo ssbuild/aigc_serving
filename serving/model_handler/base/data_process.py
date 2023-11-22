@@ -156,6 +156,8 @@ class StopWordsCriteria(StoppingCriteria):
             del ids
         return False
 
+
+global_multinomial_fn = torch.multinomial
 class GenArgs:
     def __init__(self,args_dict:Dict, this_obj,is_stream=False):
         if args_dict is None:
@@ -167,9 +169,18 @@ class GenArgs:
         self.chunk: Optional[ChunkData] = None
         self.this_obj = this_obj
 
+        global global_multinomial_fn
+        if global_multinomial_fn is None:
+            global_multinomial_fn = torch.multinomial
+
+        if global_multinomial_fn != torch.multinomial:
+            torch.multinomial = global_multinomial_fn
         # support seed
         self.multinomial_fn = torch.multinomial
         self.__preprocess(args_dict)
+
+
+
     def __del__(self):
         # restore
         if torch.multinomial != self.multinomial_fn:

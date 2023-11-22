@@ -376,15 +376,16 @@ class EngineAPI_Base(ABC):
             code, msg = self.switch_lora(adapter_name)
             if code != 0:
                 return ret._replace(code=-1, msg=msg)
-            messages = r.get("messages", [])
             if method == "chat":
+                messages = r.get("messages", [])
                 node: CompletionResult = method_fn(messages=messages, **params)
                 result = {
                     "response": node.result["response"],
                     "num_token": node.result.get('num_token', len(node.result["response"]))
                 }
             else:
-                node: CompletionResult = method_fn(messages=messages, **params)
+                query = r.get("query", "")
+                node: CompletionResult = method_fn(query=query, **params)
                 result = {
                     "response": node.result["response"],
                 }

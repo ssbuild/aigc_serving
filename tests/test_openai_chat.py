@@ -11,7 +11,7 @@ model = "ChatYuan-large-v2"
 # models = openai.Model.list()
 # print("Models:", models)
 # Test completion API
-stream = False
+stream = True
 
 data = {
     "model": model,
@@ -19,7 +19,7 @@ data = {
     "messages": [{"role": "user", "content": "你是谁"}],
     "top_p": 0.8,
     "temperature": 1.0,
-    "frequency_penalty": 1.01,
+    "frequency_penalty": 1.1,
     "stream": stream,
     "nchar": 1,# stream 字符
     "n": 1, # 返回 n 个choices

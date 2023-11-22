@@ -13,7 +13,7 @@ def create_error_response(code: int, message: str) -> JSONResponse:
     )
 
 
-def check_requests(request) -> Optional[JSONResponse]:
+def check_requests_gen(request) -> Optional[JSONResponse]:
     # Check all params
     if request.max_tokens is not None and request.max_tokens <= 0:
         return create_error_response(
