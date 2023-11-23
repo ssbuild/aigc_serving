@@ -26,7 +26,7 @@ data = {
     "max_tokens": 512,
     "stop": ["Observation:"],
     "seed": None,
-    # "seed": "46",
+    # "seed": 46,
 }
 
 
