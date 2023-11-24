@@ -48,6 +48,7 @@ class CustomChatParams(BaseModel):
     forced_eos_token_id: Optional[int] = None
     guidance_scale: Optional[float] = None
     low_memory: Optional[bool] = None
+    no_repeat_ngram_size: Optional[int] = None
 
     # Deprecated
     functions: Optional[List[Dict[str, Any]]] = None
@@ -102,6 +103,9 @@ class CustomChatParams(BaseModel):
 
         if self.repetition_penalty is not None:
             params["repetition_penalty"] = self.repetition_penalty
+
+        if self.no_repeat_ngram_size is not None:
+            params["no_repeat_ngram_size"] = self.no_repeat_ngram_size
 
         if self.temperature <= 0:
             self.temperature = 1
