@@ -34,3 +34,45 @@ llama-7b-hf:
 #    # 使用第三块和第四块显卡
 #    - 2
 #    - 3
+
+
+
+
+
+
+Yi-34B-Chat:
+  alias: null
+  # 当仅有一个lora, 是否自动合并成一个模型，此方法将无法调用基础模型，只能使用合并后的权重
+  auto_merge_lora_single: true
+  # 是否自动量化模型
+  # 是否启用
+  enable: false
+  # embdding max batch size
+  max_batch_size: 1
+  model_config:
+    do_lower_case: null
+    # 是否启用lora , 多个 lora , adapter_name: lora weight dir
+    # "default": "/data/nlp/pre_models/torch/lora_path_dir"
+    # "your_adapter_name": "/data/nlp/pre_models/torch/your_adapter_dir"
+    lora: {}
+    model_name_or_path: /data/nlp/pre_models/torch/llama/Yi-34B-Chat
+    model_type: llama
+    use_fast_tokenizer: false
+  # 扩展位置长度 1 即为 1 * 2048 不扩充 , 2 即为 2 * 2 * 2048 以此类推
+  ntk_scale: 1
+
+  # one of deepspeed,accelerate,hf    单卡建议使用 hf
+  work_mode: deepspeed
+
+
+  workers:
+  # 第一个worker
+  - device_id:
+    # 使用第一块和第二块显卡
+    - 0
+    - 1
+#  # 第二个worker
+#  - device_id:
+#    # 使用第三块和第四块显卡
+#    - 2
+#    - 3

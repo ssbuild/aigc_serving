@@ -10,6 +10,7 @@
 
 ## update information
 ```text
+    11-27 yi model_type change to llama
     11-22 support sentence_transformers , such as bge,m3e and so on
     11-20 support seed for generator sample and support bianque2 , lingowhale
     11-06 fix pydantic 2 and support api_keys in config
