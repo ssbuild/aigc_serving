@@ -4,7 +4,7 @@
 # @FileName: skywork
 
 def get_chat(tokenizer,query,history = None,prefix=None):
-    prompt = prefix
+    prompt = prefix or ''
     if prompt:
         prompt = f"<|im_start|>system\n{prompt}<|im_end|>\n"
     if history is not None:
