@@ -54,12 +54,13 @@ def get_worker_instance(model_name,config,group_name,worker_idx):
     elif model_type == "skywork":
         from serving.model_handler.skywork.infer import ModelEngine
         api_client = ModelEngine(config, group_name=group_name, worker_idx=worker_idx)
-    elif model_type == "yi":
-        from serving.model_handler.yi.infer import ModelEngine
-        api_client = ModelEngine(config, group_name=group_name, worker_idx=worker_idx)
-    elif model_name.startswith("tiger") or model_name.startswith("llama") or model_name.startswith("causallm"):
-        from serving.model_handler.llama.infer import ModelEngine
-        api_client = ModelEngine(config, group_name=group_name, worker_idx=worker_idx)
+    elif model_type == "llama":
+        if model_name.find('yi') != -1:
+            from serving.model_handler.yi.infer import ModelEngine
+            api_client = ModelEngine(config, group_name=group_name, worker_idx=worker_idx)
+        else:
+            from serving.model_handler.llama.infer import ModelEngine
+            api_client = ModelEngine(config, group_name=group_name, worker_idx=worker_idx)
     elif model_type in ["opt","bloom"]:
         from serving.model_handler.llm.infer import ModelEngine
         api_client = ModelEngine(config, group_name=group_name, worker_idx=worker_idx)
