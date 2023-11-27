@@ -6,7 +6,6 @@ import functools
 import json
 import os
 from typing import Dict, List
-
 import torch
 from torch.nn import functional as F
 from deep_training.trainer.pl.modelweighter import default_peft_weight_preprocess
@@ -14,7 +13,7 @@ from deep_training.data_helper import ModelArguments, DataHelper
 from deep_training.nlp.layers.rope_scale.patch import RotaryNtkScaledArguments
 from transformers import HfArgumentParser,AutoModelForCausalLM
 from deep_training.utils.hf import register_transformer_model, register_transformer_config , register_transformer_tokenizer # noqa
-from aigc_zoo.model_zoo.yi.llm_model import MyYiForCausalLM,YiConfig,YiTokenizer
+from deep_training.nlp.models.rellama.modeling_llama import LlamaForCausalLM
 from aigc_zoo.model_zoo.llm.llm_model import MyTransformer,PetlArguments,PetlModel,AutoConfig
 from aigc_zoo.generator_utils.generator_llm import Generate
 from serving.model_handler.base import ModelEngine_Base,CompletionResult, LoraModelState, load_lora_config, GenArgs,WorkMode,ChunkData
@@ -26,10 +25,7 @@ class NN_DataHelper(DataHelper):pass
 
 class ModelEngine(ModelEngine_Base):
     def _load_model(self,device_id=None):
-        register_transformer_config(YiConfig)
-        register_transformer_model(MyYiForCausalLM, AutoModelForCausalLM)
-        register_transformer_tokenizer(YiConfig,YiTokenizer,YiTokenizer)
-
+        register_transformer_model(LlamaForCausalLM, AutoModelForCausalLM)
         parser = HfArgumentParser((ModelArguments,))
         (model_args,) = parser.parse_dict(self.model_config_dict["model_config"], allow_extra_keys=True)
 
@@ -65,10 +61,7 @@ class ModelEngine(ModelEngine_Base):
         return model, config, tokenizer
 
     def _load_model_lora(self, device_id=None):
-        register_transformer_config(YiConfig)
-        register_transformer_model(MyYiForCausalLM, AutoModelForCausalLM)
-        register_transformer_tokenizer(YiConfig, YiTokenizer, YiTokenizer)
-
+        register_transformer_model(LlamaForCausalLM, AutoModelForCausalLM)
         parser = HfArgumentParser((ModelArguments,))
         (model_args,) = parser.parse_dict(self.model_config_dict["model_config"], allow_extra_keys=True)
 
