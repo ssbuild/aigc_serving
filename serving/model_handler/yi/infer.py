@@ -137,12 +137,19 @@ class ModelEngine(ModelEngine_Base):
         return 'tiger' in self.model_config_dict["model_config"]["model_name_or_path"].lower()
 
     def get_default_gen_args(self):
+        filename = os.path.join(self.model_config_dict["model_config"]["model_name_or_path"],"generation_config.json")
+        if os.path.exists(filename):
+            with open(filename,mode='r',encoding='utf-8') as f:
+                gen_args = json.loads(f.read())
+        else:
+            gen_args = {}
         default_kwargs = dict(
             bos_token_id=self.config.bos_token_id,
             eos_token_id=self.config.eos_token_id,
             pad_token_id=self.config.eos_token_id,
             do_sample=True,
         )
+        default_kwargs.update(gen_args)
         return default_kwargs
 
     def chat_stream(self,messages: List[Dict], **kwargs):
