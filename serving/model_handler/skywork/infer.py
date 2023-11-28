@@ -45,7 +45,7 @@ class ModelEngine(ModelEngine_Base):
         pl_model = MyTransformer(config=config, model_args=model_args, torch_dtype=config.torch_dtype, rope_args=rope_args)
         model = pl_model.get_llm_model()
         model = model.eval()
-        if not self.is_config_quarted(config):
+        if not self.is_config_bnb(config) and not self.is_config_awq(config):
             if config.pretraining_tp<=1 and self.auto_quantize and hasattr(model,'quantize') and not model.quantized:
                 if not model.quantized:
                     # 按需修改，目前只支持 4/8 bit 量化 ， 可以保存量化模型
@@ -110,7 +110,7 @@ class ModelEngine(ModelEngine_Base):
                                      map_preprocess=default_peft_weight_preprocess if ls_peft else None)
         self.lora_model = pl_model.backbone.eval()
         self.lora_state = LoraModelState.NONE
-        if not self.is_config_quarted(config):
+        if not self.is_config_bnb(config) and not self.is_config_awq(config):
             if len(self.lora_conf) == 1:
                 if self.auto_merge_lora_single:
                     self.lora_state = LoraModelState.MERGE_AND_LOCKED

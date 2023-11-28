@@ -5,6 +5,7 @@ import logging
 import os
 import time
 import traceback
+import types
 from typing import List,Union,Dict
 from abc import ABC
 import torch
@@ -14,7 +15,7 @@ import multiprocessing
 import threading
 from serving.model_handler.base.data_process import flat_input # noqa
 from serving.model_handler.base.data_define import CompletionResult, LoraModelState, WorkMode  # noqa
-from serving.model_handler.base.utils import is_quantization_bnb
+from serving.model_handler.base.utils import is_quantization_bnb,is_quantization_awq
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
@@ -30,7 +31,7 @@ class ModelEngine_Base(ABC):
         self.model_ds = None
         self.model = None
 
-        self.auto_quantize = model_config_dict.get('auto_quantize',True)
+        self.auto_quantize = model_config_dict.get('auto_quantize',False)
         self.auto_merge_lora_single = model_config_dict.get('auto_merge_lora_single',True)
         self.ntk_scale = model_config_dict.get('ntk_scale', 1.0)
 
@@ -55,9 +56,11 @@ class ModelEngine_Base(ABC):
         self._release()
 
 
-    def is_config_quarted(self,config):
+    def is_config_bnb(self, config):
         return is_quantization_bnb(config)
 
+    def is_config_awq(self, config):
+        return is_quantization_awq(config)
     def _release(self):
         if self.work_mode == WorkMode.STANDORD_HF:
             pass
@@ -129,7 +132,7 @@ class ModelEngine_Base(ABC):
         try:
             self.rank = rank
             import deepspeed
-            from deepspeed.inference.config import DeepSpeedInferenceConfig
+            from deepspeed.inference.config import DeepSpeedInferenceConfig,DeepSpeedTPConfig
             from deepspeed.inference.engine import InferenceEngine
             torch.cuda.set_device(rank)
             dist.init_process_group("nccl", rank=rank, world_size=self.world_size,group_name=self.group_name + str(self.worker_idx))
@@ -140,12 +143,19 @@ class ModelEngine_Base(ABC):
                 deepspeed.get_accelerator().current_device_name = old_current_device_function
                 return deepspeed.get_accelerator().current_device_name()
             deepspeed.get_accelerator().current_device_name = tmp_current_device_fn
+
+            tensor_parallel_config = DeepSpeedTPConfig(enabled=True,tp_size=self.world_size,mpu=None,tp_group=None)
             ds_config = DeepSpeedInferenceConfig(**dict(
-                                                 mp_size=self.world_size,
-                                                 # dtype=torch.half,
-                                                 # checkpoint=None if args.pre_load_checkpoint else args.checkpoint_json,
-                                                 replace_with_kernel_inject=True
-                                             ))
+                dtype = torch.float16,
+                tensor_parallel=tensor_parallel_config,
+                min_out_tokens=1,
+                max_out_tokens= 200 * 1000,
+                # checkpoint=None if args.pre_load_checkpoint else args.checkpoint_json,
+                replace_with_kernel_inject=True,
+             ))
+
+            InferenceEngine._convert_to_dtype = lambda self,*args,**kwargs: ...
+
             self.model_ds = InferenceEngine(self.model,config=ds_config)
             if hasattr(self.model,'chat'):
                 self.model_ds.chat = self.model.chat
@@ -156,6 +166,9 @@ class ModelEngine_Base(ABC):
                 self.model_ds.stream_chat = self.model.stream_chat
 
             self.model_ds.device = self.model.device
+
+            # self.model_ds._convert_to_dtype = types.MethodType(lambda self: ...,self.model_ds)
+
             self.loop_forever(rank)
         except Exception as e:
             traceback.print_exc()
