@@ -4,6 +4,7 @@ import openai
 # 新版本
 openai.api_key = "112233"
 openai.api_base = "http://192.168.2.180:8081/v1"
+openai.api_base = "http://106.12.147.243:8081/v1"
 
 openai.proxy = None
 # model = "chatglm2-6b-int4"
@@ -12,6 +13,7 @@ openai.proxy = None
 model = "qwen-7b-chat"
 model = "qwen-chat-7b-int4"
 model = "Yi-34B-Chat"
+model = "Yi-34B-Chat-4bits"
 
 # # Test list models API
 # models = openai.Model.list()
