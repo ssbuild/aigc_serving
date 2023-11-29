@@ -177,9 +177,12 @@ class GenArgs:
             torch.multinomial = global_multinomial_fn
         # support seed
         self.multinomial_fn = torch.multinomial
-        self.__preprocess(args_dict)
 
         self.stop_args = args_dict.pop('stop', None)
+
+        self.__preprocess(args_dict)
+
+
 
 
     def __del__(self):
