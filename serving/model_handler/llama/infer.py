@@ -142,6 +142,12 @@ class ModelEngine(ModelEngine_Base):
     def is_causallm(self):
         return 'causallm' in self.model_config_dict["model_config"]["model_name_or_path"].lower()
 
+    @functools.cached_property
+    def is_codellama(self):
+        return 'codellama' in self.model_config_dict["model_config"]["model_name_or_path"].lower()
+
+
+
     def get_default_gen_args(self):
         default_kwargs = dict(
             bos_token_id=self.config.bos_token_id,
@@ -163,6 +169,8 @@ class ModelEngine(ModelEngine_Base):
             prompt = get_chat_tiger(self.tokenizer, query, history=history, prefix=prefix)
         elif self.is_causallm:
             prompt = get_chat_causallm(self.tokenizer, query, history=history, prefix=prefix)
+        elif self.is_codellama:
+            prompt = get_chat_codellama(self.tokenizer, query, history=history, prefix=prefix)
         else:
             prompt = get_chat_default(self.tokenizer, query, history=history, prefix=prefix)
         skip_word_list = default_kwargs.get('eos_token_id', None) or [self.tokenizer.eos_token_id]
@@ -186,6 +194,8 @@ class ModelEngine(ModelEngine_Base):
             prompt = get_chat_tiger(self.tokenizer, query, history=history, prefix=prefix)
         elif self.is_causallm:
             prompt = get_chat_causallm(self.tokenizer, query, history=history, prefix=prefix)
+        elif self.is_codellama:
+            prompt = get_chat_codellama(self.tokenizer, query, history=history, prefix=prefix)
         else:
             prompt = get_chat_default(self.tokenizer, query, history=history, prefix=prefix)
         response = self.gen_core.generate(query=prompt, **default_kwargs)

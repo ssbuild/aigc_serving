@@ -17,6 +17,14 @@ from serving.model_handler.base import ModelEngine_Base,CompletionResult,LoraMod
 from serving.prompt import *
 
 
+def _preprocess_messages_for_baichuan_13b(messages: List[Dict]):
+    # 去除 system
+    if messages[0]["role"] == "system":
+        item = messages.pop(0)
+        messages[0]["content"] = item["content"] + messages[0]["content"]
+    return messages
+
+
 class NN_DataHelper(DataHelper):pass
 
 
@@ -115,11 +123,16 @@ class ModelEngine(ModelEngine_Base):
         return self.lora_model, config, tokenizer
 
     def get_default_gen_args(self):
-        default_kwargs = dict(eos_token_id=self.model.config.eos_token_id,
-                              pad_token_id=self.model.config.eos_token_id,
-                              do_sample=True, top_k=5, top_p=0.85, temperature=0.3,
-                              repetition_penalty=1.1,
-                              )
+        default_kwargs = dict(
+            bos_token_id=self.model.config.bos_token_id,
+            eos_token_id=self.model.config.eos_token_id,
+            pad_token_id=self.model.config.eos_token_id,
+            do_sample=True,
+            # top_k=5,
+            # top_p=0.85,
+            # temperature=0.3,
+            # repetition_penalty=1.1
+        )
         return default_kwargs
 
     def chat_stream(self,messages: List[Dict], **kwargs):
@@ -131,7 +144,7 @@ class ModelEngine(ModelEngine_Base):
         stopping_criteria = default_kwargs.pop('stopping_criteria', None)
         generation_config = GenerationConfig(**default_kwargs)
         for response in self.get_model().chat(tokenizer=self.tokenizer,
-                                              messages=messages,
+                                              messages=_preprocess_messages_for_baichuan_13b(messages),
                                               stream=True,
                                               generation_config=generation_config,
                                               stopping_criteria=stopping_criteria):
@@ -161,7 +174,7 @@ class ModelEngine(ModelEngine_Base):
         stopping_criteria = default_kwargs.pop('stopping_criteria', None)
         generation_config = GenerationConfig(**default_kwargs)
         response = self.get_model().chat(tokenizer=self.tokenizer,
-                                         messages=messages,
+                                         messages=_preprocess_messages_for_baichuan_13b(messages),
                                          generation_config=generation_config,
                                          stopping_criteria=stopping_criteria)
         response = args_process.postprocess_response(response)

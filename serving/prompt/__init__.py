@@ -15,3 +15,4 @@ from serving.prompt.bluelm import get_chat as get_chat_bluelm
 from serving.prompt.yi import get_chat as get_chat_yi
 from serving.prompt.bianque2 import get_chat as get_chat_bianque2
 from serving.prompt.lingowhale import get_chat as get_chat_lingowhale
+from serving.prompt.codellama import get_chat as get_chat_codellama
