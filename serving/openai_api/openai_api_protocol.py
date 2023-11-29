@@ -71,13 +71,24 @@ class UsageInfo(BaseModel):
     total_tokens: int = 0
     completion_tokens: Optional[int] = 0
 
+
+class ChatFunctionCallResponse(BaseModel):
+    name: str
+    arguments: str
+    thought: Optional[str] = None
+
+class ChatCodeCallResponse(BaseModel):
+    metadata: Optional[str]
+    thought: Optional[str]
+    code: Optional[str]
+
 class ChatMessage(BaseModel):
     role: str
     content: str
     name: Optional[str] = None
     functions: Optional[List[Dict[str, Any]]] = None
     function_call: Optional[Union[str, Dict[str, str]]] = "auto"
-    code_call: Optional[Union[str, Dict[str, str]]] = None
+    code_call: Optional[Union[str, Dict[str, str],ChatFunctionCallResponse]] = None
 
 class ChatCompletionRequest(CustomChatParams):
     messages: List[ChatMessage]
@@ -90,15 +101,6 @@ class ChatCompletionRequest(CustomChatParams):
 
 
 
-class ChatFunctionCallResponse(BaseModel):
-    name: str
-    arguments: str
-    thought: Optional[str] = None
-
-class ChatCodeCallResponse(BaseModel):
-    metadata: Optional[str]
-    thought: Optional[str]
-    code: Optional[str]
 
 
 class ChatCompletionResponseChoice(BaseModel):
