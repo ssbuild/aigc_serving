@@ -85,7 +85,8 @@ def get_worker_instance(model_name,config,group_name,worker_idx):
         from serving.model_handler.lingowhale.infer import ModelEngine
         api_client = ModelEngine(config, group_name=group_name, worker_idx=worker_idx)
 
-    elif model_type in ["bert","roberta"] and ("bge" in model_name or "m3e" in model_name):
+    elif model_type in ["bert","roberta"]:
+        # if ("bge" in model_name or "m3e" in model_name):
         from serving.model_handler.huggingface_embedding.infer import ModelEngine
         api_client = ModelEngine(config, group_name=group_name, worker_idx=worker_idx)
 

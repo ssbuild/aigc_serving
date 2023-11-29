@@ -21,6 +21,13 @@ from aigc_zoo.model_zoo.xverse.llm_model import MyTransformer,MyXverseForCausalL
 from serving.prompt import *
 
 
+def _preprocess_messages_for_xverse(messages: List[Dict]):
+    # 去除 system
+    if messages[0]["role"] == "system":
+        item = messages.pop(0)
+        messages[0]["content"] = item["content"] + messages[0]["content"]
+    return messages
+
 
 class NN_DataHelper(DataHelper):pass
 
@@ -154,7 +161,7 @@ class ModelEngine(ModelEngine_Base):
         skip_word_list = default_kwargs.get('eos_token_id', None) or [self.tokenizer.eos_token_id]
         streamer = args_process.get_streamer(skip_word_list)
         self.get_model().chat(tokenizer=self.tokenizer,
-                              messages=messages,
+                              messages=_preprocess_messages_for_xverse(messages),
                               generation_config=generation_config,
                               streamer=streamer,
                               stopping_criteria=stopping_criteria)
@@ -170,7 +177,7 @@ class ModelEngine(ModelEngine_Base):
         stopping_criteria = default_kwargs.pop('stopping_criteria', None)
         generation_config = GenerationConfig(**default_kwargs)
         response = self.get_model().chat(tokenizer=self.tokenizer,
-                                         messages=messages,
+                                         messages=_preprocess_messages_for_xverse(messages),
                                          generation_config=generation_config,
                                          stopping_criteria=stopping_criteria)
         response = args_process.postprocess_response(response)
