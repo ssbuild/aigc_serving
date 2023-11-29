@@ -29,7 +29,13 @@ def _preprocess_messages_for_chatglm3(messages: List[Dict]):
         if message["role"] == "assistant":
             output = message["content"]
             for response in output.split("<|assistant|>"):
-                metadata, content = response.split("\n", maxsplit=1)
+                item = response.split("\n", maxsplit=1)
+                # 支持自定义历史记录 ， 例如 aigc_evals history
+                if len(item) == 2:
+                    metadata, content = item
+                else:
+                    metadata, content = "", item[0]
+
                 if not metadata.strip():
                     content = content.strip()
                     history.append({"role": "assistant", "metadata": metadata, "content": content})
