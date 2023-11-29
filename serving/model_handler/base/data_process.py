@@ -148,8 +148,8 @@ class StopWordsCriteria(StoppingCriteria):
         if len(self.stop_words_ids) == 0:
             return False
         kmp = KMP()
-        for ids_ in input_ids:
-            ids = ids_.tolist()[self.init_pos:]
+        for ids_ in input_ids[self.init_pos:]:
+            ids = ids_.tolist()
             for stop_token_seq in self.stop_words_ids:
                 if kmp.indexOf(ids, stop_token_seq) != -1:
                     return True
@@ -179,6 +179,7 @@ class GenArgs:
         self.multinomial_fn = torch.multinomial
         self.__preprocess(args_dict)
 
+        self.stop_args = args_dict.pop('stop', None)
 
 
     def __del__(self):
@@ -190,7 +191,7 @@ class GenArgs:
         if self.is_stream:
             nchar = args_dict.pop('nchar',1)
             gtype = args_dict.pop('gtype',"total")
-            self.chunk = ChunkData(nchar=nchar, stop=args_dict.get('stop', None), mode=gtype)
+            self.chunk = ChunkData(nchar=nchar, stop=self.stop_args, mode=gtype)
 
         seed = args_dict.pop('seed',None)
 
@@ -203,7 +204,7 @@ class GenArgs:
         return args_dict
 
     def build_args(self, args_dict):
-        stop = args_dict.pop('stop',None)
+        stop = self.stop_args
         if stop is None:
             return args_dict
 
@@ -243,7 +244,7 @@ class GenArgs:
             if len(messages) > 0:
                 if messages[0]["role"] == "system":
                     prefix = messages.pop(0)["content"]
-            history = [(q, a) for q, a in zip(messages[::2], messages[1::2])]
+            history = [(q["content"], a["content"]) for q, a in zip(messages[::2], messages[1::2])]
             if prefix:
                 if history:
                     history[0] = (prefix + history[0][0],history[1])
@@ -261,14 +262,14 @@ class GenArgs:
             if len(messages) > 0:
                 if messages[0]["role"] == "system":
                     prefix = messages.pop(0)["content"]
-            history = [(q, a) for q, a in zip(messages[::2], messages[1::2])]
+            history = [(q["content"], a["content"]) for q, a in zip(messages[::2], messages[1::2])]
             return (prefix, query, history)
 
         query = messages[0]["content"]
         return query
 
-    def postprocess_response(self, response, **kwargs):
-        stops = kwargs.get('stop',None)
+    def postprocess_response(self, response):
+        stops = self.stop_args
         if stops is None:
             if isinstance(self.tokenizer.eos_token,str):
                 stops = [self.tokenizer.eos_token]

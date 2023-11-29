@@ -5,7 +5,7 @@ import os
 import sys
 import time
 import traceback
-import typing
+from typing import Optional
 
 from ipc_worker.ipc_zmq_loader import IPC_zmq,ZMQ_process_worker  # noqa
 import copy
@@ -136,7 +136,7 @@ class My_worker(ZMQ_process_worker):
                 method = r.get('method', "chat")
                 if method == 'chat_stream':
                     gen = self.api_client.trigger_generator(r)
-                    node: typing.Optional[CompletionResult]
+                    node: Optional[CompletionResult]
                     for node in gen:
                         end_time = time.time()
                         ret = {

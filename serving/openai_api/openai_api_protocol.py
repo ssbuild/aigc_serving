@@ -71,24 +71,6 @@ class UsageInfo(BaseModel):
     total_tokens: int = 0
     completion_tokens: Optional[int] = 0
 
-class ChatMessage(BaseModel):
-    role: str
-    content: str
-    name: Optional[str] = None
-    functions: Optional[List[Dict[str, Any]]] = None
-    function_call: Optional[Union[str, Dict[str, str]]] = "auto"
-    code_call: Optional[Union[str, Dict[str, str]]] = None
-
-class ChatCompletionRequest(CustomChatParams):
-    messages: List[ChatMessage]
-
-    def build_messages(self):
-        messages = [message.model_dump() for message in self.messages]
-        assert self.messages[-1].role in [Role.USER,Role.OBSERVATION]
-        return [messages]
-
-
-
 
 class ChatFunctionCallResponse(BaseModel):
     name: str
@@ -99,6 +81,26 @@ class ChatCodeCallResponse(BaseModel):
     metadata: Optional[str]
     thought: Optional[str]
     code: Optional[str]
+
+class ChatMessage(BaseModel):
+    role: str
+    content: str
+    name: Optional[str] = None
+    functions: Optional[List[Dict[str, Any]]] = None
+    function_call: Optional[Union[str, Dict[str, str],ChatFunctionCallResponse]] = "auto"
+    code_call: Optional[Union[str, Dict[str, str],ChatCodeCallResponse]] = None
+
+class ChatCompletionRequest(CustomChatParams):
+    messages: List[ChatMessage]
+
+    def build_messages(self):
+        messages = [message.model_dump() for message in self.messages]
+        assert self.messages[-1].role in [Role.USER,Role.OBSERVATION,Role.FUNCTION]
+        return [messages]
+
+
+
+
 
 
 class ChatCompletionResponseChoice(BaseModel):

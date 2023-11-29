@@ -182,7 +182,7 @@ class ModelEngine(ModelEngine_Base):
         query, history = args_process.get_chat_info(messages)
         prompt = get_chat_default(self.tokenizer, query, history)
         response = self.gen_core.generate(query=prompt, **args_process.build_args(default_kwargs))
-        response = args_process.postprocess_response(response, **kwargs)
+        response = args_process.postprocess_response(response)
         # history = history + [(query, response)]
         return CompletionResult(result={
             "response": response,

@@ -165,7 +165,7 @@ class ModelEngine(ModelEngine_Base):
         prompt = get_chat_chatyaun(self.tokenizer, query, history)
         response = self.gen_core.generate(prompt, **default_kwargs)
         response = postprocess_chatyuan(response)
-        response = args_process.postprocess_response(response, **kwargs)
+        response = args_process.postprocess_response(response)
         # history = history + [(query, response)]
         return CompletionResult(result={
             "response": response,

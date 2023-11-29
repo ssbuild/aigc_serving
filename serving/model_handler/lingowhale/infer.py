@@ -185,7 +185,7 @@ class ModelEngine(ModelEngine_Base):
         prefix,query, history = args_process.get_chat_info_with_system(messages)
         prompt = get_chat_lingowhale(self.tokenizer, query, history=history, prefix=prefix)
         response = self.gen_core.generate(query=prompt, **default_kwargs)
-        response = args_process.postprocess_response(response, **kwargs)
+        response = args_process.postprocess_response(response)
         return CompletionResult(result={
             "response": response,
             #"history": history + [(query, response)]

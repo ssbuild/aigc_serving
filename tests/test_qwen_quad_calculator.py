@@ -2,14 +2,17 @@ import json
 import math
 
 import openai
+from openai.openai_object import OpenAIObject
 from scipy import integrate
 
 
 # 新版本
-openai.api_key = "EMPTY"
+openai.api_key = "112233"
 openai.api_base = "http://192.168.2.180:8081/v1"
+openai.api_base = "http://106.12.147.243:8082/v1"
 model = "chatglm2-6b-int4"
 model = "qwen-7b-chat-int4"
+model = "Qwen-14B-Chat"
 
 def calculate_quad(formula_str: str, a: float, b: float) -> float:
     """ 计算数值积分 """
@@ -69,14 +72,18 @@ class QuadCalculator:
 
     def run(self, query: str) -> str:
         # Step 1: send the conversation and available functions to model
-        messages = [{"role": "user", "content": query}]
+        messages = [{"role": "user",
+                     "content": query}]
         response = openai.ChatCompletion.create(
             model=model,
             messages=messages,
             temperature=0,
             functions=self.functions,
-            stop=["Observation:"]
+            stop=["Observation:","Observation"]
         )
+
+
+
 
         while True:
             if response["choices"][0]["finish_reason"] == "stop":
@@ -99,8 +106,10 @@ class QuadCalculator:
 
                     function_name = response_message["function_call"]["name"]
                     fuction_to_call = available_functions[function_name]
+
+
                     function_args = json.loads(response_message["function_call"]["arguments"])
-                    print(f"Function args: {function_args}")
+
 
                     for k in ["a", "b", "y"]:
                         if k in function_args:
@@ -109,21 +118,29 @@ class QuadCalculator:
                     print(f"Function response: {function_response}")
 
                     # Step 4: send the info on the function call and function response to model
-                    messages.append(response_message)  # extend conversation with assistant's reply
+
+                    messages.append({"role": "assistant","content": response.choices[0].message.content})  # extend conversation with assistant's reply
                     messages.append(
                         {
                             "role": "function",
                             "name": function_name,
-                            "content": function_response,
+                            "content": str(function_response),
                         }
                     )  # extend conversation with function response
+
 
                     response = openai.ChatCompletion.create(
                         model=model,
                         messages=messages,
+                        functions=self.functions,
                         temperature=0,
-                        stop=["Observation:"],
+                        stop=["Observation:","Observation"],
                     )  # get a new response from model where it can see the function response
+                else:
+                    # 防止死循环
+                    print(response["choices"][0]["message"].content)
+                    break
+
             else:
                 break
 
