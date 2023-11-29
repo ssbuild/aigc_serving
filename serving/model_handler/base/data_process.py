@@ -250,7 +250,7 @@ class GenArgs:
             history = [(q["content"], a["content"]) for q, a in zip(messages[::2], messages[1::2])]
             if prefix:
                 if history:
-                    history[0] = (prefix + history[0][0],history[1])
+                    history[0] = (prefix + history[0][0],history[0][1])
                 else:
                     query = prefix + query
             return (query, history)
