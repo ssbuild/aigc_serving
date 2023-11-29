@@ -87,8 +87,8 @@ class ChatMessage(BaseModel):
     content: str
     name: Optional[str] = None
     functions: Optional[List[Dict[str, Any]]] = None
-    function_call: Optional[Union[str, Dict[str, str]]] = "auto"
-    code_call: Optional[Union[str, Dict[str, str],ChatFunctionCallResponse]] = None
+    function_call: Optional[Union[str, Dict[str, str],ChatFunctionCallResponse]] = "auto"
+    code_call: Optional[Union[str, Dict[str, str],ChatCodeCallResponse]] = None
 
 class ChatCompletionRequest(CustomChatParams):
     messages: List[ChatMessage]
