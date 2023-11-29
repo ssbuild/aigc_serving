@@ -201,7 +201,7 @@ class ModelEngine(ModelEngine_Base):
         role, query, history = _preprocess_messages_for_chatglm3(messages)
         response, history = self.model.chat(self.tokenizer, query=query,role=role,history=messages,with_postprocess=False,**default_kwargs)
         if isinstance(response,str):
-            response = args_process.postprocess_response(response, **kwargs)
+            response = args_process.postprocess_response(response)
         else:
             response = json.dumps(response,ensure_ascii=True)
 

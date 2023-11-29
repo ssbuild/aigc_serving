@@ -160,7 +160,7 @@ class ModelEngine(ModelEngine_Base):
         args_process.build_args(default_kwargs)
         query, history = args_process.get_chat_info(messages)
         response, history = self.model.chat(self.tokenizer, query=query,history=history, **default_kwargs)
-        response = args_process.postprocess_response(response, **kwargs)
+        response = args_process.postprocess_response(response)
         return CompletionResult(result={
             "response": response,
             #"history": history

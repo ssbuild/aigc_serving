@@ -95,7 +95,7 @@ class ChatCompletionRequest(CustomChatParams):
 
     def build_messages(self):
         messages = [message.model_dump() for message in self.messages]
-        assert self.messages[-1].role in [Role.USER,Role.OBSERVATION]
+        assert self.messages[-1].role in [Role.USER,Role.OBSERVATION,Role.FUNCTION]
         return [messages]
 
 

@@ -103,13 +103,18 @@ def get_react_prompt_for_qwen(messages: List[ChatMessage], functions=None, funct
     tool_descs = "\n\n".join(tool_descs)
     tool_names = ",".join(tool_names)
 
-    ret = ""
+    messages_new = []
     for message in messages:
+        ret = ""
         role, content = message.role, message.content
         if role == "user":
-            ret += REACT_PROMPT.format(tool_descs=tool_descs, tool_names=tool_names, query=content)
+            ret = REACT_PROMPT.format(tool_descs=tool_descs, tool_names=tool_names, query=content)
+            messages_new.append(ChatMessage(**{
+                "role": role,
+                "content": ret
+            }))
         elif role == "assistant":
-            if message.function_call:
+            if message.function_call and isinstance(message.function_call,dict):
                 thought = message.function_call["thought"]
                 function_name = message.function_call["name"]
                 arguments = message.function_call["arguments"]
@@ -119,29 +124,35 @@ def get_react_prompt_for_qwen(messages: List[ChatMessage], functions=None, funct
 
                 ret += f"\nAction: {function_name.strip()}"
                 ret += f"\nAction Input: {arguments.strip()}"
-        elif role == "function":
+            messages_new.append(ChatMessage(**{
+                "role": role,
+                "content": ret
+            }))
+        elif role == "function" or role == "observation":
             ret += f"\nObservation: output of {message.name} is {str(content).strip()}"
+            messages_new.append(ChatMessage(**{
+                "role": role,
+                "content": ret
+            }))
 
 
-    return [ChatMessage(role="user",content=ret,)], functions
+    return messages_new, functions
 
 
-def parse_qwen_plugin_call(text: str) -> Union[Tuple[str, str, str], None]:
+def parse_qwen_plugin_call(text: str) -> Union[Tuple[str, str , str], None]:
     t = text.rfind('Thought:')
     i = text.rfind('\nAction:')
     j = text.rfind('\nAction Input:')
     k = text.rfind('\nObservation:')
-
     if 0 <= i < j:  # If the text has `Action` and `Action input`,
         if k < j:  # but does not contain `Observation`,
             # then it is likely that `Observation` is ommited by the LLM,
             # because the output text may have discarded the stop word.
             text = text.rstrip() + '\nObservation:'  # Add it back.
             k = text.rfind('\nObservation:')
-
     if 0 <= i < j < k:
         thought = text[t + len("Thought:"): i].strip() if t >= 0 else None
-        plugin_name = text[i + len('\nAction:'): j].strip()
-        plugin_args = text[j + len('\nAction Input:'): k].strip()
-        return thought, plugin_name, plugin_args
+        plugin_name = text[i + len('\nAction:'):j].strip()
+        plugin_args = text[j + len('\nAction Input:'):k].strip()
+        return thought,plugin_name, plugin_args
     return None

@@ -193,7 +193,7 @@ class ModelEngine(ModelEngine_Base):
         else:
             prompt = get_chat_chatglm(self.tokenizer,query, history)
         response, history = self.model.chat(self.tokenizer, query=prompt,history=None, **default_kwargs)
-        response = args_process.postprocess_response(response, **kwargs)
+        response = args_process.postprocess_response(response)
         return CompletionResult(result={
             "response": response,
             #"history": history

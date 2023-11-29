@@ -144,7 +144,7 @@ class ModelEngine(ModelEngine_Base):
         response = Generate.generate(self.get_model(),
                                      tokenizer=self.tokenizer,
                                      query=prompt, **default_kwargs)
-        response = args_process.postprocess_response(response, **kwargs)
+        response = args_process.postprocess_response(response)
         return CompletionResult(result={
             "response": response,
             #"history": history + [(query, response)]

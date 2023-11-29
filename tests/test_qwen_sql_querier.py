@@ -1,14 +1,15 @@
 import json
 import sqlite3
-
 import openai
 
 
 # 新版本
-openai.api_key = "EMPTY"
+openai.api_key = "112233"
 openai.api_base = "http://192.168.2.180:8081/v1"
+openai.api_base = "http://106.12.147.243:8082/v1"
 model = "chatglm2-6b-int4"
 model = "qwen-7b-chat-int4"
+model = "Qwen-14B-Chat"
 
 def ask_database(conn, query):
     """Function to query SQLite database with a provided SQL query."""
@@ -27,7 +28,6 @@ class SqlQuerier:
 
     def run(self, query, database_schema):
         # Step 1: send the conversation and available functions to model
-        messages = [{"role": "user", "content": query}]
         functions = [
             {
                 "name_for_human":
@@ -48,15 +48,21 @@ class SqlQuerier:
                 ],
             }
         ]
+
+        messages = [{"role": "user",
+                     "content": query,}]
+
         response = openai.ChatCompletion.create(
             model=model,
             messages=messages,
             temperature=0,
             functions=functions,
-            stop=["Observation:"]
+            stop=["Observation:", "Observation"]
         )
 
-        print(response["choices"][0]["message"]["function_call"])
+
+        print(response["choices"][0]["message"]["content"])
+
 
         answer = ""
         response_message = response["choices"][0]["message"]
@@ -77,7 +83,7 @@ class SqlQuerier:
             print(f"Function response: {function_response}")
 
             # Step 4: send the info on the function call and function response to model
-            messages.append(response_message)  # extend conversation with assistant's reply
+            messages.append({"role": "assistant","content": response.choices[0].message.content})  # extend conversation with assistant's reply
             messages.append(
                 {
                     "role": "function",

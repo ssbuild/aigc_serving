@@ -164,7 +164,7 @@ class ModelEngine(ModelEngine_Base):
                                          messages=messages,
                                          generation_config=generation_config,
                                          stopping_criteria=stopping_criteria)
-        response = args_process.postprocess_response(response, **kwargs)
+        response = args_process.postprocess_response(response)
         # history = history + [(query, response)]
         return CompletionResult(result={
             "response": response,

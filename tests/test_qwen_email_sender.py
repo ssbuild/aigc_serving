@@ -8,10 +8,12 @@ import openai
 
 
 # 新版本
-openai.api_key = "EMPTY"
+openai.api_key = "112233"
 openai.api_base = "http://192.168.2.180:8081/v1"
+openai.api_base = "http://106.12.147.243:8082/v1"
 model = "chatglm2-6b-int4"
 model = "qwen-7b-chat-int4"
+model = "Qwen-14B-Chat"
 
 def send_email_action(receiver: str, content: str):
     """ 发送邮件操作 """
@@ -55,7 +57,6 @@ class EmailSender:
 
     def run(self, query):
         # Step 1: send the conversation and available functions to model
-        messages = [{"role": "user", "content": query}]
         functions = [
             {
                 "name_for_human":
@@ -84,6 +85,10 @@ class EmailSender:
                 ],
             }
         ]
+
+        messages = [{"role": "user",
+                     "content": query}]
+
         response = openai.ChatCompletion.create(
             model=model,
             messages=messages,
@@ -92,8 +97,9 @@ class EmailSender:
             stop=["Observation:"]
         )
 
+
         response_message = response["choices"][0]["message"]
-        print(response_message.content)
+
         # Step 2: check if model wanted to call a function
         if response_message.get("function_call"):
             print(f"Function call: {response_message['function_call']}")
