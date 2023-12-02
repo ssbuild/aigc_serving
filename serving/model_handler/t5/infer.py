@@ -172,20 +172,6 @@ class ModelEngine(ModelEngine_Base):
             #"history": history
         })
 
-    def generate(self, messages: List[Dict], **kwargs):
-        args_process = GenArgs(kwargs, self)
-        default_kwargs = self.get_default_gen_args()
-        default_kwargs.update(kwargs)
-        args_process.build_args(default_kwargs)
-        query = args_process.get_chat_info(messages, chat_format="generate")
-        response = Generate.generate(self.get_model(),
-                                     tokenizer=self.tokenizer,
-                                     query=query, **default_kwargs)
-        return CompletionResult(result={
-            "response": response,
-            # "history": history
-        })
-
 
 
     def embedding(self, query,max_tokens=None, **kwargs):

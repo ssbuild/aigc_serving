@@ -188,23 +188,6 @@ class ModelEngine(ModelEngine_Base):
         })
 
 
-    def generate(self,messages: List[Dict],**kwargs):
-        args_process = GenArgs(kwargs, self)
-        default_kwargs = dict(
-            eos_token_id=self.config.eos_token_id,
-            pad_token_id=self.config.eos_token_id,
-            do_sample=True, top_p=0.7, temperature=0.95,
-        )
-        default_kwargs.update(kwargs)
-        args_process.build_args(default_kwargs)
-        query = args_process.get_chat_info(messages, chat_format="generate")
-        response = Generate.generate(self.get_model(),
-                                     tokenizer=self.tokenizer,
-                                     query=query,**kwargs)
-        return CompletionResult(result={
-            "response": response,
-            #"history": history
-        })
 
     def embedding(self, query,max_tokens=None, **kwargs):
         model = self.get_model()

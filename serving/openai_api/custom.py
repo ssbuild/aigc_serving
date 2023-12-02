@@ -68,9 +68,11 @@ class CustomChatParams(BaseModel):
 
     _model_type: Optional[str] = PrivateAttr(default=None)
 
+
     @property
     def model_type(self):
         return self._model_type
+
     def _update_params(self, r):
         params = {
             "adapter_name": self.adapter_name,
@@ -125,10 +127,10 @@ class CustomChatParams(BaseModel):
         r["params"] = {k: params[k] for k in keep_keys}
         return r
 
-    def build_messages(self):
+    def _build_messages(self):
         raise NotImplemented
-    def build_request(self):
-        messages_list = self.build_messages()
+    def build_chat_request(self):
+        messages_list = self._build_messages()
         if self.stream:
             messages = messages_list[0]
             r = self._update_params({
@@ -138,14 +140,42 @@ class CustomChatParams(BaseModel):
             })
         else:
             r = []
+            method = "chat"
             for messages in messages_list:
                 r.append(self._update_params({
-                    "method": "chat",
+                    "method": method,
                     "model": self.model,
-                    "messages": messages,
+                    "messages": messages if self.is_chat else [messages],
                 }))
         return r
 
+    def build_request(self, max_batch_size=None):
+        messages_list = self._build_messages()
+        if self.stream:
+            messages = messages_list[0]
+            r = self._update_params({
+                "method": "generate_stream",
+                "model": self.model,
+                "messages": messages,
+            })
+        else:
+            r = []
+            method = "generate"
+            if max_batch_size is not None and max_batch_size > 1:
+                for i in range(0,len(messages_list),max_batch_size):
+                    r.append(self._update_params({
+                        "method": method,
+                        "model": self.model,
+                        "messages": messages_list[i : i + max_batch_size],
+                    }))
+            else:
+                for messages in messages_list:
+                    r.append(self._update_params({
+                        "method": method,
+                        "model": self.model,
+                        "messages": [messages],
+                    }))
+        return r
 
 
 class CustomEmbeddingParams(BaseModel):

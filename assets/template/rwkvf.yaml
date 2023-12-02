@@ -6,7 +6,7 @@ rwkv-4-raven-3b-v12-Eng49%-Chn49%-Jpn1%-Other1%:
   auto_quantize: false
   # 是否启用
   enable: false
-  # embdding max batch size
+  # embdding max batch size ,  openai 非 chat max batch size
   max_batch_size: 1
   model_config:
     do_lower_case: null

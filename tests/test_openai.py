@@ -2,21 +2,18 @@ import openai
 
 # 旧版本
 openai.api_key = "112233"
-openai.api_base = "http://192.168.2.180:8081/v1"
+openai.api_base = "http://106.12.147.243:9090/v1"
 model = "chatglm2-6b-int4"
 model = "ChatYuan-large-v2"
-
-# # Test list models API
-# models = openai.Model.list()
-# print("Models:", models)
+model = "Qwen-14B-Chat"
 
 # Test completion API
-stream = False
-
+stream = True
+# 非 聊天接口 ， 不带 prompt 和历史会话
 data = {
     "model": model,
     "adapter_name": None, # lora头
-    "prompt": ["你是谁?"],
+    "prompt": ["你是",],
     "top_p": 0.8,
     "temperature": 1.0,
     "frequency_penalty": 1.01,
@@ -27,6 +24,7 @@ data = {
     # "stop": ["Observation:","Observation:\n"]
     "seed": None,
 }
+
 
 
 completion = openai.Completion.create(**data)

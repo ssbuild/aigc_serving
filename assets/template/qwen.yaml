@@ -1,12 +1,13 @@
-Qwen-7B:
-  alias: null
+
+
+Qwen-72B-Chat:
   # 当仅有一个lora, 是否自动合并成一个模型，此方法将无法调用基础模型，只能使用合并后的权重
   auto_merge_lora_single: true
   # 是否自动量化模型
   auto_quantize: false
   # 是否启用
   enable: false
-  # embdding max batch size
+  # embdding max batch size ,  openai 非 chat max batch size
   max_batch_size: 1
   model_config:
     do_lower_case: null
@@ -14,12 +15,12 @@ Qwen-7B:
     # "default": "/data/nlp/pre_models/torch/lora_path_dir"
     # "your_adapter_name": "/data/nlp/pre_models/torch/your_adapter_dir"
     lora: {}
-    model_name_or_path: /data/nlp/pre_models/torch/qwen/Qwen-7B
+    model_name_or_path: /data/nlp/pre_models/torch/qwen/Qwen-72B-Chat
     model_type: qwen
     use_fast_tokenizer: false
 
-  # one of deepspeed,accelerate,hf    单卡建议使用 hf 
-  work_mode: deepspeed
+  # one of deepspeed,accelerate,hf    单卡建议使用 hf
+  work_mode: accelerate
 
 
   workers:
@@ -34,6 +35,7 @@ Qwen-7B:
 #    - 2
 #    - 3
 
+
 Qwen-7B-Chat:
   # 当仅有一个lora, 是否自动合并成一个模型，此方法将无法调用基础模型，只能使用合并后的权重
   auto_merge_lora_single: true
@@ -41,7 +43,7 @@ Qwen-7B-Chat:
   auto_quantize: false
   # 是否启用
   enable: false
-  # embdding max batch size
+  # embdding max batch size ,  openai 非 chat max batch size
   max_batch_size: 1
   model_config:
     do_lower_case: null
@@ -69,6 +71,43 @@ Qwen-7B-Chat:
 #    - 2
 #    - 3
 
+Qwen-7B:
+  alias: null
+  # 当仅有一个lora, 是否自动合并成一个模型，此方法将无法调用基础模型，只能使用合并后的权重
+  auto_merge_lora_single: true
+  # 是否自动量化模型
+  auto_quantize: false
+  # 是否启用
+  enable: false
+  # embdding max batch size ,  openai 非 chat max batch size
+  max_batch_size: 1
+  model_config:
+    do_lower_case: null
+    # 是否启用lora , 多个 lora , adapter_name: lora weight dir
+    # "default": "/data/nlp/pre_models/torch/lora_path_dir"
+    # "your_adapter_name": "/data/nlp/pre_models/torch/your_adapter_dir"
+    lora: {}
+    model_name_or_path: /data/nlp/pre_models/torch/qwen/Qwen-7B
+    model_type: qwen
+    use_fast_tokenizer: false
+
+  # one of deepspeed,accelerate,hf    单卡建议使用 hf
+  work_mode: deepspeed
+
+
+  workers:
+  # 第一个worker
+  - device_id:
+    # 使用第一块和第二块显卡
+    - 0
+    - 1
+#  # 第二个worker
+#  - device_id:
+#    # 使用第三块和第四块显卡
+#    - 2
+#    - 3
+
+
 qwen-7b-chat-int4:
   # 当仅有一个lora, 是否自动合并成一个模型，此方法将无法调用基础模型，只能使用合并后的权重
   auto_merge_lora_single: true
@@ -76,7 +115,7 @@ qwen-7b-chat-int4:
   auto_quantize: false
   # 是否启用
   enable: false
-  # embdding max batch size
+  # embdding max batch size ,  openai 非 chat max batch size
   max_batch_size: 1
   model_config:
     do_lower_case: null

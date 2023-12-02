@@ -174,6 +174,7 @@ class ModelEngine(ModelEngine_Base):
         })
 
 
+
     def embedding(self, query,max_tokens=None, **kwargs):
         model = self.get_model()
         inputs = self.tokenizer(query, truncation=True,max_length=max_tokens, return_tensors="pt")

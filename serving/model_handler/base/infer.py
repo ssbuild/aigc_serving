@@ -13,7 +13,7 @@ import torch.distributed as dist
 import torch.multiprocessing as mp
 import multiprocessing
 import threading
-from serving.model_handler.base.data_process import flat_input # noqa
+from serving.model_handler.base.data_process import flat_input, GenArgs  # noqa
 from serving.model_handler.base.data_define import CompletionResult, LoraModelState, WorkMode  # noqa
 from serving.model_handler.base.utils import is_quantization_bnb,is_quantization_awq
 
@@ -21,7 +21,36 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-class ModelEngine_Base(ABC):
+
+class ModelEngine_Method(ABC):
+    def chat_stream(self, messages: List[Dict], **kwargs):
+        raise NotImplemented
+
+    def chat(self, messages: List[Dict], **kwargs):
+        raise NotImplemented
+
+    def generate_stream(self, messages: List[Dict], **kwargs):
+        raise NotImplemented
+
+    def generate(self, messages: List[Dict], **kwargs):
+        raise NotImplemented
+
+    def embedding(self, query, max_tokens=None, **kwargs):
+        raise NotImplemented
+
+
+class ModelEngine_Attributes(ABC):
+    def is_config_bnb(self, config):
+        return is_quantization_bnb(config)
+
+    def is_config_awq(self, config):
+        return is_quantization_awq(config)
+
+    def get_default_gen_args(self):
+        raise NotImplemented
+
+
+class ModelEngine_Base(ModelEngine_Method,ModelEngine_Attributes):
     def __init__(self,model_config_dict,group_name="",worker_idx=0):
         self.model_config_dict = model_config_dict
         self.group_name = group_name
@@ -56,11 +85,7 @@ class ModelEngine_Base(ABC):
         self._release()
 
 
-    def is_config_bnb(self, config):
-        return is_quantization_bnb(config)
 
-    def is_config_awq(self, config):
-        return is_quantization_awq(config)
     def _release(self):
         if self.work_mode == WorkMode.STANDORD_HF:
             pass
@@ -118,15 +143,46 @@ class ModelEngine_Base(ABC):
     def get_model(self):
         return self.model_ds or self.model_accelerate or self.model
 
+    # no template
+    def generate_stream(self, messages: List[Dict], **kwargs):
+        model = self.get_model()
+        args_process = GenArgs(kwargs, self, is_stream=True)
+        default_kwargs = self.get_default_gen_args()
+        default_kwargs.update(kwargs)
+        args_process.build_args(default_kwargs)
+        query_list = [messages[0]["content"]]
+        max_length = default_kwargs.get("max_length", None)
+        inputs = self.tokenizer(query_list, truncation="longest_first", max_length=max_length, return_tensors="pt")
+        inputs = inputs.to(model.device)
+        skip_word_list = [self.tokenizer.eos_token_id]
+        skip_word_list += default_kwargs.get('stop_words_ids', [])
+        streamer = args_process.get_streamer(skip_word_list)
+        model.generate(**inputs, streamer=streamer, **default_kwargs)
+        args_process.do_final_stream()
+        return None
 
-    def chat_stream(self, messages: List[Dict], **kwargs):
-        raise NotImplemented
-
-    def chat(self, messages: List[Dict], **kwargs):
-        raise NotImplemented
-
-    def generate(self,messages: List[Dict], **kwargs):
-        raise NotImplemented
+    # no template
+    def generate(self, messages: List[Dict], **kwargs):
+        model = self.get_model()
+        args_process = GenArgs(kwargs, self)
+        default_kwargs = self.get_default_gen_args()
+        default_kwargs.update(kwargs)
+        args_process.build_args(default_kwargs)
+        query_list = [message[0]["content"] for message in messages]
+        max_length = default_kwargs.get("max_length", None)
+        inputs = self.tokenizer(query_list, truncation="longest_first", max_length=max_length, return_tensors="pt")
+        inputs = inputs.to(model.device)
+        outputs = self.get_model().generate(**inputs, **default_kwargs)
+        response = []
+        for a, b in zip(inputs["input_ids"], outputs):
+            prompt_length = 0 if model.config.is_encoder_decoder else len(a)
+            b = b.tolist()[prompt_length:]
+            b = self.tokenizer.decode(b, skip_special_tokens=True)
+            response.append(b)
+        return CompletionResult(result={
+            "response": response,
+            # "history": history
+        })
 
     def worker_ds(self,rank):
         try:
@@ -167,8 +223,6 @@ class ModelEngine_Base(ABC):
 
             self.model_ds.device = self.model.device
 
-            # self.model_ds._convert_to_dtype = types.MethodType(lambda self: ...,self.model_ds)
-
             self.loop_forever(rank)
         except Exception as e:
             traceback.print_exc()
@@ -198,7 +252,8 @@ class ModelEngine_Base(ABC):
         while True:
             r = self.pull_request()
             try:
-                if r.get('method', "chat") == 'chat_stream':
+                method: str = r.get('method', "chat_stream")
+                if method.endswith("_stream"):
                     for item in self._do_work_generator(r=r):
                         self.push_response(item)
                     continue
@@ -275,15 +330,16 @@ class ModelEngine_Base(ABC):
         elif load_in_8bit:
             dtype = torch.int8
 
+        no_split_module_classes = getattr(self.model,"_no_split_modules",None)
         max_memory = get_balanced_memory(self.model,
                                          dtype=dtype,
                                          low_zero=False,
-                                         no_split_module_classes=self.model._no_split_modules)
+                                         no_split_module_classes=no_split_module_classes)
 
         device_map = infer_auto_device_map(self.model,
                                            dtype=dtype,
                                            max_memory=max_memory,
-                                           no_split_module_classes=self.model._no_split_modules)
+                                           no_split_module_classes=no_split_module_classes)
         return device_map
 
     def switch_lora(self,adapter_name):
@@ -323,6 +379,10 @@ class ModelEngine_Base(ABC):
             if self.work_mode == WorkMode.DS and self.model_ds is None:
                 yield ret._replace(code=-1,result=None,msg="ds_engine init failed",complete=True)
 
+            method = r.get("method", "chat_stream")
+            if method not in ["chat_stream", "generate_stream"]:
+                return ret._replace(code=-1, msg="invalid method {}".format(method))
+
             params = r.get('params', {})
             messages = r.get("messages", [])
 
@@ -331,7 +391,11 @@ class ModelEngine_Base(ABC):
             if code != 0:
                 yield ret._replace(code=code,result=None,msg=msg,complete=True)
 
-            gen_results = self.chat_stream(messages=messages, **params)
+            if method == "chat_stream":
+                gen_results = self.chat_stream(messages=messages, **params)
+            else:
+                gen_results = self.generate_stream(messages=messages, **params)
+
             if gen_results is None:
                 return None
             iter_: CompletionResult
@@ -381,7 +445,7 @@ class ModelEngine_Base(ABC):
             return ret._replace(code=-1, msg="params error")
 
         method = r.get("method", "chat")
-        if method not in ["chat", "embedding"]:
+        if method not in ["chat", "embedding","generate"]:
             return ret._replace(code=-1, msg="invalid method {}".format(method))
         method_fn = getattr(self, method, None)
         if method_fn is not None:
@@ -403,12 +467,15 @@ class ModelEngine_Base(ABC):
                     "response": node.result["response"],
                 }
             else:
-                # generate
-                messages = r.get("messages", [])
+                # generate ， 批次
+                messages: List[List[Dict]] = r.get("messages", [])
                 node: CompletionResult = method_fn(messages=messages, **params)
+
+                response_list: list = node.result["response"]
+                num_token = node.result.get('num_token', sum( [len(response) for response in response_list]))
                 result = {
-                    "response": node.result["response"],
-                    "num_token": node.result.get('num_token', len(node.result["response"]))
+                    "response": response_list,
+                    "num_token": num_token
                 }
 
         else:

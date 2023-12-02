@@ -1,14 +1,25 @@
+# -*- coding: utf-8 -*-
+# @Author  : ssbuild
+# @Time    : 2023/11/29 13:35
+
+import json
+import math
+
 import openai
+from openai.openai_object import OpenAIObject
+from scipy import integrate
+
 
 # 新版本
 openai.api_key = "112233"
+openai.api_base = "http://192.168.2.180:8081/v1"
 openai.api_base = "http://106.12.147.243:9090/v1"
 model = "chatglm2-6b-int4"
-model = "ChatYuan-large-v2"
+model = "qwen-7b-chat-int4"
 model = "Qwen-14B-Chat"
+# model = "Qwen-72B-Chat"
 
-# Test completion API
-stream = False
+stream = True
 
 data = {
     "model": model,

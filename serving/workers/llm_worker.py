@@ -134,8 +134,8 @@ class My_worker(ZMQ_process_worker):
         start_time = time.time()
         try:
             if self.initial_error is None:
-                method = r.get('method', "chat")
-                if method == 'chat_stream':
+                method: str = r.get('method', "chat")
+                if method.endswith('_stream'):
                     gen = self.api_client.trigger_generator(r)
                     node: Optional[CompletionResult]
                     for node in gen:

@@ -8,7 +8,7 @@ llama-7b-hf:
 
   # 是否启用
   enable: false
-  # embdding max batch size
+  # embdding max batch size ,  openai 非 chat max batch size
   max_batch_size: 1
   model_config:
     do_lower_case: null
@@ -51,7 +51,7 @@ Yi-34B-Chat:
   auto_quantize: false
   # 是否启用
   enable: false
-  # embdding max batch size
+  # embdding max batch size ,  openai 非 chat max batch size
   max_batch_size: 1
   model_config:
     do_lower_case: null
@@ -92,7 +92,7 @@ Yi-34B-Chat-4bits:
   auto_quantize: false
   # 是否启用
   enable: false
-  # embdding max batch size
+  # embdding max batch size ,  openai 非 chat max batch size
   max_batch_size: 1
   model_config:
     do_lower_case: null
