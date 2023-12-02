@@ -7,6 +7,7 @@ from typing import Literal, Optional, List, Dict, Any, Union
 import time
 import uuid
 from pydantic import BaseModel, Field
+from pydantic.v1 import PrivateAttr
 from transformers import GenerationConfig
 
 from serving.openai_api.custom import CustomChatParams, CustomEmbeddingParams
@@ -93,7 +94,11 @@ class ChatMessage(BaseModel):
 class ChatCompletionRequest(CustomChatParams):
     messages: List[ChatMessage]
 
-    def build_messages(self):
+    @property
+    def is_chat(self):
+        return True
+
+    def _build_messages(self):
         messages = [message.model_dump() for message in self.messages]
         assert self.messages[-1].role in [Role.USER,Role.OBSERVATION,Role.FUNCTION]
         return [messages]
@@ -193,7 +198,12 @@ class CompletionRequest(CustomChatParams):
     frequency_penalty: Optional[float] = 0.0
     user: Optional[str] = None
 
-    def build_messages(self):
+
+    @property
+    def is_chat(self):
+        return False
+
+    def _build_messages(self):
         if isinstance(self.prompt,str):
             self.prompt = [self.prompt]
         messages_list = [[{"role": Role.USER,"content": prompt}] for prompt in self.prompt]

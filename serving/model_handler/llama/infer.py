@@ -146,6 +146,10 @@ class ModelEngine(ModelEngine_Base):
     def is_codellama(self):
         return 'codellama' in self.model_config_dict["model_config"]["model_name_or_path"].lower()
 
+    @functools.cached_property
+    def is_deepseek(self):
+        return 'deepseek' in self.model_config_dict["model_config"]["model_name_or_path"].lower()
+
 
 
     def get_default_gen_args(self):
@@ -171,6 +175,8 @@ class ModelEngine(ModelEngine_Base):
             prompt = get_chat_causallm(self.tokenizer, query, history=history, prefix=prefix)
         elif self.is_codellama:
             prompt = get_chat_codellama(self.tokenizer, query, history=history, prefix=prefix)
+        elif self.is_deepseek:
+            prompt = get_chat_deepseek(self.tokenizer, query, history=history, prefix=prefix)
         else:
             prompt = get_chat_default(self.tokenizer, query, history=history, prefix=prefix)
         skip_word_list = default_kwargs.get('eos_token_id', None) or [self.tokenizer.eos_token_id]
@@ -196,6 +202,8 @@ class ModelEngine(ModelEngine_Base):
             prompt = get_chat_causallm(self.tokenizer, query, history=history, prefix=prefix)
         elif self.is_codellama:
             prompt = get_chat_codellama(self.tokenizer, query, history=history, prefix=prefix)
+        elif self.is_deepseek:
+            prompt = get_chat_deepseek(self.tokenizer, query, history=history, prefix=prefix)
         else:
             prompt = get_chat_default(self.tokenizer, query, history=history, prefix=prefix)
         response = self.gen_core.generate(query=prompt, **default_kwargs)
@@ -206,17 +214,7 @@ class ModelEngine(ModelEngine_Base):
         })
 
 
-    def generate(self,messages: List[Dict],**kwargs):
-        args_process = GenArgs(kwargs, self)
-        default_kwargs = self.get_default_gen_args()
-        default_kwargs.update(kwargs)
-        args_process.build_args(default_kwargs)
-        query = args_process.get_chat_info(messages,chat_format="generate")
-        response = self.gen_core.generate(query=query, **default_kwargs)
-        return CompletionResult(result={
-            "response": response,
-            #"history": history
-        })
+
 
     def embedding(self, query,max_tokens=None, **kwargs):
         model = self.get_model()

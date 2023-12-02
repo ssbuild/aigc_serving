@@ -148,7 +148,7 @@ def create_chat_completion(request: Union[CompletionRequest, ChatCompletionReque
 
 def _openai_chat_v2(self: Resource, request: Union[CompletionRequest, ChatCompletionRequest]):
     functions = self.build_react_function(request)
-    rs = request.build_request()
+    rs = request.build_chat_request()
     choices = []
     prompt_length, response_length = 0, 0
     for r in rs:
@@ -199,7 +199,7 @@ def _openai_chat_stream_v2(self: Resource, request: Union[CompletionRequest, Cha
         chunk = ChatCompletionStreamResponse(model=request.model, choices=[choice_data])
         yield f"data: {chunk.model_dump_json(exclude_unset=True)}\n\n"
 
-        r = request.build_request()
+        r = request.build_chat_request()
         instance = self.queue_mapper[request.model]
         request_id = instance.put(r)
 
@@ -233,29 +233,37 @@ def _openai_chat_stream_v2(self: Resource, request: Union[CompletionRequest, Cha
     yield "data: [DONE]\n\n"
 
 
+# 非 chat 批次接口
 def _openai_chat_v1(self: Resource, request: CompletionRequest):
-    rs = request.build_request()
+    conf = self.valid_model_map[request.model]
+    max_batch_size = getattr(conf, "max_batch_size", 1)
+
+    # openai 非 chat max batch size
+    rs = request.build_request(max_batch_size)
     choices = []
     prompt_length, response_length = 0, 0
     for r in rs:
         for i in range(max(1, request.n)):
+            messages_batch = r["messages"]
+            for messages in messages_batch:
+                prompt_length += len(messages[0]['content'])
+
             instance = self.queue_mapper[request.model]
             request_id = instance.put(r)
             result = instance.get(request_id)
             if result["code"] != 0:
                 logger.error(result["msg"])
                 return create_error_response(ErrorCode.INTERNAL_ERROR, result["msg"])
+            response_list = result["response"]
+            for response in response_list:
+                response_length += len(response)
+                choice_data = CompletionResponseChoice(
+                    index=len(choices),
+                    text=response,
+                    finish_reason=Finish.STOP
+                )
+                choices.append(choice_data)
 
-            for message in r["messages"]:
-                prompt_length += len(message['content'])
-
-            response_length += len(result["response"])
-            choice_data = CompletionResponseChoice(
-                index=len(choices),
-                text=result["response"],
-                finish_reason=Finish.STOP
-            )
-            choices.append(choice_data)
     usage = UsageInfo(
         prompt_tokens=prompt_length,
         completion_tokens=response_length,

@@ -10,6 +10,10 @@
 
 ## update information
 ```text
+    12-02 support qwen 1.8b 7b 14b 72b and 
+          support chat chat_stream is for openai_chat ,  
+          generate generate_stream is for openai , 
+          support batch for generate method
     11-28 support autoawq , such as 4bits 8bits
     11-27 yi model_type change to llama
     11-22 support sentence_transformers , such as bge,m3e and so on
