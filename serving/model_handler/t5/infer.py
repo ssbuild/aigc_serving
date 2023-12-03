@@ -174,9 +174,9 @@ class ModelEngine(ModelEngine_Base):
 
 
 
-    def embedding(self, query,max_tokens=None, **kwargs):
+    def embedding(self, query, **kwargs):
         model = self.get_model()
-        inputs = self.tokenizer(query, truncation=True,max_length=max_tokens, return_tensors="pt")
+        inputs = self.tokenizer(query, return_tensors="pt")
         inputs = inputs.to(model.device)
         model_output = model.forward(**inputs,return_dict=True, output_hidden_states=True, **kwargs)
         data = model_output.hidden_states[-1]

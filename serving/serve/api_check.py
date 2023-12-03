@@ -20,6 +20,9 @@ def check_requests_gen(request) -> Optional[JSONResponse]:
             ErrorCode.PARAM_OUT_OF_RANGE,
             f"{request.max_tokens} is less than the minimum of 1 - 'max_tokens'",
         )
+    elif request.max_tokens is None:
+        request.max_tokens = 2048 # 默认4k
+
     if request.n is not None and (request.n <= 0 or request.n >16) :
         return create_error_response(
             ErrorCode.PARAM_OUT_OF_RANGE,

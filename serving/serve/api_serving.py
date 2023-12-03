@@ -63,6 +63,14 @@ class Resource:
             return create_error_response(ErrorCode.INVALID_MODEL, msg)
         request.model = self.alias_map[request.model]
         request._model_type = global_models_info_args[request.model]["model_config"]["model_type"]
+
+        # 根据模型最大长度，截断处理
+        conf = self.valid_model_map[request.model]
+        model_max_length = conf.get("model_max_length", 204800) # 模型支持的最大长度
+        if request.max_tokens >= model_max_length:
+            return create_error_response(ErrorCode.PARAM_OUT_OF_RANGE,
+                                         f"max_tokens {request.max_tokens} is alias max_new_tokens and it should less than model_max_length {model_max_length}")
+
         return None
 
     def build_react_function(self, request):
@@ -131,7 +139,6 @@ def create_chat_completion(request: Union[CompletionRequest, ChatCompletionReque
         ret = self.check_model(request)
         if ret is not None:
             return ret
-
         if request.stream:
             _openai_chat_stream_generate = _openai_chat_stream_v2(self, request) if isinstance(request,
                                                                                                ChatCompletionRequest) else _openai_chat_stream_v1(
@@ -236,7 +243,7 @@ def _openai_chat_stream_v2(self: Resource, request: Union[CompletionRequest, Cha
 # 非 chat 批次接口
 def _openai_chat_v1(self: Resource, request: CompletionRequest):
     conf = self.valid_model_map[request.model]
-    max_batch_size = getattr(conf, "max_batch_size", 1)
+    max_batch_size = conf.get("max_batch_size", 1)
 
     # openai 非 chat max batch size
     rs = request.build_request(max_batch_size)
@@ -333,7 +340,7 @@ def create_embeddings(request: EmbeddingsRequest, model_name: str = None):
             return error_check_ret
 
         conf = self.valid_model_map[request.model]
-        max_batch_size = getattr(conf, "max_batch_size", 1)
+        max_batch_size = conf.get("max_batch_size", 1)
 
         batches = request.build_data(max_batch_size)
 

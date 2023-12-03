@@ -292,7 +292,7 @@ class ModelEngine(ModelEngine_Base):
         for start_index in range(0, len(sentences), batch_size):
             sentences_batch = sentences_sorted[start_index:start_index+batch_size]
             self.tokenizer: PreTrainedTokenizer
-            features = self.tokenizer(sentences_batch,truncation=True,max_length=max_tokens,return_tensors="pt")
+            features = self.tokenizer(sentences_batch,max_length=self.model_max_length,return_tensors="pt")
             features = features.to(device=device)
             with torch.no_grad():
                 out_features = model(features)
@@ -318,7 +318,7 @@ class ModelEngine(ModelEngine_Base):
             all_embeddings = all_embeddings[0]
 
         return all_embeddings
-    def embedding(self, query,max_tokens=None, **kwargs):
+    def embedding(self, query, **kwargs):
         model = self.get_model()
         emb = self._encode(model,sentences=query,max_tokens=max_tokens,normalize_embeddings=True)
         emb = emb.tolist()

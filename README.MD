@@ -10,6 +10,7 @@
 
 ## update information
 ```text
+    12-03 limit model_max_length
     12-02 support qwen 1.8b 7b 14b 72b and 
           support chat chat_stream is for openai_chat ,  
           generate generate_stream is for openai , 
@@ -39,7 +40,7 @@
     08-08 support xverse-13b , 版本要求 deep_training 0.1.15.rc2
     08-07 support llama llama2 量化推理 , 版本要求 deep_training 0.1.15.rc1
     08-05 aigc_zoo 最低版本0.1.14 
-    08-03 support qwen (千问）
+    08-03 support qwen
     08-02 support muti lora infer , 手动升级 aigc_zoo , pip install -U git+https://github.com/ssbuild/aigc_zoo.git --force-reinstall --no-deps
     07-27 support openai client
     07-26 support streaming
