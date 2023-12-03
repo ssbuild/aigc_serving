@@ -8,6 +8,7 @@ moss-moon-003-sft-int4:
   enable: false
   # embdding max batch size ,  openai 非 chat max batch size
   max_batch_size: 1
+  model_max_length:  null  # default  min(config.model_max_length , 204800)
   model_config:
     do_lower_case: null
     # 是否启用lora , 多个 lora , adapter_name: lora weight dir
@@ -43,6 +44,7 @@ moss-moon-003-sft-plugin-int4:
   enable: false
   # embdding max batch size ,  openai 非 chat max batch size
   max_batch_size: 1
+  model_max_length:  null  # default  min(config.model_max_length , 204800)
   model_config:
     do_lower_case: null
     # 是否启用lora , 多个 lora , adapter_name: lora weight dir

@@ -13,6 +13,9 @@ import torch.distributed as dist
 import torch.multiprocessing as mp
 import multiprocessing
 import threading
+
+from transformers import PreTrainedTokenizer
+
 from serving.model_handler.base.data_process import flat_input, GenArgs  # noqa
 from serving.model_handler.base.data_define import CompletionResult, LoraModelState, WorkMode  # noqa
 from serving.model_handler.base.utils import is_quantization_bnb,is_quantization_awq
@@ -76,6 +79,7 @@ class ModelEngine_Base(ModelEngine_Method,ModelEngine_Attributes):
         self.device_id = device_id
         self.world_size = len(self.device_id)
         self.work_mode = WorkMode.STANDORD_HF
+        self.model_max_length = model_config_dict.get("model_max_length",None)
 
         self._q_in = None
         self._q_out = None
@@ -137,8 +141,21 @@ class ModelEngine_Base(ModelEngine_Method,ModelEngine_Attributes):
             call_method = self._load_model_lora
         else:
             call_method = self._load_model
-
         self.model, self.config, self.tokenizer = call_method(device_id)
+        self._model_post_init()
+
+
+    def _tokenizer_prepare_for_model(self,tokenizer_cls: PreTrainedTokenizer,*args,**kwargs):
+        if kwargs.get("max_length",None) is None:
+            model_max_length = self.model_max_length or getattr(self.config,"model_max_length",None) or 204800
+            kwargs["max_length"] = model_max_length
+            kwargs["truncation"] = "longest_first"
+        return self._tokenizer_prepare_for_model_old(*args,**kwargs)
+
+    def _model_post_init(self):
+        self._tokenizer_prepare_for_model_old = self.tokenizer.prepare_for_model
+        self.tokenizer.prepare_for_model = types.MethodType(self._tokenizer_prepare_for_model ,self.tokenizer)
+
 
     def get_model(self):
         return self.model_ds or self.model_accelerate or self.model
@@ -151,8 +168,7 @@ class ModelEngine_Base(ModelEngine_Method,ModelEngine_Attributes):
         default_kwargs.update(kwargs)
         args_process.build_args(default_kwargs)
         query_list = [messages[0]["content"]]
-        max_length = default_kwargs.get("max_length", None)
-        inputs = self.tokenizer(query_list, truncation="longest_first", max_length=max_length, return_tensors="pt")
+        inputs = self.tokenizer(query_list, return_tensors="pt")
         inputs = inputs.to(model.device)
         skip_word_list = [self.tokenizer.eos_token_id]
         skip_word_list += default_kwargs.get('stop_words_ids', [])
@@ -169,8 +185,7 @@ class ModelEngine_Base(ModelEngine_Method,ModelEngine_Attributes):
         default_kwargs.update(kwargs)
         args_process.build_args(default_kwargs)
         query_list = [message[0]["content"] for message in messages]
-        max_length = default_kwargs.get("max_length", None)
-        inputs = self.tokenizer(query_list, truncation="longest_first", max_length=max_length, return_tensors="pt")
+        inputs = self.tokenizer(query_list, return_tensors="pt")
         inputs = inputs.to(model.device)
         outputs = self.get_model().generate(**inputs, **default_kwargs)
         response = []
