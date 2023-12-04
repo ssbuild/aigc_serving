@@ -153,6 +153,7 @@ class ModelEngine_Base(ModelEngine_Method,ModelEngine_Attributes):
         return self._tokenizer_prepare_for_model_old(*args,**kwargs)
 
     def _model_post_init(self):
+        self.tokenizer.truncation_side = "left"
         self._tokenizer_prepare_for_model_old = self.tokenizer.prepare_for_model
         self.tokenizer.prepare_for_model = types.MethodType(self._tokenizer_prepare_for_model ,self.tokenizer)
 

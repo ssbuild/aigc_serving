@@ -10,7 +10,7 @@
 
 ## update information
 ```text
-    12-03 limit model_max_length
+    12-03 limit model_max_length for inputs
     12-02 support qwen 1.8b 7b 14b 72b and 
           support chat chat_stream is for openai_chat ,  
           generate generate_stream is for openai , 
