@@ -36,7 +36,7 @@ class ModelEngine(ModelEngine_Base):
         model = pl_model.get_llm_model()
         model = model.eval()
 
-        if not self.is_config_bnb(config) and not self.is_config_awq(config):
+        if not self.is_config_bnb(config) and not self.is_config_awq(config) and not self.is_config_gptq(config):
             model.eval().half()
 
         if self.work_mode != WorkMode.ACCELERATE:
@@ -84,7 +84,7 @@ class ModelEngine(ModelEngine_Base):
                                      map_preprocess=default_peft_weight_preprocess if ls_peft else None)
         self.lora_model = pl_model.backbone.eval()
         self.lora_state = LoraModelState.NONE
-        if not self.is_config_bnb(config) and not self.is_config_awq(config):
+        if not self.is_config_bnb(config) and not self.is_config_awq(config) and not self.is_config_gptq(config):
             if len(self.lora_conf) == 1:
                 if self.auto_merge_lora_single:
                     self.lora_state = LoraModelState.MERGE_AND_LOCKED
