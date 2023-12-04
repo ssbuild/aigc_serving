@@ -18,7 +18,7 @@ from transformers import PreTrainedTokenizer
 
 from serving.model_handler.base.data_process import flat_input, GenArgs  # noqa
 from serving.model_handler.base.data_define import CompletionResult, LoraModelState, WorkMode  # noqa
-from serving.model_handler.base.utils import is_quantization_bnb,is_quantization_awq
+from serving.model_handler.base.utils import is_quantization_bnb, is_quantization_awq, is_quantization_gptq
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
@@ -38,7 +38,7 @@ class ModelEngine_Method(ABC):
     def generate(self, messages: List[Dict], **kwargs):
         raise NotImplemented
 
-    def embedding(self, query, max_tokens=None, **kwargs):
+    def embedding(self, query,  **kwargs):
         raise NotImplemented
 
 
@@ -48,6 +48,9 @@ class ModelEngine_Attributes(ABC):
 
     def is_config_awq(self, config):
         return is_quantization_awq(config)
+
+    def is_config_gptq(self, config):
+        return is_quantization_gptq(config)
 
     def get_default_gen_args(self):
         raise NotImplemented

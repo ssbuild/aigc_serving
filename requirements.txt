@@ -14,4 +14,5 @@ transformers_stream_generator
 bitsandbytes>=0.39
 sentence_transformers
 autoawq
+auto-gptq
 git+https://github.com/ssbuild/aigc_zoo#egg=aigc_zoo

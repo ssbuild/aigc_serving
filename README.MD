@@ -10,6 +10,7 @@
 
 ## update information
 ```text
+    12-04 support auto-gptq , such as 4bits 8bits
     12-03 limit model_max_length for inputs
     12-02 support qwen 1.8b 7b 14b 72b and 
           support chat chat_stream is for openai_chat ,  
