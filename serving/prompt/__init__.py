@@ -17,3 +17,5 @@ from serving.prompt.bianque2 import get_chat as get_chat_bianque2
 from serving.prompt.lingowhale import get_chat as get_chat_lingowhale
 from serving.prompt.codellama import get_chat as get_chat_codellama
 from serving.prompt.deepseek import get_chat as get_chat_deepseek
+from serving.prompt.deepseek import get_chat as get_chat_deepseek_coder
+from serving.prompt.deepseek import get_chat as get_chat_suschat

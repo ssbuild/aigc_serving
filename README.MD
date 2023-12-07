@@ -10,6 +10,7 @@
 
 ## update information
 ```text
+    12-07 support sus-chat and deepseek-coder
     12-04 support auto-gptq , such as 4bits 8bits
     12-03 limit model_max_length for inputs
     12-02 support qwen 1.8b 7b 14b 72b and 
@@ -58,31 +59,35 @@ pip install -r requirements.txt
 ## 支持的模型
 支持且不限于以下模型 ，原则上支持transformer 全系列
 
-| 模型            | 16bit | 4bit | ptv2 | deepspeed | accelerate | hf |
-|---------------|-------|------|------|-----------|------------|----|
-| baichuan-7b   | √     | √    | ×    | √         | √          | √  |
-| baichuan-13b  | √     | √    | ×    | √         | √          | √  |
-| baichuan2-7b  | √     | √    | ×    | √         | √          | √  |
-| baichuan2-13b | √     | √    | ×    | √         | √          | √  |
-| bloom         | √     | ×    | ×    | √         | √          | √  |
-| casuallm      | √     | √    | ×    | √         | √          | √  |
-| chatglm       | √     | √    | √    | √         | √          | √  |
-| chatglm2      | √     | √    | √    | √         | √          | √  |
-| chatglm3      | √     | √    | √    | √         | √          | √  |
-| internlm      | √     | √    | ×    | √         | √          | √  |
-| llama         | √     | √    | ×    | √         | √          | √  |
-| moss          | √     | √    | ×    | √         | √          | √  |
-| openbuddy     | √     | √    | ×    | √         | √          | √  |
-| opt           | √     | ×    | ×    | √         | √          | √  |
-| qwen          | √     | √    | ×    | √         | √          | √  |
-| rwkv          | √     | ×    | ×    | √         | √          | √  |
-| t5            | √     | ×    | ×    | √         | √          | √  |
-| tiger         | √     | ×    | ×    | √         | √          | √  |
-| xverse        | √     | √    | ×    | √         | √          | √  |
-| bluelm        | √     | √    | ×    | √         | √          | √  |
-| yi            | √     | √    | ×    | √         | √          | √  |
-| bianque2      | √     | √    | ×    | √         | √          | √  |
-| lingowhale    | √     | √    | ×    | √         | √          | √  |
+| 模型             | 16bit | 4bit | ptv2 | deepspeed | accelerate | hf |
+|----------------|-------|------|------|-----------|------------|----|
+| baichuan-7b    | √     | √    | ×    | √         | √          | √  |
+| baichuan-13b   | √     | √    | ×    | √         | √          | √  |
+| baichuan2-7b   | √     | √    | ×    | √         | √          | √  |
+| baichuan2-13b  | √     | √    | ×    | √         | √          | √  |
+| bloom          | √     | ×    | ×    | √         | √          | √  |
+| casuallm       | √     | √    | ×    | √         | √          | √  |
+| chatglm        | √     | √    | √    | √         | √          | √  |
+| chatglm2       | √     | √    | √    | √         | √          | √  |
+| chatglm3       | √     | √    | √    | √         | √          | √  |
+| internlm       | √     | √    | ×    | √         | √          | √  |
+| llama          | √     | √    | ×    | √         | √          | √  |
+| moss           | √     | √    | ×    | √         | √          | √  |
+| openbuddy      | √     | √    | ×    | √         | √          | √  |
+| opt            | √     | ×    | ×    | √         | √          | √  |
+| qwen           | √     | √    | ×    | √         | √          | √  |
+| rwkv           | √     | ×    | ×    | √         | √          | √  |
+| t5             | √     | ×    | ×    | √         | √          | √  |
+| tiger          | √     | ×    | ×    | √         | √          | √  |
+| xverse         | √     | √    | ×    | √         | √          | √  |
+| bluelm         | √     | √    | ×    | √         | √          | √  |
+| yi             | √     | √    | ×    | √         | √          | √  |
+| bianque2       | √     | √    | ×    | √         | √          | √  |
+| lingowhale     | √     | √    | ×    | √         | √          | √  |
+| sus_chat       | √     | √    | ×    | √         | √          | √  |
+| deepseek       | √     | √    | ×    | √         | √          | √  |
+| deepseek_coder | √     | √    | ×    | √         | √          | √  |
+
 ## docker
 
 ### build

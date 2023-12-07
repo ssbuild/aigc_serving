@@ -150,6 +150,15 @@ class ModelEngine(ModelEngine_Base):
     def is_deepseek(self):
         return 'deepseek' in self.model_config_dict["model_config"]["model_name_or_path"].lower()
 
+    @functools.cached_property
+    def is_deepseek_coder(self):
+        model_name_or_path = self.model_config_dict["model_config"]["model_name_or_path"].lower()
+        return 'deepseek-coder' in model_name_or_path or 'deepseek_coder' in model_name_or_path
+
+    @functools.cached_property
+    def is_sus_cat(self):
+        return 'sus_cat' in self.model_config_dict["model_config"]["model_name_or_path"].lower()
+
 
 
     def get_default_gen_args(self):
@@ -167,7 +176,9 @@ class ModelEngine(ModelEngine_Base):
         default_kwargs.update(kwargs)
         args_process.build_args(default_kwargs)
         prefix,query, history = args_process.get_chat_info_with_system(messages)
-        if self.is_openbuddy:
+        if self.is_sus_cat:
+            prompt = get_chat_suschat(self.tokenizer, query, history=history, prefix=prefix)
+        elif self.is_openbuddy:
             prompt = get_chat_openbuddy(self.tokenizer, query, history=history, prefix=prefix)
         elif self.is_tigger:
             prompt = get_chat_tiger(self.tokenizer, query, history=history, prefix=prefix)
@@ -175,6 +186,8 @@ class ModelEngine(ModelEngine_Base):
             prompt = get_chat_causallm(self.tokenizer, query, history=history, prefix=prefix)
         elif self.is_codellama:
             prompt = get_chat_codellama(self.tokenizer, query, history=history, prefix=prefix)
+        elif self.is_deepseek_coder:
+            prompt = get_chat_deepseek_coder(self.tokenizer, query, history=history, prefix=prefix)
         elif self.is_deepseek:
             prompt = get_chat_deepseek(self.tokenizer, query, history=history, prefix=prefix)
         else:
@@ -194,7 +207,9 @@ class ModelEngine(ModelEngine_Base):
         default_kwargs.update(kwargs)
         args_process.build_args(default_kwargs)
         prefix,query, history = args_process.get_chat_info_with_system(messages)
-        if self.is_openbuddy:
+        if self.is_sus_cat:
+            prompt = get_chat_suschat(self.tokenizer, query, history=history, prefix=prefix)
+        elif self.is_openbuddy:
             prompt = get_chat_openbuddy(self.tokenizer, query, history=history, prefix=prefix)
         elif self.is_tigger:
             prompt = get_chat_tiger(self.tokenizer, query, history=history, prefix=prefix)
@@ -202,6 +217,8 @@ class ModelEngine(ModelEngine_Base):
             prompt = get_chat_causallm(self.tokenizer, query, history=history, prefix=prefix)
         elif self.is_codellama:
             prompt = get_chat_codellama(self.tokenizer, query, history=history, prefix=prefix)
+        elif self.is_deepseek_coder:
+            prompt = get_chat_deepseek_coder(self.tokenizer, query, history=history, prefix=prefix)
         elif self.is_deepseek:
             prompt = get_chat_deepseek(self.tokenizer, query, history=history, prefix=prefix)
         else:
