@@ -126,8 +126,7 @@ class ModelEngine(ModelEngine_Base):
         return self.lora_model, config, tokenizer
 
     def get_default_gen_args(self):
-        default_kwargs = dict(eos_token_id=[2, 103028],
-                              do_sample=True,
+        default_kwargs = dict(do_sample=True,
                               temperature=0.8,
                               top_p=0.8,
                               repetition_penalty=1.01, )
@@ -139,7 +138,7 @@ class ModelEngine(ModelEngine_Base):
         default_kwargs.update(kwargs)
         args_process.build_args(default_kwargs)
         query, history = args_process.get_chat_info(messages)
-        skip_word_list = [self.tokenizer.eos_token_id,2, 103028]
+        skip_word_list = [self.tokenizer.eos_token_id]
         streamer = args_process.get_streamer(skip_word_list)
         self.get_model().chat( tokenizer=self.tokenizer, streamer=streamer, query=query,history=history, **default_kwargs)
         args_process.do_final_stream()
