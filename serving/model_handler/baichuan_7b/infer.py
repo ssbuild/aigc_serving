@@ -12,8 +12,8 @@ from deep_training.trainer.pl.modelweighter import default_peft_weight_preproces
 from deep_training.data_helper import ModelArguments, DataHelper
 from deep_training.nlp.layers.rope_scale.patch import RotaryNtkScaledArguments
 from transformers import HfArgumentParser, BitsAndBytesConfig, GenerationConfig
-from aigc_zoo.model_zoo.baichuan.baichuan_7b.llm_model import MyTransformer,BaiChuanConfig,BaiChuanTokenizer,PetlArguments,PetlModel
-from aigc_zoo.generator_utils.generator_llm import Generate
+from deep_training.zoo.model_zoo.baichuan.baichuan_7b.llm_model import MyTransformer,BaiChuanConfig,BaiChuanTokenizer,PetlArguments,PetlModel
+from deep_training.zoo.generator_utils.generator_llm import Generate
 from serving.model_handler.base import ModelEngine_Base,CompletionResult, LoraModelState, load_lora_config,GenArgs,WorkMode
 from serving.prompt import *
 
