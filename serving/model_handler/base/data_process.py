@@ -5,7 +5,7 @@ from typing import Iterable, List, Optional, Callable, Tuple, Union, Dict
 
 import numpy as np
 import torch
-from aigc_zoo.utils.streamgenerator import GenTextStreamer
+from deep_training.zoo.utils.streamgenerator import GenTextStreamer
 from transformers import PreTrainedTokenizer, LogitsProcessorList, LogitsProcessor, PretrainedConfig, StoppingCriteria, \
     StoppingCriteriaList
 

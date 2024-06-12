@@ -11,8 +11,8 @@ from torch.nn import functional as F
 from deep_training.trainer.pl.modelweighter import default_peft_weight_preprocess
 from deep_training.data_helper import ModelArguments, DataHelper
 from transformers import HfArgumentParser
-from aigc_zoo.model_zoo.moss.llm_model import MyTransformer,MossConfig,MossTokenizer,PetlArguments,PetlModel
-from aigc_zoo.generator_utils.generator_moss import Generate
+from deep_training.zoo.model_zoo.moss.llm_model import MyTransformer,MossConfig,MossTokenizer,PetlArguments,PetlModel
+from deep_training.zoo.generator_utils.generator_moss import Generate
 from serving.model_handler.base import ModelEngine_Base, CompletionResult, CompletionResult, LoraModelState, \
     load_lora_config, GenArgs, WorkMode
 from serving.prompt import *

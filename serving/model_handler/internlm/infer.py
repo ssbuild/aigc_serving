@@ -12,7 +12,7 @@ from deep_training.trainer.pl.modelweighter import default_peft_weight_preproces
 from deep_training.data_helper import ModelArguments, DataHelper
 from deep_training.nlp.layers.rope_scale.patch import RotaryNtkScaledArguments
 from transformers import HfArgumentParser, BitsAndBytesConfig
-from aigc_zoo.model_zoo.internlm.llm_model import MyTransformer,InternLMConfig,InternLMTokenizer,\
+from deep_training.zoo.model_zoo.internlm.llm_model import MyTransformer,InternLMConfig,InternLMTokenizer,\
     InternLMForCausalLM,PetlArguments,PetlModel
 from serving.model_handler.base import ModelEngine_Base, CompletionResult,LoraModelState, load_lora_config, \
     GenArgs, WorkMode

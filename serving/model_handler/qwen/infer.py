@@ -10,7 +10,7 @@ from torch.nn import functional as F
 from deep_training.trainer.pl.modelweighter import default_peft_weight_preprocess
 from deep_training.data_helper import ModelArguments,DataHelper
 from transformers import HfArgumentParser, BitsAndBytesConfig
-from aigc_zoo.model_zoo.qwen.llm_model import MyTransformer, QWenTokenizer, PetlArguments, \
+from deep_training.zoo.model_zoo.qwen.llm_model import MyTransformer, QWenTokenizer, PetlArguments, \
     setup_model_profile, QWenConfig
 from serving.model_handler.base import ModelEngine_Base,CompletionResult,LoraModelState, load_lora_config, GenArgs,WorkMode
 from serving.prompt import *

@@ -10,44 +10,45 @@
 
 ## update information
 ```text
-    12-07 support sus-chat and deepseek-coder
-    12-04 support auto-gptq , such as 4bits 8bits
-    12-03 limit model_max_length for inputs
-    12-02 support qwen 1.8b 7b 14b 72b and 
+    2024-04-22 0.3.0
+    2023-12-07 support sus-chat and deepseek-coder
+    2023-12-04 support auto-gptq , such as 4bits 8bits
+    2023-12-03 limit model_max_length for inputs
+    2023-12-02 support qwen 1.8b 7b 14b 72b and 
           support chat chat_stream is for openai_chat ,  
           generate generate_stream is for openai , 
           support batch for generate method
-    11-28 support autoawq , such as 4bits 8bits
-    11-27 yi model_type change to llama
-    11-22 support sentence_transformers , such as bge,m3e and so on
-    11-20 support seed for generator sample and support bianque2 , lingowhale
-    11-06 fix pydantic 2 and support api_keys in config
-    11-04 support yi aigc-zoo>=0.2.7.post2 , 支持 pydantic >= 2 
-    11-01 support bluelm aigc-zoo>=0.2.7.post1
-    10-31 support chatglm3,CausalLM,skywork , aigc-zoo>=0.2.7.post0
-    10-11 support t5
-    09-13 支持模型别名
-    09-11 增加支持且仅支持 ptv2 for chatglm,chatglm2
-    09-06 support baichuan2
-    09-03 增加tiger , openbuddy 模板 ， test openbuddy-70b passed
-    08-26 fix same group stream order
-    08-25 aigc-zoo 0.2.0.post1 support xverse-13b-chat , 已有模型 实现 stop 功能
-    08-20 support embedding
-    08-17 add tiger-chat-13b
-    08-16 推理可选使用 Rope NtkScale , 不训练扩展推理长度
-    08-14 支持lora model 基础模型和lora头切换
-    08-12 增加通义千问模型工具调用示例，支持 **`function call`** 特性，调用方式参考 [邮件发送助手](./tests/email_sender.py)、[定积分计算器](./tests/quad_calculator.py)、[SQL查询](./tests/sql_querier.py)
-    08-11 qwen官方配置文件更新，请使用aigc-zoo 0.1.17.post0 , 并更新官方config.json , generation_config.json 等信息
-    08-10 0.1.17 release , fix new bugs
-    08-08 support xverse-13b , 版本要求 deep_training 0.1.15.rc2
-    08-07 support llama llama2 量化推理 , 版本要求 deep_training 0.1.15.rc1
-    08-05 aigc_zoo 最低版本0.1.14 
-    08-03 support qwen
-    08-02 support muti lora infer , 手动升级 aigc_zoo , pip install -U git+https://github.com/ssbuild/aigc_zoo.git --force-reinstall --no-deps
-    07-27 support openai client
-    07-26 support streaming
-    07-24 support chat
-    07-23 support deepspeed , accelerate
+    2023-11-28 support autoawq , such as 4bits 8bits
+    2023-11-27 yi model_type change to llama
+    2023-11-22 support sentence_transformers , such as bge,m3e and so on
+    2023-11-20 support seed for generator sample and support bianque2 , lingowhale
+    2023-11-06 fix pydantic 2 and support api_keys in config
+    2023-11-04 support yi aigc-zoo>=0.2.7.post2 , 支持 pydantic >= 2 
+    2023-11-01 support bluelm aigc-zoo>=0.2.7.post1
+    2023-10-31 support chatglm3,CausalLM,skywork , aigc-zoo>=0.2.7.post0
+    2023-10-11 support t5
+    2023-09-13 支持模型别名
+    2023-09-11 增加支持且仅支持 ptv2 for chatglm,chatglm2
+    2023-09-06 support baichuan2
+    2023-09-03 增加tiger , openbuddy 模板 ， test openbuddy-70b passed
+    2023-08-26 fix same group stream order
+    2023-08-25 aigc-zoo 0.2.0.post1 support xverse-13b-chat , 已有模型 实现 stop 功能
+    2023-08-20 support embedding
+    2023-08-17 add tiger-chat-13b
+    2023-08-16 推理可选使用 Rope NtkScale , 不训练扩展推理长度
+    2023-08-14 支持lora model 基础模型和lora头切换
+    2023-08-12 增加通义千问模型工具调用示例，支持 **`function call`** 特性，调用方式参考 [邮件发送助手](./tests/email_sender.py)、[定积分计算器](./tests/quad_calculator.py)、[SQL查询](./tests/sql_querier.py)
+    2023-08-11 qwen官方配置文件更新，请使用aigc-zoo 0.1.17.post0 , 并更新官方config.json , generation_config.json 等信息
+    2023-08-10 0.1.17 release , fix new bugs
+    2023-08-08 support xverse-13b , 版本要求 deep_training 0.1.15.rc2
+    2023-08-07 support llama llama2 量化推理 , 版本要求 deep_training 0.1.15.rc1
+    2023-08-05 aigc_zoo 最低版本0.1.14 
+    2023-08-03 support qwen
+    2023-08-02 support muti lora infer , 手动升级 aigc_zoo , pip install -U git+https://github.com/ssbuild/deep_training.zoo.git --force-reinstall --no-deps
+    2023-07-27 support openai client
+    2023-07-26 support streaming
+    2023-07-24 support chat
+    2023-07-23 support deepspeed , accelerate
 ```
 
 ## 注意

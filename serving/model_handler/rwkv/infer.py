@@ -11,9 +11,9 @@ from torch.nn import functional as F
 from deep_training.trainer.pl.modelweighter import default_peft_weight_preprocess
 from deep_training.data_helper import ModelArguments, DataHelper
 from transformers import HfArgumentParser
-from aigc_zoo.model_zoo.rwkv4.llm_model import MyTransformer, RwkvConfig, \
+from deep_training.zoo.model_zoo.rwkv4.llm_model import MyTransformer, RwkvConfig, \
     set_model_profile,PetlArguments,PetlModel
-from aigc_zoo.utils.rwkv4_generate import Generate
+from deep_training.zoo.utils.rwkv4_generate import Generate
 from serving.model_handler.base import ModelEngine_Base,CompletionResult,LoraModelState, load_lora_config, GenArgs,WorkMode
 from serving.prompt import *
 

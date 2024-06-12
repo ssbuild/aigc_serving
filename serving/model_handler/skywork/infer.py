@@ -14,9 +14,9 @@ from deep_training.data_helper import ModelArguments, DataHelper
 from deep_training.nlp.layers.rope_scale.patch import RotaryNtkScaledArguments
 from transformers import HfArgumentParser,AutoModelForCausalLM
 from deep_training.utils.hf import register_transformer_model, register_transformer_config , register_transformer_tokenizer # noqa
-from aigc_zoo.model_zoo.skywork.llm_model import MySkyworkForCausalLM,SkyworkConfig,SkyworkTokenizer
-from aigc_zoo.model_zoo.llm.llm_model import MyTransformer,PetlArguments,PetlModel,AutoConfig
-from aigc_zoo.generator_utils.generator_llm import Generate
+from deep_training.zoo.model_zoo.skywork.llm_model import MySkyworkForCausalLM,SkyworkConfig,SkyworkTokenizer
+from deep_training.zoo.model_zoo.llm.llm_model import MyTransformer,PetlArguments,PetlModel,AutoConfig
+from deep_training.zoo.generator_utils.generator_llm import Generate
 from serving.model_handler.base import ModelEngine_Base,CompletionResult, LoraModelState, load_lora_config, GenArgs,WorkMode,ChunkData
 from serving.prompt import *
 
