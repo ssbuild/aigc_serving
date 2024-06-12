@@ -39,6 +39,9 @@ def get_worker_instance(model_name,config,group_name,worker_idx):
         elif model_name.startswith("chatglm2"):
             from serving.model_handler.chatglm2.infer import ModelEngine
             api_client = ModelEngine(config, group_name=group_name, worker_idx=worker_idx)
+        elif model_name.startswith("chatglm4") or model_name.startswith("glm4"):
+            from serving.model_handler.glm4.infer import ModelEngine
+            api_client = ModelEngine(config, group_name=group_name, worker_idx=worker_idx)
         elif model_name.startswith("chatglm") or model_name.startswith("bianque2"):
             from serving.model_handler.chatglm.infer import ModelEngine
             api_client = ModelEngine(config, group_name=group_name, worker_idx=worker_idx)
